@@ -19,7 +19,7 @@ It generates unified, cross-compatible agent definitions and applies local **Ski
 - **Interactive Multi-Agent Setup Wizard**: Asks step-by-step questions for your project context, primary goals, and each agent's mission, provider, model, reasoning effort, scope, completion criteria, and tool permissions (`Read-Only` vs `Read+Write+Bash`).
 - **Strict `< 150 Lines` `AGENTS.md` Budget**: Enforces a hard limit of under 150 lines on root `AGENTS.md` files (preserving existing repository sections while pushing detailed tables into `.agents/README.md`) to prevent context window bloat.
 - **Automatic Local Skill Discovery & Linking**: Scans your local skill libraries (`~/.gemini/config/plugins`, `~/Projects/Hephaestus/.agents/skills`, and built-in Antigravity skills) and applies selected skill bundles via `symlink`, `copy`, or `.agents/skills.json`.
-- **Bilingual CLI Interface (`Tiếng Việt` & `English`)**: Full Vietnamese interactive terminal UI by default (`--lang vi`), with seamless switching to English (`--lang en`).
+- **Bilingual CLI Interface (`English` & `Tiếng Việt`)**: Full English interactive terminal UI by default (`--lang en`), with seamless switching to Vietnamese (`--lang vi` or directly in the dashboard menu).
 
 ---
 

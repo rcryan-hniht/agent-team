@@ -45,6 +45,13 @@ BLUE = "\033[34m"
 RED = "\033[31m"
 
 
+CURRENT_LANG = "en"
+
+
+def tr(en_text: str, vi_text: str) -> str:
+    return vi_text if CURRENT_LANG == "vi" else en_text
+
+
 def c(text: str, color: str = "") -> str:
     if not sys.stdout.isatty():
         return text
@@ -52,15 +59,26 @@ def c(text: str, color: str = "") -> str:
 
 
 def banner() -> None:
-    print(
-        c(
-            "\n╭──────────────────────────────────────────────────────────────────────────────╮\n"
-            "│  🤖 AGT (AGENT-TEAM CLI) — Thiết lập Đội ngũ AI & Skills cho ~/Projects      │\n"
-            "│  Chuẩn hóa: Antigravity (.agents) • OpenAI (.codex) • Claude Code (.claude)  │\n"
-            "╰──────────────────────────────────────────────────────────────────────────────╯",
-            BOLD + CYAN,
+    if CURRENT_LANG == "vi":
+        print(
+            c(
+                "\n╭──────────────────────────────────────────────────────────────────────────────╮\n"
+                "│  🤖 AGT (AGENT-TEAM CLI) — Thiết lập Đội ngũ AI & Skills cho ~/Projects      │\n"
+                "│  Chuẩn hóa: Antigravity (.agents) • OpenAI (.codex) • Claude Code (.claude)  │\n"
+                "╰──────────────────────────────────────────────────────────────────────────────╯",
+                BOLD + CYAN,
+            )
         )
-    )
+    else:
+        print(
+            c(
+                "\n╭──────────────────────────────────────────────────────────────────────────────╮\n"
+                "│  🤖 AGT (AGENT-TEAM CLI) — Multi-Agent Team & Skills Setup for ~/Projects    │\n"
+                "│  Harnesses: Antigravity (.agents) • OpenAI (.codex) • Claude Code (.claude)  │\n"
+                "╰──────────────────────────────────────────────────────────────────────────────╯",
+                BOLD + CYAN,
+            )
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -108,13 +126,13 @@ class TeamConfig:
 # Model & Role Catalogs (Đồng bộ chuẩn Orpheus / Act2Morse + Antigravity/Codex/Claude)
 # ---------------------------------------------------------------------------
 AGY_MODEL_CHOICES: List[Tuple[str, str]] = [
-    ("gemini-4-argon-high", "Google Gemini 4 Argon (High) — Orchestrator / Kiến trúc phức tạp"),
-    ("claude-opus-5-5-medium", "Anthropic Claude Opus 5.5 (Medium) — Orchestrator / Thiết kế sâu"),
-    ("gemini-3.1-pro-high", "Google Gemini 3.1 Pro (High) — Reviewer / Kiểm định độc lập & Bảo mật"),
-    ("gemini-3.8-flash-high", "Google Gemini 3.8 Flash (High) — Implementer / Viết code & TDD nhanh, chuẩn"),
-    ("gemini-3.8-flash-medium", "Google Gemini 3.8 Flash (Medium) — Searcher / Trinh sát tài liệu & mã nguồn"),
-    ("gemini-3.7-flash", "Google Gemini 3.7 Flash (Low) — Committer / Tác vụ gọn nhẹ"),
-    ("inherit", "Kế thừa model hiện tại đang chọn trong phiên Antigravity"),
+    ("gemini-4-argon-high", "Google Gemini 4 Argon (High) — Lead Orchestrator / Complex Architecture"),
+    ("claude-opus-5-5-medium", "Anthropic Claude Opus 5.5 (Medium) — Lead Orchestrator / Deep Design"),
+    ("gemini-3.1-pro-high", "Google Gemini 3.1 Pro (High) — Independent Reviewer & Security"),
+    ("gemini-3.8-flash-high", "Google Gemini 3.8 Flash (High) — Fast & Accurate TDD Implementer"),
+    ("gemini-3.8-flash-medium", "Google Gemini 3.8 Flash (Medium) — Focused Searcher & Documentation Scout"),
+    ("gemini-3.7-flash", "Google Gemini 3.7 Flash (Low) — Lightweight Conventional Committer"),
+    ("inherit", "Inherit active session model in Antigravity"),
 ]
 
 CODEX_MODEL_CHOICES: List[Tuple[str, str, str]] = [
@@ -132,7 +150,7 @@ CLAUDE_MODEL_CHOICES: List[Tuple[str, str]] = [
     ("opus", "Claude Opus (Lead Architect / Reviewer)"),
     ("sonnet", "Claude Sonnet (Implementer / Code Reviewer)"),
     ("haiku", "Claude Haiku (Fast Searcher / Committer)"),
-    ("inherit", "Inherit từ phiên Claude Code hiện tại"),
+    ("inherit", "Inherit from active Claude Code session"),
 ]
 
 READ_WRITE_TOOLS = [
@@ -172,22 +190,21 @@ COMMITTER_TOOLS = [
 DEFAULT_AGENT_TEMPLATES: Dict[str, Dict] = {
     "orchestrator": {
         "title": "Astra / Argon: Architecture, Orchestration & Verification",
-        "role": "Điều phối viên & Kiến trúc sư trưởng (Orchestrator)",
+        "role": "Lead Orchestrator & Architect",
         "mission": (
-            "Phân tích yêu cầu, chia nhỏ thành các task độc lập không chồng chéo file; "
-            "giao việc cho implementer (code/test), reviewer (kiểm định độc lập), "
-            "searcher (tra cứu tài liệu/codebase), và committer (tạo git commit). "
-            "Kiểm tra hợp đồng giữa các module và đảm bảo toàn bộ ứng dụng build/test xanh."
+            "Break down requirements into bounded, non-overlapping tasks; delegate implementation "
+            "and testing to implementer, independent review to reviewer, documentation/code research "
+            "to searcher, and git commits to committer. Verify module contracts and final build/tests."
         ),
         "provider": "multi",
         "agy_model": "gemini-4-argon-high",
         "claude_model": "claude-opus-5-5-medium",
         "codex_model": "gpt-6-astra",
         "reasoning_effort": "high",
-        "context_scope": "Toàn bộ kiến trúc repo, AGENTS.md, module contracts và tích hợp hệ thống.",
+        "context_scope": "Full repository architecture, AGENTS.md, module contracts, and system integration.",
         "goal_criteria": (
-            "Không có 2 subagent sửa cùng 1 file; mọi phát hiện của reviewer được giải quyết triệt để; "
-            "toàn bộ ứng dụng build và pass test trước khi báo cáo hoàn thành."
+            "Zero overlapping file ownership across subagents; all reviewer findings resolved; "
+            "full application builds and passes tests before claiming completion."
         ),
         "enable_write": True,
         "enable_subagents": True,
@@ -204,21 +221,21 @@ DEFAULT_AGENT_TEMPLATES: Dict[str, Dict] = {
     },
     "reviewer": {
         "title": "3.1 Pro High / Sol 6.1: Code Correctness, Security & Test Quality Review",
-        "role": "Kiểm định viên chất lượng & Bảo mật (Reviewer)",
+        "role": "Independent Code Quality & Security Reviewer",
         "mission": (
-            "Review code độc lập ở chế độ Read-Only: phát hiện lỗi logic, async race conditions, "
-            "lỗ hổng bảo mật, dữ liệu đầu vào chưa kiểm tra, và chất lượng unit/regression test. "
-            "Báo cáo chính xác file/dòng, nguyên nhân, mức độ ảnh hưởng và cách sửa nhỏ gọn nhất."
+            "Independently review changes in read-only mode: detect logic bugs, async race conditions, "
+            "security vulnerabilities, unvalidated inputs, and missing regression tests. "
+            "Report actionable defects with exact file/line, impact, and smallest safe fix."
         ),
         "provider": "multi",
         "agy_model": "gemini-3.1-pro-high",
         "claude_model": "sonnet",
         "codex_model": "gpt-6.1-sol",
         "reasoning_effort": "xhigh",
-        "context_scope": "Chế độ Read-Only trên git diff, các module liên đới và bộ kiểm thử.",
+        "context_scope": "Read-only inspection of git diffs, affected modules, and test suites.",
         "goal_criteria": (
-            "Phân biệt rõ hành vi đã kiểm chứng với giả định; chỉ rõ file:line cho từng lỗi; "
-            "không tự ý sửa đè lên file trừ khi được giao sửa một bug cụ thể."
+            "Distinguish verified behavior from assumptions; cite exact file:line for every finding; "
+            "do not overwrite files directly unless explicitly assigned to fix a specific bug."
         ),
         "enable_write": False,
         "enable_subagents": False,
@@ -234,21 +251,20 @@ DEFAULT_AGENT_TEMPLATES: Dict[str, Dict] = {
     },
     "implementer": {
         "title": "3.8 Flash High / Sol 6.0: Minimal Implementation, TDD & Test Execution",
-        "role": "Kỹ sư thực thi & Kiểm thử (Implementer)",
+        "role": "Senior Feature & TDD Implementer",
         "mission": (
-            "Thực thi code và kiểm thử với thay đổi nhỏ gọn, trọn vẹn nhất (smallest complete changes): "
-            "viết regression/unit test trước, chạy để xác nhận test fail (Red), sau đó viết code "
-            "để pass (Green) và refactor sạch sẽ."
+            "Implement and test with the smallest complete changes: write regression/unit tests first, "
+            "run them to verify failure (Red), implement the minimal code to pass (Green), and refactor."
         ),
         "provider": "multi",
         "agy_model": "gemini-3.8-flash-high",
         "claude_model": "sonnet",
         "codex_model": "gpt-6-sol",
         "reasoning_effort": "xhigh",
-        "context_scope": "Các module/file được phân công trong task brief và test suite tương ứng.",
+        "context_scope": "Assigned modules/files in the task brief and corresponding test suites.",
         "goal_criteria": (
-            "Tuân thủ kiến trúc và hợp đồng module hiện có; bảo toàn xử lý lỗi và dọn dẹp tài nguyên; "
-            "báo cáo trung thực câu lệnh đã chạy và kết quả test thực tế."
+            "Follow existing module contracts and architecture; preserve error handling and resource cleanup; "
+            "report actual commands executed and verified test results."
         ),
         "enable_write": True,
         "enable_subagents": False,
@@ -266,21 +282,20 @@ DEFAULT_AGENT_TEMPLATES: Dict[str, Dict] = {
     },
     "searcher": {
         "title": "Luna / 3.8 Flash Medium: Focused Research & Codebase Scout",
-        "role": "Trinh sát mã nguồn & Tài liệu chính thống (Searcher)",
+        "role": "Primary Documentation & Codebase Scout",
         "mission": (
-            "Nghiên cứu các câu hỏi trọng tâm dựa trên tài liệu chính thống (primary documentation) "
-            "và quét nhanh cấu trúc codebase ở chế độ Read-Only. Trả về kết quả cô đọng kèm URL, "
-            "chữ ký hàm (API signatures), đường dẫn file:dòng và giới hạn tương thích."
+            "Research focused questions against primary documentation and scout the codebase in read-only mode. "
+            "Return concise findings with direct URLs, API signatures, exact file:line paths, and compatibility limits."
         ),
         "provider": "multi",
         "agy_model": "gemini-3.8-flash-medium",
         "claude_model": "haiku",
         "codex_model": "gpt-6-luna",
         "reasoning_effort": "medium",
-        "context_scope": "Read-Only trên toàn bộ codebase, tài liệu nội bộ và tìm kiếm web.",
+        "context_scope": "Read-only access across codebase, local docs, and primary web documentation.",
         "goal_criteria": (
-            "Xác minh thông tin trước khi đề xuất thư viện hoặc cấu hình; tuyệt đối không sửa code "
-            "và không đưa thông tin nhạy cảm/secrets vào truy vấn tìm kiếm."
+            "Verify facts before recommending dependencies or configuration; never modify code "
+            "or include secrets in search queries."
         ),
         "enable_write": False,
         "enable_subagents": False,
@@ -295,21 +310,20 @@ DEFAULT_AGENT_TEMPLATES: Dict[str, Dict] = {
     },
     "committer": {
         "title": "3.7 Flash Low / Luna: Concise Conventional Git Commits",
-        "role": "Chuyên viên Git Commit chuẩn Conventional Commits (Committer)",
+        "role": "Conventional Git Committer",
         "mission": (
-            "Kiểm tra trạng thái git (`git status -s`, `git diff --staged`) và tạo thông điệp commit "
-            "ngắn gọn, chuyên nghiệp theo chuẩn Conventional Commits (`feat:`, `fix:`, `refactor:`, "
-            "`test:`, `docs:`, `chore:`)."
+            "Inspect git status (`git status -s`, `git diff --staged`) and craft concise, professional "
+            "commit messages in Conventional Commits format (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`)."
         ),
         "provider": "multi",
         "agy_model": "gemini-3.7-flash",
         "claude_model": "haiku",
         "codex_model": "gpt-6-luna",
         "reasoning_effort": "low",
-        "context_scope": "Git working tree, staged changes và lịch sử commit.",
+        "context_scope": "Git working tree, staged changes, and commit history.",
         "goal_criteria": (
-            "Subject line ở thể mệnh lệnh (imperative), chữ thường, tối đa 50-72 ký tự, không dấu chấm cuối; "
-            "commit nguyên tử (atomic); tuyệt đối không commit secrets, API keys hay file cấu hình nhạy cảm."
+            "Imperative mood subject line, lowercase, 50-72 chars max, no trailing period; "
+            "atomic commits; never stage or commit secrets, credentials, or local config files."
         ),
         "enable_write": False,
         "enable_subagents": False,
@@ -326,7 +340,7 @@ DEFAULT_AGENT_TEMPLATES: Dict[str, Dict] = {
 SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
     "core-subagents-tdd": {
         "label": "Core Subagents, Planning & TDD (superpowers + mattpocock)",
-        "description": "Quy trình điều phối subagents, lập kế hoạch, TDD, debug hệ thống và code review 2 trục.",
+        "description": "Subagent orchestration, planning, TDD, systematic debugging, and two-axis code review.",
         "skills": [
             "brainstorming",
             "writing-plans",
@@ -348,7 +362,7 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
     },
     "ponytail-lean": {
         "label": "Ponytail Lean / YAGNI Senior Mode (ponytail)",
-        "description": "Giữ code tối giản, chống over-engineering, review thực dụng và kiểm toán nợ kỹ thuật.",
+        "description": "Minimalist code changes, anti-overengineering, pragmatic review, and tech debt auditing.",
         "skills": [
             "ponytail",
             "ponytail-review",
@@ -359,7 +373,7 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
     },
     "frontend-taste-ui": {
         "label": "Frontend Taste & UI/UX Pro Max (taste-skill + ui-ux-pro-max + Hephaestus UI)",
-        "description": "Thiết kế giao diện chống AI-slop, minimalist/brutalist UI, animations, shadcn/tailwind.",
+        "description": "Anti-slop art direction, minimalist/brutalist UI, motion design, and shadcn/tailwind.",
         "skills": [
             "design-taste-frontend",
             "ui-ux-pro-max",
@@ -380,7 +394,7 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
     },
     "architecture-archify": {
         "label": "Architecture Diagrams, Domain Modeling & Playwright (Hephaestus + mattpocock)",
-        "description": "Vẽ kiến trúc hệ thống (archify), domain modeling, kiểm thử giao diện (playwright-cli).",
+        "description": "Interactive architecture diagrams (archify), domain modeling, and Playwright verification.",
         "skills": [
             "archify",
             "domain-modeling",
@@ -392,7 +406,7 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
     },
     "agy-swarm": {
         "label": "Antigravity Native Swarm & Customizations (builtin)",
-        "description": "Điều phối bầy đàn (Swarm message board) và tùy biến sâu hệ thống Antigravity.",
+        "description": "Parallel multi-agent swarm message board and Antigravity customization guides.",
         "skills": [
             "swarm",
             "agy-customizations",
@@ -491,7 +505,7 @@ def ask_text(prompt_label: str, default: str = "") -> str:
     try:
         val = input(f"{c('?', BOLD + GREEN)} {BOLD}{prompt_label}{RESET}{default_hint}: ").strip()
     except (EOFError, KeyboardInterrupt):
-        print("\nĐã hủy thiết lập.")
+        print(tr("\nSetup cancelled.", "\nĐã hủy thiết lập."))
         sys.exit(0)
     return val if val else default
 
@@ -501,7 +515,7 @@ def ask_yes_no(prompt_label: str, default: bool = True) -> bool:
     try:
         val = input(f"{c('?', BOLD + GREEN)} {BOLD}{prompt_label}{RESET} [{c(hint, CYAN)}]: ").strip().lower()
     except (EOFError, KeyboardInterrupt):
-        print("\nĐã hủy thiết lập.")
+        print(tr("\nSetup cancelled.", "\nĐã hủy thiết lập."))
         sys.exit(0)
     if not val:
         return default
@@ -511,9 +525,9 @@ def ask_yes_no(prompt_label: str, default: bool = True) -> bool:
 def ask_choice(prompt_label: str, options: List[Tuple[str, str]], default_index: int = 0) -> str:
     print(f"\n{c('?', BOLD + GREEN)} {BOLD}{prompt_label}{RESET}")
     for idx, (key, desc) in enumerate(options, start=1):
-        marker = c(" (mặc định)", YELLOW) if (idx - 1) == default_index else ""
+        marker = c(tr(" (default)", " (mặc định)"), YELLOW) if (idx - 1) == default_index else ""
         print(f"  {c(str(idx), BOLD + CYAN)}. {BOLD}{key}{RESET} — {desc}{marker}")
-    raw = ask_text("Chọn số (hoặc nhập trực tiếp tên)", str(default_index + 1))
+    raw = ask_text(tr("Select number (or type name)", "Chọn số (hoặc nhập trực tiếp tên)"), str(default_index + 1))
     if raw.isdigit():
         num = int(raw)
         if 1 <= num <= len(options):
@@ -535,7 +549,10 @@ def ask_multi_choice(
         print(f"  {c(str(idx), BOLD + CYAN)}. {checked} {BOLD}{key}{RESET} — {desc}")
     default_str = ",".join(str(i + 1) for i in default_indices)
     raw = ask_text(
-        "Nhập các số cách nhau bằng dấu phẩy (hoặc 'all' / Enter để giữ mặc định)",
+        tr(
+            "Enter comma-separated numbers (or 'all' / Enter for default)",
+            "Nhập các số cách nhau bằng dấu phẩy (hoặc 'all' / Enter để giữ mặc định)",
+        ),
         default_str,
     )
     if raw.lower() == "all":
@@ -564,7 +581,10 @@ def select_project_directory(initial_dir: Path, projects_root: Path) -> Path:
     if resolved == projects_root.resolve():
         print(
             c(
-                f"\n📂 Bạn đang ở thư mục gốc {projects_root}. Hãy chọn Project/Repo muốn thiết lập đội AI:",
+                tr(
+                    f"\n📂 You are in the root {projects_root} directory. Select a Project/Repo to configure:",
+                    f"\n📂 Bạn đang ở thư mục gốc {projects_root}. Hãy chọn Project/Repo muốn thiết lập đội AI:",
+                ),
                 BOLD + YELLOW,
             )
         )
@@ -585,17 +605,26 @@ def select_project_directory(initial_dir: Path, projects_root: Path) -> Path:
                 status_parts.append(".agents")
             if (d / ".codex" / "config.toml").exists():
                 status_parts.append(".codex")
-            badge = f"✓ Đã có: {', '.join(status_parts)}" if status_parts else "Chưa cài"
+            badge = (
+                tr(f"✓ Configured: {', '.join(status_parts)}", f"✓ Đã có: {', '.join(status_parts)}")
+                if status_parts
+                else tr("Not configured", "Chưa cài")
+            )
             stack = detect_tech_stack(d)
             options.append((d.name, f"{stack} ({badge})"))
-        options.append(("[Tạo thư mục Project mới]", "Tạo một repo mới trong ~/Projects"))
-        options.append(("[Thiết lập ngay tại ~/Projects]", "Tạo cấu hình cấp toàn cục cho ~/Projects"))
+        new_proj_key = tr("[Create new Project folder]", "[Tạo thư mục Project mới]")
+        root_proj_key = tr("[Configure at ~/Projects root]", "[Thiết lập ngay tại ~/Projects]")
+        options.append((new_proj_key, tr("Create a new repository folder in ~/Projects", "Tạo một repo mới trong ~/Projects")))
+        options.append((root_proj_key, tr("Create global configuration in ~/Projects", "Tạo cấu hình cấp toàn cục cho ~/Projects")))
 
-        choice = ask_choice("Chọn Project/Repo đích", options, default_index=0)
-        if choice == "[Thiết lập ngay tại ~/Projects]":
+        choice = ask_choice(tr("Select target Project/Repo", "Chọn Project/Repo đích"), options, default_index=0)
+        if choice == root_proj_key:
             return projects_root
-        if choice == "[Tạo thư mục Project mới]":
-            new_name = ask_text("Nhập tên thư mục project mới (trong ~/Projects)", "my-new-project")
+        if choice == new_proj_key:
+            new_name = ask_text(
+                tr("Enter new project folder name (in ~/Projects)", "Nhập tên thư mục project mới (trong ~/Projects)"),
+                "my-new-project",
+            )
             target = (projects_root / new_name).expanduser().resolve()
             target.mkdir(parents=True, exist_ok=True)
             return target
@@ -606,17 +635,23 @@ def select_project_directory(initial_dir: Path, projects_root: Path) -> Path:
 def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool) -> AgentSpec:
     print(
         c(
-            f"\n─── Thiết lập Agent: [{role_id.upper()}] ({template['role']}) ───",
+            tr(
+                f"\n─── Configure Agent: [{role_id.upper()}] ({template['role']}) ───",
+                f"\n─── Thiết lập Agent: [{role_id.upper()}] ({template['role']}) ───",
+            ),
             BOLD + MAGENTA,
         )
     )
     if not customize_deeply:
-        print(f"  • Nhiệm vụ     : {template['mission'][:95]}...")
+        print(f"  • {tr('Mission     ', 'Nhiệm vụ     ')}: {template['mission'][:95]}...")
         print(
             f"  • Model (Agy)  : {c(template['agy_model'], CYAN)} | Model (Codex): {c(template['codex_model'], CYAN)} ({template['reasoning_effort']}) | Claude: {c(template['claude_model'], CYAN)}"
         )
         print(f"  • Skills       : {', '.join(template['skills'])}")
-        if not ask_yes_no(f"Bạn có muốn chỉnh sửa chi tiết cho agent '{role_id}' không?", default=False):
+        if not ask_yes_no(
+            tr(f"Customize details for agent '{role_id}'?", f"Bạn có muốn chỉnh sửa chi tiết cho agent '{role_id}' không?"),
+            default=False,
+        ):
             return AgentSpec(
                 id=role_id,
                 title=template["title"],
@@ -637,34 +672,40 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
                 skills=list(template["skills"]),
             )
 
-    role_label = ask_text(f"[{role_id}] Tên vai trò (Role)", template["role"])
-    title = ask_text(f"[{role_id}] Tiêu đề ngắn (Description header)", template["title"])
-    mission = ask_text(f"[{role_id}] Nhiệm vụ cụ thể (Mission)", template["mission"])
+    role_label = ask_text(tr(f"[{role_id}] Role title", f"[{role_id}] Tên vai trò (Role)"), template["role"])
+    title = ask_text(tr(f"[{role_id}] Short description header", f"[{role_id}] Tiêu đề ngắn (Description header)"), template["title"])
+    mission = ask_text(tr(f"[{role_id}] Specific mission", f"[{role_id}] Nhiệm vụ cụ thể (Mission)"), template["mission"])
 
-    # Chọn Model cho Antigravity (agy)
     default_agy_idx = next(
         (i for i, (k, _) in enumerate(AGY_MODEL_CHOICES) if k == template["agy_model"]),
         0,
     )
-    agy_opts = list(AGY_MODEL_CHOICES) + [("custom", "Tự nhập tên model bất kỳ cho Antigravity")]
-    agy_model = ask_choice(f"[{role_id}] Chọn Model cho Antigravity (agy)", agy_opts, default_index=default_agy_idx)
+    agy_opts = list(AGY_MODEL_CHOICES) + [("custom", tr("Enter a custom model name for Antigravity", "Tự nhập tên model bất kỳ cho Antigravity"))]
+    agy_model = ask_choice(
+        tr(f"[{role_id}] Select Model for Antigravity (agy)", f"[{role_id}] Chọn Model cho Antigravity (agy)"),
+        agy_opts,
+        default_index=default_agy_idx,
+    )
     if agy_model == "custom":
-        agy_model = ask_text(f"[{role_id}] Nhập tên model Antigravity", template["agy_model"])
+        agy_model = ask_text(tr(f"[{role_id}] Enter Antigravity model name", f"[{role_id}] Nhập tên model Antigravity"), template["agy_model"])
 
-    # Chọn Model cho OpenAI Codex (codex)
     codex_opts = [(k, f"{desc}") for k, _, desc in CODEX_MODEL_CHOICES] + [
-        ("custom", "Tự nhập tên model bất kỳ cho OpenAI Codex")
+        ("custom", tr("Enter a custom model name for OpenAI Codex", "Tự nhập tên model bất kỳ cho OpenAI Codex"))
     ]
     default_codex_idx = next(
         (i for i, (k, _, _) in enumerate(CODEX_MODEL_CHOICES) if k == template["codex_model"]),
         0,
     )
-    codex_choice = ask_choice(f"[{role_id}] Chọn Model cho OpenAI Codex (.codex)", codex_opts, default_index=default_codex_idx)
+    codex_choice = ask_choice(
+        tr(f"[{role_id}] Select Model for OpenAI Codex (.codex)", f"[{role_id}] Chọn Model cho OpenAI Codex (.codex)"),
+        codex_opts,
+        default_index=default_codex_idx,
+    )
     if codex_choice == "custom":
-        codex_model = ask_text(f"[{role_id}] Nhập tên model Codex", template["codex_model"])
+        codex_model = ask_text(tr(f"[{role_id}] Enter Codex model name", f"[{role_id}] Nhập tên model Codex"), template["codex_model"])
         reasoning_effort = ask_choice(
-            f"[{role_id}] Mức độ suy luận (model_reasoning_effort)",
-            [("xhigh", "Cực cao (xhigh)"), ("high", "Cao (high)"), ("medium", "Trung bình (medium)"), ("low", "Thấp/Nhanh (low)")],
+            tr(f"[{role_id}] Reasoning effort (model_reasoning_effort)", f"[{role_id}] Mức độ suy luận (model_reasoning_effort)"),
+            [("xhigh", "Extra High (xhigh)"), ("high", "High (high)"), ("medium", "Medium (medium)"), ("low", "Low/Fast (low)")],
             default_index=1,
         )
     else:
@@ -676,35 +717,41 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
             codex_model = codex_choice
             reasoning_effort = template["reasoning_effort"]
 
-    # Chọn Model cho Claude Code (claude)
     default_claude_idx = next(
         (i for i, (k, _) in enumerate(CLAUDE_MODEL_CHOICES) if k == template["claude_model"]),
         0,
     )
-    claude_opts = list(CLAUDE_MODEL_CHOICES) + [("custom", "Tự nhập tên model cho Claude Code")]
-    claude_model = ask_choice(f"[{role_id}] Chọn Model cho Claude Code (.claude)", claude_opts, default_index=default_claude_idx)
+    claude_opts = list(CLAUDE_MODEL_CHOICES) + [("custom", tr("Enter a custom model name for Claude Code", "Tự nhập tên model cho Claude Code"))]
+    claude_model = ask_choice(
+        tr(f"[{role_id}] Select Model for Claude Code (.claude)", f"[{role_id}] Chọn Model cho Claude Code (.claude)"),
+        claude_opts,
+        default_index=default_claude_idx,
+    )
     if claude_model == "custom":
-        claude_model = ask_text(f"[{role_id}] Nhập tên model Claude", template["claude_model"])
+        claude_model = ask_text(tr(f"[{role_id}] Enter Claude model name", f"[{role_id}] Nhập tên model Claude"), template["claude_model"])
 
-    context_scope = ask_text(f"[{role_id}] Ngữ cảnh & Phạm vi (Context/Scope)", template["context_scope"])
+    context_scope = ask_text(
+        tr(f"[{role_id}] Context & Scope", f"[{role_id}] Ngữ cảnh & Phạm vi (Context/Scope)"),
+        template["context_scope"],
+    )
     goal_criteria = ask_text(
-        f"[{role_id}] Mục tiêu & Tiêu chí hoàn thành (Goal/Completion Criteria)",
+        tr(f"[{role_id}] Goal & Completion Criteria", f"[{role_id}] Mục tiêu & Tiêu chí hoàn thành (Goal/Completion Criteria)"),
         template["goal_criteria"],
     )
 
     enable_write = ask_yes_no(
-        f"[{role_id}] Cấp quyền ghi/sửa file mã nguồn (Write tools)?",
+        tr(f"[{role_id}] Grant file write & command execution permissions?", f"[{role_id}] Cấp quyền ghi/sửa file mã nguồn (Write tools)?"),
         default=bool(template["enable_write"]),
     )
     enable_subagents = ask_yes_no(
-        f"[{role_id}] Cho phép gọi subagents con?",
+        tr(f"[{role_id}] Allow dispatching nested subagents?", f"[{role_id}] Cho phép gọi subagents con?"),
         default=bool(template["enable_subagents"]),
     )
     workspace_mode = "share" if enable_write and role_id != "orchestrator" else "inherit"
     agy_tools = list(READ_WRITE_TOOLS) if enable_write else list(template.get("agy_tools", REVIEWER_TOOLS))
 
     skills_raw = ask_text(
-        f"[{role_id}] Skills gắn riêng cho agent này (cách nhau bằng dấu phẩy)",
+        tr(f"[{role_id}] Preferred skills for this agent (comma-separated)", f"[{role_id}] Skills gắn riêng cho agent này (cách nhau bằng dấu phẩy)"),
         ", ".join(template["skills"]),
     )
     agent_skills = [s.strip() for s in skills_raw.split(",") if s.strip()]
@@ -743,97 +790,147 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path) -> TeamConfig:
             existing_data = json.loads(existing_cfg_path.read_text(encoding="utf-8"))
             print(
                 c(
-                    f"\nℹ️ Phát hiện cấu hình đội AI đã có trong {project_name} (cập nhật: {existing_data.get('updated_at', '')}).",
+                    tr(
+                        f"\nℹ️ Found existing AI team config in {project_name} (updated: {existing_data.get('updated_at', '')}).",
+                        f"\nℹ️ Phát hiện cấu hình đội AI đã có trong {project_name} (cập nhật: {existing_data.get('updated_at', '')}).",
+                    ),
                     YELLOW,
                 )
             )
         except Exception:
             existing_data = None
 
-    print(c(f"\n═══ BƯỚC 1: NGỮ CẢNH & MỤC TIÊU CỦA PROJECT [{project_name}] ═══", BOLD + BLUE))
+    print(
+        c(
+            tr(
+                f"\n═══ STEP 1: PROJECT CONTEXT & PRIMARY GOAL [{project_name}] ═══",
+                f"\n═══ BƯỚC 1: NGỮ CẢNH & MỤC TIÊU CỦA PROJECT [{project_name}] ═══",
+            ),
+            BOLD + BLUE,
+        )
+    )
     tech_stack = ask_text(
-        "Tech Stack / Ngôn ngữ của Project",
+        tr("Project Tech Stack / Languages", "Tech Stack / Ngôn ngữ của Project"),
         existing_data.get("tech_stack", detected_stack) if existing_data else detected_stack,
     )
     default_ctx = (
         existing_data.get("project_context")
         if existing_data
-        else f"Dự án {project_name} ({tech_stack}). Giữ thay đổi nhỏ gọn (minimal complete changes), ưu tiên TDD và kiểm định độc lập."
+        else tr(
+            f"{project_name} ({tech_stack}). Keep changes small and complete, prioritize TDD and independent code review.",
+            f"Dự án {project_name} ({tech_stack}). Giữ thay đổi nhỏ gọn (minimal complete changes), ưu tiên TDD và kiểm định độc lập.",
+        )
     )
-    project_context = ask_text("Ngữ cảnh chung của Project (kiến trúc, quy ước, lưu ý)", default_ctx)
+    project_context = ask_text(
+        tr("Project Context (architecture, conventions, notes)", "Ngữ cảnh chung của Project (kiến trúc, quy ước, lưu ý)"),
+        default_ctx,
+    )
 
     default_goal = (
         existing_data.get("project_goal")
         if existing_data
-        else f"Phát triển, kiểm thử và duy trì {project_name} thông qua đội ngũ Multi-Agent điều phối trực tiếp."
+        else tr(
+            f"Develop, test, and maintain {project_name} through a directly orchestrated Multi-Agent team.",
+            f"Phát triển, kiểm thử và duy trì {project_name} thông qua đội ngũ Multi-Agent điều phối trực tiếp.",
+        )
     )
-    project_goal = ask_text("Mục tiêu chính của Project hiện tại (Goal)", default_goal)
+    project_goal = ask_text(
+        tr("Primary Project Goal", "Mục tiêu chính của Project hiện tại (Goal)"),
+        default_goal,
+    )
 
-    # Quy tắc bổ sung (Graphify, Draw.io, Commit restriction...)
     rule_options = [
         (
             "graphify",
-            "Graphify Rule (Ưu tiên `graphify query` trước khi đọc source nếu có `graphify-out/graph.json`, chạy `graphify update .` sau khi sửa code)",
+            tr(
+                "Graphify Rule (Prefer `graphify query` before source reads if `graphify-out/graph.json` exists; run `graphify update .` after edits)",
+                "Graphify Rule (Ưu tiên `graphify query` trước khi đọc source nếu có `graphify-out/graph.json`, chạy `graphify update .` sau khi sửa code)",
+            ),
         ),
         (
             "drawio-erd",
-            "System Design / Draw.io Rule (Đọc `/home/killua/ryan/Study/System design/AGENTS.md` trước khi vẽ ERD/.drawio)",
+            tr(
+                "System Design / Draw.io Rule (Read `/home/killua/ryan/Study/System design/AGENTS.md` before creating/editing ERDs or `.drawio`)",
+                "System Design / Draw.io Rule (Đọc `/home/killua/ryan/Study/System design/AGENTS.md` trước khi vẽ ERD/.drawio)",
+            ),
         ),
         (
             "commit-restrictions",
-            "Git Commit Restrictions Rule (Tạo `.agents/rules/commit-restrictions.md` chặn commit nhầm AGENTS.md / SKILL.md)",
+            tr(
+                "Git Commit Restrictions Rule (Create `.agents/rules/commit-restrictions.md` blocking commits of AGENTS.md / SKILL.md)",
+                "Git Commit Restrictions Rule (Tạo `.agents/rules/commit-restrictions.md` chặn commit nhầm AGENTS.md / SKILL.md)",
+            ),
         ),
     ]
     selected_extra_rules = ask_multi_choice(
-        "Chọn các Quy tắc Đặc thù (Workspace Rules) muốn gắn vào Project này",
+        tr("Select Workspace Rules to include in this Project", "Chọn các Quy tắc Đặc thù (Workspace Rules) muốn gắn vào Project này"),
         rule_options,
         default_indices=[0, 1],
     )
-    custom_rule = ask_text("Nhập thêm quy tắc đặc thù riêng của dự án (hoặc nhấn Enter để bỏ qua)", "")
+    custom_rule = ask_text(
+        tr("Enter an optional custom project rule (or press Enter to skip)", "Nhập thêm quy tắc đặc thù riêng của dự án (hoặc nhấn Enter để bỏ qua)"),
+        "",
+    )
     if custom_rule.strip():
         selected_extra_rules.append(f"custom:{custom_rule.strip()}")
 
     harness_options = [
-        ("agy", "Google Antigravity (AGENTS.md, GEMINI.md, .agents/agents.json, .agents/agents/*/agent.md, .agents/skills.json)"),
+        ("agy", "Google Antigravity (AGENTS.md, .agents/agents.json, .agents/agents/*/agent.md, .agents/skills.json)"),
         ("codex", "OpenAI Codex CLI (.codex/config.toml & .agents/agents/*/agent.toml)"),
         ("claude", "Anthropic Claude Code (CLAUDE.md & .claude/agents/*.md)"),
     ]
     harnesses = ask_multi_choice(
-        "Chọn các công cụ điều phối cần sinh cấu hình",
+        tr("Select target harnesses to generate configs for", "Chọn các công cụ điều phối cần sinh cấu hình"),
         harness_options,
         default_indices=[0, 1, 2],
     )
 
-    # Bước 2: Chọn đội hình Agents
-    print(c("\n═══ BƯỚC 2: CHỌN ĐỘI HÌNH AGENTS & PHÂN CÔNG NHIỆM VỤ ═══", BOLD + BLUE))
+    print(
+        c(
+            tr(
+                "\n═══ STEP 2: AGENT ROSTER & ROLE CONFIGURATION ═══",
+                "\n═══ BƯỚC 2: CHỌN ĐỘI HÌNH AGENTS & PHÂN CÔNG NHIỆM VỤ ═══",
+            ),
+            BOLD + BLUE,
+        )
+    )
     role_options = [
-        ("orchestrator", "Điều phối viên & Kiến trúc sư (Agy: gemini-4-argon-high | Codex: gpt-6-astra high)"),
-        ("reviewer", "Kiểm định viên độc lập Read-Only (Agy: gemini-3.1-pro-high | Codex: gpt-6.1-sol xhigh)"),
-        ("implementer", "Kỹ sư thực thi & TDD (Agy: gemini-3.8-flash-high | Codex: gpt-6-sol xhigh)"),
-        ("searcher", "Trinh sát tài liệu & Codebase (Agy: gemini-3.8-flash-medium | Codex: gpt-6-luna medium)"),
-        ("committer", "Chuyên viên Git Commit chuẩn (Agy: gemini-3.7-flash | Codex: gpt-6-luna low)"),
+        ("orchestrator", "Lead Orchestrator & Architect (Agy: gemini-4-argon-high | Codex: gpt-6-astra high)"),
+        ("reviewer", "Independent Read-Only Reviewer (Agy: gemini-3.1-pro-high | Codex: gpt-6.1-sol xhigh)"),
+        ("implementer", "Feature & TDD Implementer (Agy: gemini-3.8-flash-high | Codex: gpt-6-sol xhigh)"),
+        ("searcher", "Documentation & Codebase Scout (Agy: gemini-3.8-flash-medium | Codex: gpt-6-luna medium)"),
+        ("committer", "Conventional Git Committer (Agy: gemini-3.7-flash | Codex: gpt-6-luna low)"),
     ]
     selected_roles = ask_multi_choice(
-        "Chọn các Agents trong đội hình của Project này",
+        tr("Select Agents to include in this Project's roster", "Chọn các Agents trong đội hình của Project này"),
         role_options,
         default_indices=[0, 1, 2, 3, 4],
     )
 
-    while ask_yes_no("Bạn có muốn thêm một Agent chuyên biệt mới (VD: ui-designer, security-auditor, ml-tuner)?", default=False):
-        custom_id = ask_text("Nhập ID cho agent mới (viết thường, nối bằng dấu gạch ngang)", "custom-specialist")
+    while ask_yes_no(
+        tr(
+            "Add a custom specialist Agent (e.g. ui-designer, security-auditor, ml-tuner)?",
+            "Bạn có muốn thêm một Agent chuyên biệt mới (VD: ui-designer, security-auditor, ml-tuner)?",
+        ),
+        default=False,
+    ):
+        custom_id = ask_text(
+            tr("Enter ID for the new agent (lowercase, hyphenated)", "Nhập ID cho agent mới (viết thường, nối bằng dấu gạch ngang)"),
+            "custom-specialist",
+        )
         custom_id = re.sub(r"[^a-z0-9_-]", "-", custom_id.lower()).strip("-") or "custom-agent"
         if custom_id not in DEFAULT_AGENT_TEMPLATES:
             DEFAULT_AGENT_TEMPLATES[custom_id] = {
                 "title": f"Specialized {custom_id.replace('-', ' ').title()} Agent",
-                "role": f"Chuyên gia {custom_id}",
-                "mission": f"Thực hiện các tác vụ chuyên sâu về {custom_id} theo sự điều phối của Orchestrator.",
+                "role": f"Specialist ({custom_id})",
+                "mission": f"Execute specialized {custom_id} tasks delegated by the Orchestrator.",
                 "provider": "multi",
                 "agy_model": "gemini-3.8-flash-high",
                 "claude_model": "sonnet",
                 "codex_model": "gpt-6-sol",
                 "reasoning_effort": "high",
-                "context_scope": f"Các module và tài liệu liên quan đến {custom_id}.",
-                "goal_criteria": f"Hoàn thành trọn vẹn tác vụ {custom_id} với kết quả kiểm chứng được.",
+                "context_scope": f"Modules and documentation related to {custom_id}.",
+                "goal_criteria": f"Complete assigned {custom_id} tasks with verifiable output.",
                 "enable_write": True,
                 "enable_subagents": False,
                 "enable_mcp": True,
@@ -845,10 +942,26 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path) -> TeamConfig:
             selected_roles.append(custom_id)
 
     setup_mode_options = [
-        ("guided", "Đi qua từng Agent để đặt câu hỏi chi tiết (Nhiệm vụ, Model, Provider, Ngữ cảnh, Mục tiêu)"),
-        ("quick", "Xem tóm tắt chuẩn Orpheus/Act2Morse cho từng Agent và chỉ chỉnh sửa Agent nào cần đổi"),
+        (
+            "guided",
+            tr(
+                "Step through each Agent with detailed prompts (Mission, Model, Provider, Context, Goal)",
+                "Đi qua từng Agent để đặt câu hỏi chi tiết (Nhiệm vụ, Model, Provider, Ngữ cảnh, Mục tiêu)",
+            ),
+        ),
+        (
+            "quick",
+            tr(
+                "Review standard summary per Agent and only customize specific ones",
+                "Xem tóm tắt chuẩn Orpheus/Act2Morse cho từng Agent và chỉ chỉnh sửa Agent nào cần đổi",
+            ),
+        ),
     ]
-    setup_mode = ask_choice("Chọn chế độ thiết lập từng Agent", setup_mode_options, default_index=0)
+    setup_mode = ask_choice(
+        tr("Select Agent configuration mode", "Chọn chế độ thiết lập từng Agent"),
+        setup_mode_options,
+        default_index=0,
+    )
     customize_deeply = setup_mode == "guided"
 
     agents: List[AgentSpec] = []
@@ -861,17 +974,26 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path) -> TeamConfig:
         spec = configure_single_agent(role_id, tpl, customize_deeply)
         agents.append(spec)
 
-    # Bước 3: Chọn & Apply Skills
-    print(c("\n═══ BƯỚC 3: CHỌN & APPLY SKILLS VÀO PROJECT / REPO ═══", BOLD + BLUE))
+    print(
+        c(
+            tr(
+                "\n═══ STEP 3: SELECT & APPLY WORKSPACE SKILLS ═══",
+                "\n═══ BƯỚC 3: CHỌN & APPLY SKILLS VÀO PROJECT / REPO ═══",
+            ),
+            BOLD + BLUE,
+        )
+    )
     discovered_skills = discover_local_skills()
     print(
-        f"Đã quét thấy {c(str(len(discovered_skills)), BOLD + GREEN)} skills từ `~/.gemini/config/plugins`, "
-        f"`Hephaestus/.agents/skills`, và `builtin`."
+        tr(
+            f"Discovered {c(str(len(discovered_skills)), BOLD + GREEN)} local skills across `~/.gemini/config/plugins`, `Hephaestus/.agents/skills`, and `builtin`.",
+            f"Đã quét thấy {c(str(len(discovered_skills)), BOLD + GREEN)} skills từ `~/.gemini/config/plugins`, `Hephaestus/.agents/skills`, và `builtin`.",
+        )
     )
     bundle_keys = list(SKILL_BUNDLES.keys())
     bundle_opts = [(k, f"{SKILL_BUNDLES[k]['label']} — {SKILL_BUNDLES[k]['description']}") for k in bundle_keys]
     chosen_bundles = ask_multi_choice(
-        "Chọn các Gói Kỹ năng (Skill Bundles) muốn apply cho Project này",
+        tr("Select Skill Bundles to apply to this Project", "Chọn các Gói Kỹ năng (Skill Bundles) muốn apply cho Project này"),
         bundle_opts,
         default_indices=[0, 1, 4],
     )
@@ -885,7 +1007,10 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path) -> TeamConfig:
             skill_names_set.add(s_name)
 
     extra_skills_raw = ask_text(
-        "Nhập thêm tên các skills lẻ muốn gắn thêm (VD: archify, minimalist-ui, playwright-cli... hoặc Enter)",
+        tr(
+            "Enter additional skill names to attach (e.g. archify, minimalist-ui, playwright-cli... or press Enter)",
+            "Nhập thêm tên các skills lẻ muốn gắn thêm (VD: archify, minimalist-ui, playwright-cli... hoặc Enter)",
+        ),
         "",
     )
     if extra_skills_raw.strip():
@@ -896,18 +1021,31 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path) -> TeamConfig:
     apply_mode_opts = [
         (
             "symlink",
-            "Khai báo `.agents/skills.json` + Tạo symlink trực tiếp vào `.agents/skills/` (Nhẹ, tự động cập nhật, mọi công cụ đều đọc được)",
+            tr(
+                "Register `.agents/skills.json` + Create symlinks in `.agents/skills/` (Lightweight, auto-updated, readable by all tools)",
+                "Khai báo `.agents/skills.json` + Tạo symlink trực tiếp vào `.agents/skills/` (Nhẹ, tự động cập nhật, mọi công cụ đều đọc được)",
+            ),
         ),
         (
             "copy",
-            "Khai báo `.agents/skills.json` + Copy toàn bộ thư mục skill vào `.agents/skills/` (Giống Hephaestus, độc lập hoàn toàn)",
+            tr(
+                "Register `.agents/skills.json` + Copy full skill folders into `.agents/skills/` (Self-contained like Hephaestus)",
+                "Khai báo `.agents/skills.json` + Copy toàn bộ thư mục skill vào `.agents/skills/` (Giống Hephaestus, độc lập hoàn toàn)",
+            ),
         ),
         (
             "json-only",
-            "Chỉ khai báo đường dẫn trong `.agents/skills.json` (Giữ thư mục `.agents/skills/` gọn nhất)",
+            tr(
+                "Only register paths in `.agents/skills.json` (Keeps `.agents/skills/` minimal)",
+                "Chỉ khai báo đường dẫn trong `.agents/skills.json` (Giữ thư mục `.agents/skills/` gọn nhất)",
+            ),
         ),
     ]
-    skill_apply_mode = ask_choice("Cách thức Apply Skills vào Project", apply_mode_opts, default_index=0)
+    skill_apply_mode = ask_choice(
+        tr("Select Skill application mode", "Cách thức Apply Skills vào Project"),
+        apply_mode_opts,
+        default_index=0,
+    )
 
     resolved_skills: List[Dict[str, str]] = []
     for s_name in sorted(skill_names_set):
@@ -1420,9 +1558,15 @@ def build_preset_config(
         project_path=str(project_path),
         tech_stack=tech_stack,
         project_context=context
-        or f"Dự án {project_name} ({tech_stack}). Giữ thay đổi nhỏ gọn, ưu tiên TDD và kiểm định độc lập.",
+        or tr(
+            f"{project_name} ({tech_stack}). Keep changes small and complete, prioritize TDD and independent code review.",
+            f"Dự án {project_name} ({tech_stack}). Giữ thay đổi nhỏ gọn, ưu tiên TDD và kiểm định độc lập.",
+        ),
         project_goal=goal
-        or f"Phát triển, kiểm thử và duy trì {project_name} thông qua đội ngũ 5 Agents chuẩn (Orchestrator, Reviewer, Implementer, Committer, Searcher).",
+        or tr(
+            f"Develop, test, and maintain {project_name} through a 5-Agent team (Orchestrator, Reviewer, Implementer, Committer, Searcher).",
+            f"Phát triển, kiểm thử và duy trì {project_name} thông qua đội ngũ 5 Agents chuẩn (Orchestrator, Reviewer, Implementer, Committer, Searcher).",
+        ),
         extra_rules=["graphify", "drawio-erd"],
         harnesses=harnesses,
         skill_apply_mode=skill_apply_mode,
@@ -1441,9 +1585,14 @@ def cmd_list_skills() -> None:
     for s in discovered.values():
         by_plugin.setdefault(s["plugin"], []).append(s)
 
-    print(f"\nTìm thấy tổng cộng {c(str(len(discovered)), BOLD + GREEN)} skills trên máy:\n")
+    print(
+        tr(
+            f"\nFound {c(str(len(discovered)), BOLD + GREEN)} local skills on this machine:\n",
+            f"\nTìm thấy tổng cộng {c(str(len(discovered)), BOLD + GREEN)} skills trên máy:\n",
+        )
+    )
     for plugin, items in sorted(by_plugin.items()):
-        print(c(f"📦 Nguồn/Plugin: {plugin} ({len(items)} skills)", BOLD + CYAN))
+        print(c(tr(f"📦 Source/Plugin: {plugin} ({len(items)} skills)", f"📦 Nguồn/Plugin: {plugin} ({len(items)} skills)"), BOLD + CYAN))
         for item in sorted(items, key=lambda x: x["name"]):
             print(f"   • {BOLD}{item['name']}{RESET}: {item['description']}")
         print()
@@ -1456,13 +1605,21 @@ def cmd_status(target_dir: Path) -> None:
 
     if cfg_file.exists():
         data = json.loads(cfg_file.read_text(encoding="utf-8"))
-        print(c(f"\n📊 Trạng thái Đội ngũ AI tại: {data['project_name']} ({data['project_path']})", BOLD + GREEN))
+        print(
+            c(
+                tr(
+                    f"\n📊 AI Team Status at: {data['project_name']} ({data['project_path']})",
+                    f"\n📊 Trạng thái Đội ngũ AI tại: {data['project_name']} ({data['project_path']})",
+                ),
+                BOLD + GREEN,
+            )
+        )
         print(f"  • Tech Stack : {data.get('tech_stack')}")
-        print(f"  • Mục tiêu   : {data.get('project_goal')}")
-        print(f"  • Công cụ    : {', '.join(data.get('harnesses', []))}")
+        print(f"  • {tr('Goal       ', 'Mục tiêu   ')}: {data.get('project_goal')}")
+        print(f"  • {tr('Harnesses  ', 'Công cụ    ')}: {', '.join(data.get('harnesses', []))}")
         print(f"  • Skill Mode : {data.get('skill_apply_mode')}")
-        print(f"  • Cập nhật   : {data.get('updated_at')}")
-        print(c("\n  🤖 Danh sách Agents:", BOLD + CYAN))
+        print(f"  • {tr('Updated    ', 'Cập nhật   ')}: {data.get('updated_at')}")
+        print(c(tr("\n  🤖 Agent Roster:", "\n  🤖 Danh sách Agents:"), BOLD + CYAN))
         for ag in data.get("agents", []):
             w = "Write" if ag.get("enable_write") else "Read-Only"
             print(
@@ -1470,39 +1627,72 @@ def cmd_status(target_dir: Path) -> None:
                 f"       Agy: {c(ag['agy_model'], CYAN)} | Codex: {c(ag['codex_model'], CYAN)} ({ag.get('reasoning_effort', 'high')}) | Claude: {c(ag['claude_model'], CYAN)} [{w}]"
             )
         skills = [s["name"] for s in data.get("selected_skills", [])]
-        print(c(f"\n  🧩 Skills đã gắn ({len(skills)}):", BOLD + CYAN))
+        print(c(tr(f"\n  🧩 Applied Skills ({len(skills)}):", f"\n  🧩 Skills đã gắn ({len(skills)}):"), BOLD + CYAN))
         print("     " + ", ".join(skills))
         return
 
     if agents_json.exists():
         items = json.loads(agents_json.read_text(encoding="utf-8"))
-        print(c(f"\n📊 Phát hiện cấu hình `.agents/agents.json` tại {project_path.name}:", BOLD + GREEN))
+        print(
+            c(
+                tr(
+                    f"\n📊 Detected `.agents/agents.json` in {project_path.name}:",
+                    f"\n📊 Phát hiện cấu hình `.agents/agents.json` tại {project_path.name}:",
+                ),
+                BOLD + GREEN,
+            )
+        )
         for item in items:
             print(f"   • {BOLD}{item.get('name')}{RESET} -> `.agents/{item.get('path')}`")
         return
 
-    print(c(f"⚠️ Chưa tìm thấy cấu hình đội AI tại {project_path}", YELLOW))
-    print("Hãy gõ `agt` để khởi tạo ngay.")
+    print(
+        c(
+            tr(
+                f"⚠️ No AI Team configuration found at {project_path}",
+                f"⚠️ Chưa tìm thấy cấu hình đội AI tại {project_path}",
+            ),
+            YELLOW,
+        )
+    )
+    print(tr("Run `agt` to initialize now.", "Hãy gõ `agt` để khởi tạo ngay."))
 
 
 def print_summary(cfg: TeamConfig, created_files: List[str], dry_run: bool = False) -> None:
-    prefix = "[DRY-RUN] Dự kiến tạo" if dry_run else "✅ Đã khởi tạo thành công"
-    print(c(f"\n{prefix} bộ cấu hình Đội ngũ AI & Skills cho [{cfg.project_name}]!", BOLD + GREEN))
-    print(f"📍 Thư mục đích: {BOLD}{cfg.project_path}{RESET}\n")
-    print(c("📄 Các file cấu hình đã sinh ra:", BOLD + CYAN))
+    if CURRENT_LANG == "vi":
+        prefix = "[DRY-RUN] Dự kiến tạo" if dry_run else "✅ Đã khởi tạo thành công"
+        print(c(f"\n{prefix} bộ cấu hình Đội ngũ AI & Skills cho [{cfg.project_name}]!", BOLD + GREEN))
+        print(f"📍 Thư mục đích: {BOLD}{cfg.project_path}{RESET}\n")
+        print(c("📄 Các file cấu hình đã sinh ra:", BOLD + CYAN))
+    else:
+        prefix = "[DRY-RUN] Would generate" if dry_run else "✅ Successfully generated"
+        print(c(f"\n{prefix} AI Team & Skills configuration for [{cfg.project_name}]!", BOLD + GREEN))
+        print(f"📍 Target directory: {BOLD}{cfg.project_path}{RESET}\n")
+        print(c("📄 Generated configuration files:", BOLD + CYAN))
+
     for f in created_files:
         rel = os.path.relpath(f, cfg.project_path) if f.startswith(cfg.project_path) else f
         print(f"   • {rel}")
 
-    print(c("\n🚀 Cách sử dụng ngay trong công cụ bạn đang mở:", BOLD + YELLOW))
-    print(
-        f"  • {BOLD}Antigravity (`agy`){RESET}   : Tự động nhận diện `.agents/agents.json`, `.agents/agents/*/agent.md`, và `.agents/skills.json`.\n"
-        f"  • {BOLD}OpenAI Codex (`codex`){RESET}: Tự động nhận diện `[agents]` trong `.codex/config.toml` trỏ tới `.agents/agents/*/agent.toml`.\n"
-        f"  • {BOLD}Claude Code (`claude`){RESET}: Tự động nhận diện `CLAUDE.md` và `.claude/agents/*.md`.\n"
-    )
+    if CURRENT_LANG == "vi":
+        print(c("\n🚀 Cách sử dụng ngay trong công cụ bạn đang mở:", BOLD + YELLOW))
+        print(
+            f"  • {BOLD}Antigravity (`agy`){RESET}   : Tự động nhận diện `.agents/agents.json`, `.agents/agents/*/agent.md`, và `.agents/skills.json`.\n"
+            f"  • {BOLD}OpenAI Codex (`codex`){RESET}: Tự động nhận diện `[agents]` trong `.codex/config.toml` trỏ tới `.agents/agents/*/agent.toml`.\n"
+            f"  • {BOLD}Claude Code (`claude`){RESET}: Tự động nhận diện `CLAUDE.md` và `.claude/agents/*.md`.\n"
+        )
+    else:
+        print(c("\n🚀 How to use inside your active coding tool:", BOLD + YELLOW))
+        print(
+            f"  • {BOLD}Antigravity (`agy`){RESET}   : Automatically discovers `.agents/agents.json`, `.agents/agents/*/agent.md`, and `.agents/skills.json`.\n"
+            f"  • {BOLD}OpenAI Codex (`codex`){RESET}: Automatically discovers `[agents]` in `.codex/config.toml` pointing to `.agents/agents/*/agent.toml`.\n"
+            f"  • {BOLD}Claude Code (`claude`){RESET}: Automatically discovers `CLAUDE.md` and `.claude/agents/*.md`.\n"
+        )
 
 
-def print_cli_help(lang: str = "vi") -> None:
+def print_cli_help(lang: str = "en") -> None:
+    global CURRENT_LANG
+    CURRENT_LANG = lang
     banner()
     if lang == "en":
         print(
@@ -1520,16 +1710,20 @@ def print_cli_help(lang: str = "vi") -> None:
             f"  {c('--context <text>', CYAN)}        Project context description (used with --yes)\n"
             f"  {c('--harnesses <list>', CYAN)}      Target harnesses: agy,codex,claude (default: all)\n"
             f"  {c('--skill-mode <mode>', CYAN)}     Skill linking mode: symlink | copy | json-only\n"
-            f"  {c('--lang <vi|en>', CYAN)}          CLI display language: vi (Tiếng Việt) or en (English)\n"
+            f"  {c('--lang <en|vi>', CYAN)}          CLI display language: en (English, default) or vi (Tiếng Việt)\n"
             f"  {c('--dry-run', CYAN)}               Preview generated files without writing to disk\n"
-            f"  {c('-h, --help', CYAN)}              Show this help message\n"
+            f"  {c('-h, --help', CYAN)}              Show this help message\n\n"
+            f"{c('QUICK EXAMPLES:', BOLD + YELLOW)}\n"
+            f"  • Launch interactive dashboard in ~/Projects : {c('cd ~/Projects && agt', GREEN)}\n"
+            f"  • Launch in Vietnamese mode                  : {c('agt --lang vi', GREEN)}\n"
+            f"  • Quick preset init for a repository         : {c('agt init -t ~/Projects/Orpheus -y', GREEN)}\n"
         )
     else:
         print(
             f"\n{c('CÁCH SỬ DỤNG:', BOLD + YELLOW)}\n"
             f"  {c('agt', BOLD + GREEN)} [lệnh] [tùy chọn]\n\n"
             f"{c('CÁC LỆNH CHÍNH:', BOLD + YELLOW)}\n"
-            f"  {c('(không truyền lệnh)', BOLD + CYAN)} Mở Bảng điều khiển tương tác Tiếng Việt (TUI Menu / Wizard)\n"
+            f"  {c('(không truyền lệnh)', BOLD + CYAN)} Mở Bảng điều khiển tương tác (TUI Menu / Wizard)\n"
             f"  {c('init', BOLD + CYAN)}                Chạy Wizard thiết lập đội ngũ AI & Skills cho Project/Repo\n"
             f"  {c('status', BOLD + CYAN)}              Xem trạng thái đội ngũ Agents, Models & Skills của Project\n"
             f"  {c('list-skills', BOLD + CYAN)}         Liệt kê toàn bộ 150+ Skills đang có trên máy\n\n"
@@ -1540,30 +1734,31 @@ def print_cli_help(lang: str = "vi") -> None:
             f"  {c('--context <text>', CYAN)}        Ngữ cảnh kiến trúc của project (dùng kèm `--yes`)\n"
             f"  {c('--harnesses <list>', CYAN)}      Công cụ xuất cấu hình: `agy,codex,claude` (mặc định: cả 3)\n"
             f"  {c('--skill-mode <mode>', CYAN)}     Chế độ gắn skills: `symlink` | `copy` | `json-only`\n"
-            f"  {c('--lang <vi|en>', CYAN)}          Ngôn ngữ giao diện CLI: `vi` (Tiếng Việt) hoặc `en` (Tiếng Anh)\n"
+            f"  {c('--lang <en|vi>', CYAN)}          Ngôn ngữ giao diện CLI: `en` (Tiếng Anh, mặc định) hoặc `vi` (Tiếng Việt)\n"
             f"  {c('--dry-run', CYAN)}               Xem trước danh sách file sẽ sinh ra mà không ghi xuống ổ cứng\n"
-            f"  {c('-h, --help', CYAN)}              Hiển thị bảng hướng dẫn Tiếng Việt này\n\n"
+            f"  {c('-h, --help', CYAN)}              Hiển thị bảng hướng dẫn này\n\n"
             f"{c('VÍ DỤ NHANH:', BOLD + YELLOW)}\n"
-            f"  • Mở giao diện tương tác tại ~/Projects : {c('cd ~/Projects && agt', GREEN)}\n"
-            f"  • Tạo nhanh đội AI cho 1 repo           : {c('agt init -t ~/Projects/Orpheus -y', GREEN)}\n"
-            f"  • Kiểm tra trạng thái đội AI            : {c('agt status -t ~/Projects/Orpheus', GREEN)}\n"
+            f"  • Mở giao diện Tiếng Việt tại ~/Projects : {c('cd ~/Projects && agt --lang vi', GREEN)}\n"
+            f"  • Tạo nhanh đội AI cho 1 repo            : {c('agt init -t ~/Projects/Orpheus -y', GREEN)}\n"
+            f"  • Kiểm tra trạng thái đội AI             : {c('agt status -t ~/Projects/Orpheus', GREEN)}\n"
         )
 
 
-def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str = "vi") -> None:
-    """Bảng điều khiển dòng lệnh Tiếng Việt (hoặc Tiếng Anh) khi gõ `agt` trực tiếp."""
-    current_lang = lang
+def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str = "en") -> None:
+    """Interactive CLI Dashboard (defaults to English, toggleable to Vietnamese)."""
+    global CURRENT_LANG
+    CURRENT_LANG = lang
     while True:
         banner()
         cwd_str = str(target_path.resolve())
-        if current_lang == "vi":
+        if CURRENT_LANG == "vi":
             print(f"📍 Thư mục làm việc hiện tại: {c(cwd_str, BOLD + GREEN)}")
             menu_opts = [
                 ("wizard", "Thiết lập đội ngũ AI & Skills theo từng bước (Interactive Wizard)"),
                 ("preset", "Khởi tạo nhanh đội hình 5 Agents chuẩn cho 1 Project (Quick Preset)"),
                 ("status", "Xem trạng thái đội ngũ AI & Skills của Project"),
                 ("list-skills", "Tra cứu danh sách 150+ Skills đang có trên máy"),
-                ("lang", "Chuyển ngôn ngữ giao diện sang Tiếng Anh (Switch to English)"),
+                ("lang", "Switch CLI language to English (Chuyển sang Tiếng Anh)"),
                 ("exit", "Thoát (Exit)"),
             ]
             prompt_title = "BẢNG ĐIỀU KHIỂN CHÍNH — Chọn tác vụ bạn muốn thực hiện"
@@ -1581,10 +1776,10 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
 
         action = ask_choice(prompt_title, menu_opts, default_index=0)
         if action == "exit":
-            print(c("\n👋 Tạm biệt! Chúc bạn code hiệu quả cùng đội ngũ AI." if current_lang == "vi" else "\n👋 Goodbye!", CYAN))
+            print(c("\n👋 Tạm biệt! Chúc bạn code hiệu quả cùng đội ngũ AI." if CURRENT_LANG == "vi" else "\n👋 Goodbye!", CYAN))
             return
         if action == "lang":
-            current_lang = "en" if current_lang == "vi" else "vi"
+            CURRENT_LANG = "en" if CURRENT_LANG == "vi" else "vi"
             continue
         if action == "list-skills":
             cmd_list_skills()
@@ -1597,11 +1792,11 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             proj = select_project_directory(target_path, projects_root)
             default_goal = (
                 f"Phát triển, kiểm thử và duy trì {proj.name} với đội ngũ 5 Agents."
-                if current_lang == "vi"
+                if CURRENT_LANG == "vi"
                 else f"Develop, test, and maintain {proj.name} with a 5-Agent team."
             )
             goal = ask_text(
-                "Nhập mục tiêu chính của Project (Goal)" if current_lang == "vi" else "Enter primary project goal",
+                "Nhập mục tiêu chính của Project (Goal)" if CURRENT_LANG == "vi" else "Enter primary project goal",
                 default_goal,
             )
             cfg = build_preset_config(
@@ -1623,13 +1818,14 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
 
 
 def main() -> None:
-    # Kiểm tra nhanh cờ --lang và -h/--help để hiển thị giao diện Tiếng Việt trọn vẹn
+    global CURRENT_LANG
     raw_argv = sys.argv[1:]
-    lang = "vi"
+    lang = "en"
     if "--lang" in raw_argv:
         idx = raw_argv.index("--lang")
         if idx + 1 < len(raw_argv) and raw_argv[idx + 1] in ("vi", "en"):
             lang = raw_argv[idx + 1]
+    CURRENT_LANG = lang
 
     if "-h" in raw_argv or "--help" in raw_argv:
         print_cli_help(lang=lang)
@@ -1638,53 +1834,54 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         prog="agt",
         add_help=False,
-        description="CLI Wizard (agt) thiết lập đội ngũ Multi-Agent (Orchestrator, Reviewer, Implementer, Committer, Searcher) & Skills cho ~/Projects.",
+        description="CLI Wizard (agt) to configure Multi-Agent teams & Skills for ~/Projects.",
     )
-    parser.add_argument("--lang", type=str, default="vi", choices=["vi", "en"], help="Ngôn ngữ giao diện (vi/en)")
-    parser.add_argument("--target", "-t", type=str, default=".", help="Đường dẫn tới project/repo")
-    parser.add_argument("--yes", "-y", action="store_true", help="Chạy tự động với preset chuẩn")
-    parser.add_argument("--dry-run", action="store_true", help="Chỉ xem trước file sẽ tạo")
+    parser.add_argument("--lang", type=str, default="en", choices=["en", "vi"], help="CLI language (en/vi)")
+    parser.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
+    parser.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode with standard preset")
+    parser.add_argument("--dry-run", action="store_true", help="Preview generated files without writing")
     subparsers = parser.add_subparsers(dest="command")
 
-    p_init = subparsers.add_parser("init", add_help=False, help="Chạy wizard thiết lập đội ngũ AI cho một Project/Repo")
-    p_init.add_argument("--lang", type=str, default="vi", choices=["vi", "en"])
-    p_init.add_argument("--target", "-t", type=str, default=".", help="Đường dẫn tới project/repo cần thiết lập")
-    p_init.add_argument("--yes", "-y", action="store_true", help="Chạy tự động với preset chuẩn Orpheus/Act2Morse")
-    p_init.add_argument("--goal", type=str, default="", help="Mục tiêu chính của project (dùng kèm --yes)")
-    p_init.add_argument("--context", type=str, default="", help="Ngữ cảnh của project (dùng kèm --yes)")
+    p_init = subparsers.add_parser("init", add_help=False, help="Run the Multi-Agent setup wizard")
+    p_init.add_argument("--lang", type=str, default="en", choices=["en", "vi"])
+    p_init.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
+    p_init.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode with standard preset")
+    p_init.add_argument("--goal", type=str, default="", help="Primary project goal (used with --yes)")
+    p_init.add_argument("--context", type=str, default="", help="Project context (used with --yes)")
     p_init.add_argument(
         "--harnesses",
         type=str,
         default="agy,codex,claude",
-        help="Danh sách công cụ cần xuất cấu hình: agy,codex,claude",
+        help="Target harnesses: agy,codex,claude",
     )
     p_init.add_argument(
         "--bundles",
         type=str,
         default="core-subagents-tdd,ponytail-lean,agy-swarm",
-        help="Các gói skill cần gắn (cách nhau dấu phẩy)",
+        help="Comma-separated skill bundles to attach",
     )
     p_init.add_argument(
         "--skill-mode",
         type=str,
         default="symlink",
         choices=["symlink", "copy", "json-only"],
-        help="Chế độ apply skills vào .agents/skills/ (symlink, copy, json-only)",
+        help="Skill linking mode (symlink, copy, json-only)",
     )
-    p_init.add_argument("--dry-run", action="store_true", help="Chỉ hiển thị danh sách file sẽ tạo, không ghi xuống đĩa")
+    p_init.add_argument("--dry-run", action="store_true", help="Preview generated files without writing")
 
-    p_list = subparsers.add_parser("list-skills", add_help=False, help="Liệt kê toàn bộ Skills đang có trên máy")
-    p_list.add_argument("--lang", type=str, default="vi", choices=["vi", "en"])
+    p_list = subparsers.add_parser("list-skills", add_help=False, help="List all discovered local Skills")
+    p_list.add_argument("--lang", type=str, default="en", choices=["en", "vi"])
 
-    p_status = subparsers.add_parser("status", add_help=False, help="Xem cấu hình đội ngũ AI hiện tại của một Project")
-    p_status.add_argument("--lang", type=str, default="vi", choices=["vi", "en"])
-    p_status.add_argument("--target", "-t", type=str, default=".", help="Đường dẫn tới project/repo")
+    p_status = subparsers.add_parser("status", add_help=False, help="Inspect active AI Team status for a Project")
+    p_status.add_argument("--lang", type=str, default="en", choices=["en", "vi"])
+    p_status.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
 
-    p_menu = subparsers.add_parser("menu", add_help=False, help="Mở bảng điều khiển tương tác Tiếng Việt")
-    p_menu.add_argument("--lang", type=str, default="vi", choices=["vi", "en"])
-    p_menu.add_argument("--target", "-t", type=str, default=".", help="Đường dẫn tới project/repo")
+    p_menu = subparsers.add_parser("menu", add_help=False, help="Open interactive dashboard menu")
+    p_menu.add_argument("--lang", type=str, default="en", choices=["en", "vi"])
+    p_menu.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
 
     args = parser.parse_args()
+    CURRENT_LANG = getattr(args, "lang", lang)
     projects_root = Path("/home/killua/Projects")
 
     if args.command == "list-skills":
@@ -1699,9 +1896,8 @@ def main() -> None:
     auto_yes = getattr(args, "yes", False)
     dry_run = getattr(args, "dry_run", False)
 
-    # Nếu gõ `agt` không kèm lệnh con ở terminal tương tác -> mở Bảng điều khiển Tiếng Việt
     if args.command in (None, "menu") and not auto_yes and not dry_run and sys.stdin.isatty():
-        run_interactive_dashboard(target_path, projects_root, lang=getattr(args, "lang", lang))
+        run_interactive_dashboard(target_path, projects_root, lang=CURRENT_LANG)
         return
 
     if auto_yes:
