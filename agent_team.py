@@ -3502,6 +3502,135 @@ def _load_team_config_from_disk(project_path: Path) -> Optional[TeamConfig]:
         return None
 
 
+def cmd_clean(target_dir: Path, auto_yes: bool = False, dry_run: bool = False) -> None:
+    """
+    Remove all AI agent configurations (.agents/, .codex/, .claude/, AGENTS.md, CLAUDE.md)
+    from the target repository and reset it to clean state.
+    """
+    project_path = target_dir.resolve()
+    print(
+        c(
+            tr(
+                f"\n🧹 Clean AI Agent Setup — {project_path.name} ({project_path})",
+                f"\n🧹 Dọn dẹp Cấu hình AI Agents — {project_path.name} ({project_path})",
+            ),
+            BOLD + YELLOW,
+        )
+    )
+
+    items_to_clean: List[Tuple[str, Path, str]] = []
+
+    # 1. .agents/
+    agents_dir = project_path / ".agents"
+    if agents_dir.exists():
+        items_to_clean.append((".agents/", agents_dir, "directory"))
+
+    # 2. .codex/config.toml
+    codex_toml = project_path / ".codex" / "config.toml"
+    if codex_toml.exists():
+        items_to_clean.append((".codex/config.toml", codex_toml, "file"))
+
+    # 3. .claude/agents/
+    claude_agents = project_path / ".claude" / "agents"
+    if claude_agents.exists():
+        items_to_clean.append((".claude/agents/", claude_agents, "directory"))
+
+    # 4. CLAUDE.md
+    claude_md = project_path / "CLAUDE.md"
+    if claude_md.exists():
+        items_to_clean.append(("CLAUDE.md", claude_md, "file"))
+
+    # 5. AGENTS.md
+    agents_md = project_path / "AGENTS.md"
+    if agents_md.exists():
+        items_to_clean.append(("AGENTS.md", agents_md, "file"))
+
+    if not items_to_clean:
+        print(
+            f"  {c(tr('✔ No agent configurations found in this project. Nothing to clean.', '✔ Không tìm thấy cấu hình agents nào trong project này. Không có gì để dọn dẹp.'), GREEN)}\n"
+        )
+        return
+
+    print(
+        c(
+            tr(
+                f"  Found {len(items_to_clean)} agent configuration item(s) to remove:",
+                f"  Phát hiện {len(items_to_clean)} mục cấu hình agents cần xóa:",
+            ),
+            BOLD + CYAN,
+        )
+    )
+    for label, p, p_type in items_to_clean:
+        print(f"     • {c(label, YELLOW)} ({p_type})")
+
+    if dry_run:
+        print(
+            c(
+                tr(
+                    "\n  [dry-run] Preview mode: No files or directories were deleted.\n",
+                    "\n  [dry-run] Chế độ xem trước: Không có file hay thư mục nào bị xóa.\n",
+                ),
+                YELLOW,
+            )
+        )
+        return
+
+    if not auto_yes:
+        confirm = ask_yes_no(
+            tr(
+                f"\n  Are you sure you want to completely remove these {len(items_to_clean)} agent item(s)?",
+                f"\n  Bạn có chắc chắn muốn xóa hoàn toàn {len(items_to_clean)} mục cấu hình agents này không?",
+            ),
+            default=False,
+        )
+        if not confirm:
+            print(
+                c(
+                    tr(
+                        "  Operation aborted. No agent files were deleted.\n",
+                        "  Đã hủy thao tác. Không có file nào bị xóa.\n",
+                    ),
+                    YELLOW,
+                )
+            )
+            return
+
+    # Deletion execution
+    deleted_count = 0
+    print()
+    for label, p, p_type in items_to_clean:
+        try:
+            if p_type == "directory" and p.is_dir():
+                shutil.rmtree(p)
+            elif p.exists():
+                p.unlink()
+            print(f"     {c('✔', GREEN)} {tr('Removed', 'Đã xóa')}: {label}")
+            deleted_count += 1
+        except Exception as e:
+            print(f"     {c('✖', RED)} {tr('Failed to remove', 'Lỗi khi xóa')} {label}: {e}")
+
+    # Remove empty parent directories if any (.codex, .claude)
+    for parent_name in (".codex", ".claude"):
+        parent_dir = project_path / parent_name
+        if parent_dir.is_dir():
+            try:
+                if not any(parent_dir.iterdir()):
+                    parent_dir.rmdir()
+                    print(f"     {c('✔', GREEN)} {tr('Removed empty directory', 'Đã xóa thư mục rỗng')}: {parent_name}/")
+            except Exception:
+                pass
+
+    print(
+        c(
+            tr(
+                f"\n✨ Successfully cleaned {deleted_count} agent configuration item(s) from {project_path.name}!\n",
+                f"\n✨ Đã dọn dẹp thành công {deleted_count} mục cấu hình agents khỏi {project_path.name}!\n",
+            ),
+            BOLD + GREEN,
+        )
+    )
+
+
 def cmd_fallback(
     target_dir: Path,
     role_arg: str = "",
@@ -3744,10 +3873,12 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('status', BOLD + CYAN)}        Inspect active AI Team Status, 7-Role Animals & Skills\n"
             f"  {c('fallback', BOLD + CYAN)}      Configure or step down along the Model & Provider Fallback Chain\n"
             f"  {c('ps / tasks', BOLD + CYAN)}    Check live running Agent processes, subagents, and tasks\n"
+            f"  {c('clean', BOLD + CYAN)}         Clean / remove all AI agent configurations from a repo\n"
             f"  {c('list-skills', BOLD + CYAN)}   List all discovered local Skills\n\n"
             f"{c('OPTIONS:', BOLD + YELLOW)}\n"
             f"  {c('-t, --target <path>', CYAN)}     Target project directory (default: current directory)\n"
             f"  {c('-y, --yes', CYAN)}               Non-interactive mode using standard 5-agent preset\n"
+            f"  {c('--clean', CYAN)}                 Clean / remove all AI agent configurations in target repo\n"
             f"  {c('--goal <text>', CYAN)}           Primary project goal (used with --yes)\n"
             f"  {c('--context <text>', CYAN)}        Project context description (used with --yes)\n"
             f"  {c('--harnesses <list>', CYAN)}      Target harnesses: agy,codex,claude (default: all)\n"
@@ -3776,10 +3907,12 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('status', BOLD + CYAN)}              Xem trạng thái Đội ngũ AI, 7 Linh vật & Skills\n"
             f"  {c('fallback', BOLD + CYAN)}            Thiết lập hoặc lùi Model theo Chuỗi Fallback đa Provider\n"
             f"  {c('ps / tasks', BOLD + CYAN)}          Kiểm tra Agents nào đang chạy task nào (tiến trình, subagents, checklist)\n"
+            f"  {c('clean', BOLD + CYAN)}               Dọn dẹp / xóa toàn bộ cấu hình AI Agents khỏi repo\n"
             f"  {c('list-skills', BOLD + CYAN)}         Liệt kê toàn bộ 150+ Skills đang có trên máy\n\n"
             f"{c('TÙY CHỌN (OPTIONS):', BOLD + YELLOW)}\n"
             f"  {c('-t, --target <path>', CYAN)}     Đường dẫn tới project/repo cần thiết lập (mặc định: `.`)\n"
             f"  {c('-y, --yes', CYAN)}               Khởi tạo tự động bằng Preset 5 Agents chuẩn (không hỏi đáp)\n"
+            f"  {c('--clean', CYAN)}                 Dọn dẹp / xóa toàn bộ cấu hình AI Agents trong repo chỉ định\n"
             f"  {c('--goal <text>', CYAN)}           Mục tiêu chính của project (dùng kèm `--yes`)\n"
             f"  {c('--context <text>', CYAN)}        Ngữ cảnh kiến trúc của project (dùng kèm `--yes`)\n"
             f"  {c('--harnesses <list>', CYAN)}      Công cụ xuất cấu hình: `agy,codex,claude` (mặc định: cả 3)\n"
@@ -3815,6 +3948,7 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
                 ("status", "Xem trạng thái Đội ngũ AI, 7 Linh vật & Skills (`agt status`)"),
                 ("fallback", "Thiết lập / Lùi Model theo Chuỗi Fallback đa Provider (`agt fallback`)"),
                 ("ps", "Kiểm tra Agents nào đang chạy task nào (Live Agent & Task Monitor)"),
+                ("clean", "Dọn dẹp / Xóa toàn bộ cấu hình AI Agents trong repo (`agt clean`)"),
                 ("list-skills", "Tra cứu danh sách 150+ Skills đang có trên máy"),
                 ("lang", "Switch CLI language to English (Chuyển sang Tiếng Anh)"),
                 ("exit", "Thoát (Exit)"),
@@ -3828,6 +3962,7 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
                 ("status", "Inspect active AI Team Status, 7-Role Animals & Skills (`agt status`)"),
                 ("fallback", "Configure or Step Down Model & Provider Fallback Chains (`agt fallback`)"),
                 ("ps", "Check live running Agents, subagents & active tasks (`agt ps`)"),
+                ("clean", "Clean / Remove all AI agent configurations from repo (`agt clean`)"),
                 ("list-skills", "Browse all 150+ discovered local Skills"),
                 ("lang", "Chuyển ngôn ngữ giao diện sang Tiếng Việt (Switch to Vietnamese)"),
                 ("exit", "Exit"),
@@ -3855,6 +3990,10 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
         if action == "ps":
             proj = select_project_directory(target_path, projects_root)
             cmd_ps(proj)
+            return
+        if action == "clean":
+            proj = select_project_directory(target_path, projects_root)
+            cmd_clean(proj, auto_yes=False, dry_run=False)
             return
         if action == "preset":
             proj = select_project_directory(target_path, projects_root)
@@ -3907,6 +4046,7 @@ def main() -> None:
     parser.add_argument("--lang", type=str, default="en", choices=["en", "vi"], help="CLI language (en/vi)")
     parser.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
     parser.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode with standard preset")
+    parser.add_argument("--clean", action="store_true", help="Remove all AI agent configurations in target repo")
     parser.add_argument("--dry-run", action="store_true", help="Preview generated files without writing")
     subparsers = parser.add_subparsers(dest="command")
 
@@ -3952,6 +4092,12 @@ def main() -> None:
     p_tasks.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_tasks.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
 
+    p_clean = subparsers.add_parser("clean", add_help=False, help="Remove all AI agent configurations in target repo")
+    p_clean.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
+    p_clean.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
+    p_clean.add_argument("--yes", "-y", action="store_true", default=argparse.SUPPRESS, help="Confirm deletion without prompting")
+    p_clean.add_argument("--dry-run", action="store_true", default=argparse.SUPPRESS, help="Preview files to be deleted without removing")
+
     p_fb = subparsers.add_parser("fallback", add_help=False, help="Configure or step down model fallback chains")
     p_fb.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_fb.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
@@ -3977,6 +4123,14 @@ def main() -> None:
 
     if args.command in ("ps", "tasks"):
         cmd_ps(Path(args.target))
+        return
+
+    if args.command == "clean" or getattr(args, "clean", False):
+        cmd_clean(
+            Path(getattr(args, "target", ".")),
+            auto_yes=getattr(args, "yes", False),
+            dry_run=getattr(args, "dry_run", False),
+        )
         return
 
     if args.command == "fallback":
