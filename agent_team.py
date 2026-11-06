@@ -379,7 +379,7 @@ DEFAULT_AGENT_TEMPLATES: Dict[str, Dict] = {
 
 SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
     "core-subagents-tdd": {
-        "label": "Core Subagents, Planning & TDD (superpowers + mattpocock)",
+        "label": "Core Subagents, Planning & TDD",
         "description": "Subagent orchestration, planning, TDD, systematic debugging, and two-axis code review.",
         "skills": [
             "brainstorming",
@@ -401,7 +401,7 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
         ],
     },
     "ponytail-lean": {
-        "label": "Ponytail Lean / YAGNI Senior Mode (ponytail)",
+        "label": "Ponytail Lean / YAGNI Senior Mode",
         "description": "Minimalist code changes, anti-overengineering, pragmatic review, and tech debt auditing.",
         "skills": [
             "ponytail",
@@ -412,7 +412,7 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
         ],
     },
     "frontend-taste-ui": {
-        "label": "Frontend Taste & UI/UX Pro Max (taste-skill + ui-ux-pro-max + Hephaestus UI)",
+        "label": "Frontend Taste & UI/UX Pro Max",
         "description": "Anti-slop art direction, minimalist/brutalist UI, motion design, and shadcn/tailwind.",
         "skills": [
             "design-taste-frontend",
@@ -433,8 +433,8 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
         ],
     },
     "architecture-archify": {
-        "label": "Architecture Diagrams, Domain Modeling & Playwright (Hephaestus + mattpocock)",
-        "description": "Interactive architecture diagrams (archify), domain modeling, and Playwright verification.",
+        "label": "Architecture Diagrams, Domain Modeling & Playwright",
+        "description": "Interactive architecture diagrams, domain modeling, and Playwright verification.",
         "skills": [
             "archify",
             "domain-modeling",
@@ -445,7 +445,7 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
         ],
     },
     "agy-swarm": {
-        "label": "Antigravity Native Swarm & Customizations (builtin)",
+        "label": "Antigravity Native Swarm & Customizations",
         "description": "Parallel multi-agent swarm message board and Antigravity customization guides.",
         "skills": [
             "swarm",
@@ -512,7 +512,7 @@ def discover_local_skills() -> Dict[str, Dict[str, str]]:
                     "plugin": plugin_name,
                     "skill_dir": str(skill_dir),
                     "parent_dir": str(parent_dir),
-                    "description": description[:110] + ("..." if len(description) > 110 else ""),
+                    "description": description,
                 }
 
     return discovered
@@ -813,7 +813,7 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
     agy_tools = list(READ_WRITE_TOOLS) if enable_write else list(template.get("agy_tools", REVIEWER_TOOLS))
 
     skills_raw = ask_text(
-        tr(f"[{role_id}] Preferred skills for this agent (comma-separated)", f"[{role_id}] Skills gắn riêng cho agent này (cách nhau bằng dấu phẩy)"),
+        tr(f"[{role_id}] Preferred skills for this agent", f"[{role_id}] Skills gắn riêng cho agent này"),
         ", ".join(template["skills"]),
     )
     agent_skills = [s.strip() for s in skills_raw.split(",") if s.strip()]
@@ -1056,7 +1056,7 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
     bundle_keys = list(SKILL_BUNDLES.keys())
     bundle_opts = [(k, f"{SKILL_BUNDLES[k]['label']} — {SKILL_BUNDLES[k]['description']}") for k in bundle_keys]
     chosen_bundles = ask_multi_choice(
-        tr("Select Skill Bundles to apply to this Project", "Chọn các Gói Kỹ năng (Skill Bundles) muốn apply cho Project này"),
+        tr("Select Skill Bundles to apply to this Project", "Chọn các Gói Kỹ năng muốn apply cho Project này"),
         bundle_opts,
         default_indices=[0, 1, 4],
     )
@@ -1071,8 +1071,8 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
 
     extra_skills_raw = ask_text(
         tr(
-            "Enter additional skill names to attach (e.g. archify, minimalist-ui, playwright-cli... or press Enter)",
-            "Nhập thêm tên các skills lẻ muốn gắn thêm (VD: archify, minimalist-ui, playwright-cli... hoặc Enter)",
+            "Enter additional skill names to attach, or press Enter to skip",
+            "Nhập thêm tên các skills lẻ muốn gắn thêm, hoặc nhấn Enter để bỏ qua",
         ),
         "",
     )
@@ -1085,22 +1085,22 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         (
             "symlink",
             tr(
-                "Register `.agents/skills.json` + Create symlinks in `.agents/skills/` (Lightweight, auto-updated, readable by all tools)",
-                "Khai báo `.agents/skills.json` + Tạo symlink trực tiếp vào `.agents/skills/` (Nhẹ, tự động cập nhật, mọi công cụ đều đọc được)",
+                "Register `.agents/skills.json` + Create symlinks in `.agents/skills/`",
+                "Khai báo `.agents/skills.json` + Tạo symlink trực tiếp vào `.agents/skills/`",
             ),
         ),
         (
             "copy",
             tr(
-                "Register `.agents/skills.json` + Copy full skill folders into `.agents/skills/` (Self-contained like Hephaestus)",
-                "Khai báo `.agents/skills.json` + Copy toàn bộ thư mục skill vào `.agents/skills/` (Giống Hephaestus, độc lập hoàn toàn)",
+                "Register `.agents/skills.json` + Copy full skill folders into `.agents/skills/`",
+                "Khai báo `.agents/skills.json` + Copy toàn bộ thư mục skill vào `.agents/skills/`",
             ),
         ),
         (
             "json-only",
             tr(
-                "Only register paths in `.agents/skills.json` (Keeps `.agents/skills/` minimal)",
-                "Chỉ khai báo đường dẫn trong `.agents/skills.json` (Giữ thư mục `.agents/skills/` gọn nhất)",
+                "Only register paths in `.agents/skills.json`",
+                "Chỉ khai báo đường dẫn trong `.agents/skills.json`",
             ),
         ),
     ]
@@ -1185,9 +1185,7 @@ def build_root_agents_md(cfg: TeamConfig, existing_content: Optional[str] = None
         )
 
     extra_bullets = format_extra_rules_bullets(cfg)
-    skills_summary = ", ".join(f"`{s['name']}`" for s in cfg.selected_skills[:12])
-    if len(cfg.selected_skills) > 12:
-        skills_summary += f" (+{len(cfg.selected_skills) - 12} more in `.agents/skills.json`)"
+    skills_summary = ", ".join(f"`{s['name']}`" for s in cfg.selected_skills)
 
     agent_section_lines = [
         "## Agent-Specific Instructions",
@@ -1245,8 +1243,8 @@ def build_agents_readme_md(cfg: TeamConfig) -> str:
 
     skill_rows = []
     for s in cfg.selected_skills:
-        skill_rows.append(f"- **`{s['name']}`** ({s['plugin']}): {s['description']}")
-    skills_block = "\n".join(skill_rows) if skill_rows else "- Chưa gắn skill bổ sung."
+        skill_rows.append(f"- **`{s['name']}`**: {s['description']}")
+    skills_block = "\n".join(skill_rows) if skill_rows else "- None"
 
     return (
         f"# {cfg.project_name} Agents & Skills\n\n"
@@ -1262,7 +1260,7 @@ def build_agents_readme_md(cfg: TeamConfig) -> str:
         f"## Project Context & Goal\n\n"
         f"- **Context**: {cfg.project_context}\n"
         f"- **Goal**: {cfg.project_goal}\n\n"
-        f"## Applied Skills ({len(cfg.selected_skills)})\n\n"
+        f"## Applied Skills\n\n"
         f"{skills_block}\n"
     )
 
@@ -1554,7 +1552,7 @@ def write_project_configuration(cfg: TeamConfig, dry_run: bool = False) -> List[
     # 5. Apply Skills vào `.agents/skills/`
     skill_paths = apply_skills_to_workspace(cfg, project_path, dry_run=dry_run)
     if skill_paths:
-        created_files.append(str(project_path / f".agents/skills/ ({len(skill_paths)} skills {cfg.skill_apply_mode})"))
+        created_files.append(str(project_path / ".agents/skills/"))
 
     # 6. Lưu .agents/team-config.json để dễ dàng chỉnh sửa về sau
     save(".agents/team-config.json", json.dumps(asdict(cfg), indent=2, ensure_ascii=False) + "\n")
@@ -1655,7 +1653,7 @@ def cmd_list_skills() -> None:
         )
     )
     for plugin, items in sorted(by_plugin.items()):
-        print(c(tr(f"📦 Source/Plugin: {plugin} ({len(items)} skills)", f"📦 Nguồn/Plugin: {plugin} ({len(items)} skills)"), BOLD + CYAN))
+        print(c(tr(f"📦 Source/Plugin: {plugin}", f"📦 Nguồn/Plugin: {plugin}"), BOLD + CYAN))
         for item in sorted(items, key=lambda x: x["name"]):
             print(f"   • {BOLD}{item['name']}{RESET}: {item['description']}")
         print()
@@ -1690,7 +1688,7 @@ def cmd_status(target_dir: Path) -> None:
                 f"       Agy: {c(ag['agy_model'], CYAN)} | Codex: {c(ag['codex_model'], CYAN)} ({ag.get('reasoning_effort', 'high')}) | Claude: {c(ag['claude_model'], CYAN)} [{w}]"
             )
         skills = [s["name"] for s in data.get("selected_skills", [])]
-        print(c(tr(f"\n  🧩 Applied Skills ({len(skills)}):", f"\n  🧩 Skills đã gắn ({len(skills)}):"), BOLD + CYAN))
+        print(c(tr("\n  🧩 Applied Skills:", "\n  🧩 Skills đã gắn:"), BOLD + CYAN))
         print("     " + ", ".join(skills))
         return
 
@@ -1765,7 +1763,7 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('(no command)', BOLD + CYAN)}  Open the interactive CLI dashboard menu (or run wizard)\n"
             f"  {c('init', BOLD + CYAN)}          Run the Multi-Agent & Skills setup wizard for a Project/Repo\n"
             f"  {c('status', BOLD + CYAN)}        Inspect active Agent roster, models, and skills in a Project\n"
-            f"  {c('list-skills', BOLD + CYAN)}   List all discovered local Skills (Plugins + Hephaestus + Builtin)\n\n"
+            f"  {c('list-skills', BOLD + CYAN)}   List all discovered local Skills\n\n"
             f"{c('OPTIONS:', BOLD + YELLOW)}\n"
             f"  {c('-t, --target <path>', CYAN)}     Target project directory (default: current directory)\n"
             f"  {c('-y, --yes', CYAN)}               Non-interactive mode using standard 5-agent preset\n"
