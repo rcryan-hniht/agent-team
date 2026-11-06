@@ -1,11 +1,19 @@
-# 🤖 `agt` (`agent-team`) — Multi-Agent Team & Skills CLI Generator
+<div align="center">
+  <img src="./assets/banner.svg" alt="agt (agent-team) — Multi-Agent Team & Skills CLI Generator Banner" width="100%" />
+  <br />
+  <br />
+  <p>
+    <strong>English</strong> | <a href="./README-vi.md">Tiếng Việt</a>
+  </p>
+  <p>
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-00F0FF.svg?style=flat-square&labelColor=0D1117" alt="License: MIT" /></a>
+    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-10B981.svg?style=flat-square&labelColor=0D1117" alt="Python 3.10+" /></a>
+    <img src="https://img.shields.io/badge/AGENTS.md-%3C%20150%20Lines-F59E0B.svg?style=flat-square&labelColor=0D1117" alt="AGENTS.md < 150 Lines" />
+    <img src="https://img.shields.io/badge/Harnesses-.agents%20%7C%20.codex%20%7C%20.claude-38BDF8.svg?style=flat-square&labelColor=0D1117" alt="Harnesses" />
+  </p>
+</div>
 
-**English** | [Tiếng Việt](./README-vi.md)
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://www.python.org/)
-
-`agt` is an interactive, zero-dependency CLI wizard that scaffolds a coordinated **Multi-Agent AI Team** (**Orchestrator**, **Reviewer**, **Implementer**, **Searcher**, **Committer**, or custom specialist roles) for any repository inside your `~/Projects` workspace.
+`agt` (`agent-team`) is an interactive, zero-dependency CLI wizard that scaffolds a coordinated **Multi-Agent AI Team** (**Orchestrator**, **Reviewer**, **Implementer**, **Searcher**, **Committer**, or custom specialist roles) for any repository inside your `~/Projects` workspace.
 
 It generates unified, cross-compatible agent definitions and applies local **Skills** across all three major agentic coding harnesses:
 - **Google Antigravity (`agy`)**: `AGENTS.md`, `.agents/README.md`, `.agents/agents.json`, `.agents/agents/<role>/agent.md`, `.agents/skills.json`, `.agents/skills/`

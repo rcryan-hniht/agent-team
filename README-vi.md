@@ -1,11 +1,19 @@
-# 🤖 `agt` (`agent-team`) — Công cụ CLI Thiết lập Đội ngũ AI & Skills
+<div align="center">
+  <img src="./assets/banner-vi.svg" alt="agt (agent-team) — Công cụ CLI Thiết lập Đội ngũ AI & Skills Banner" width="100%" />
+  <br />
+  <br />
+  <p>
+    <a href="./README.md">English</a> | <strong>Tiếng Việt</strong>
+  </p>
+  <p>
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-00F0FF.svg?style=flat-square&labelColor=0D1117" alt="License: MIT" /></a>
+    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-10B981.svg?style=flat-square&labelColor=0D1117" alt="Python 3.10+" /></a>
+    <img src="https://img.shields.io/badge/AGENTS.md-%3C%20150%20D%C3%B2ng-F59E0B.svg?style=flat-square&labelColor=0D1117" alt="AGENTS.md < 150 Dòng" />
+    <img src="https://img.shields.io/badge/Harnesses-.agents%20%7C%20.codex%20%7C%20.claude-38BDF8.svg?style=flat-square&labelColor=0D1117" alt="Harnesses" />
+  </p>
+</div>
 
-[English](./README.md) | **Tiếng Việt**
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://www.python.org/)
-
-`agt` là công cụ CLI tương tác (không phụ thuộc thư viện ngoài) giúp bạn thiết lập một **Đội ngũ AI (Multi-Agent Team)** gồm **Orchestrator**, **Reviewer**, **Implementer**, **Searcher**, **Committer** (hoặc bất kỳ vai trò tùy chỉnh nào) cho từng dự án trong `~/Projects`, đồng thời đảm bảo `AGENTS.md` luôn gọn gàng **dưới 150 dòng (< 150 lines)**.
+`agt` (`agent-team`) là công cụ CLI tương tác (không phụ thuộc thư viện ngoài) giúp bạn thiết lập một **Đội ngũ AI (Multi-Agent Team)** gồm **Orchestrator**, **Reviewer**, **Implementer**, **Searcher**, **Committer** (hoặc bất kỳ vai trò tùy chỉnh nào) cho từng dự án trong `~/Projects`, đồng thời đảm bảo `AGENTS.md` luôn gọn gàng **dưới 150 dòng (< 150 lines)**.
 
 Khi chạy lệnh `agt`, giao diện dòng lệnh Tiếng Việt sẽ hỏi từng bước về:
 - **Nhiệm vụ riêng (Mission)** của từng agent

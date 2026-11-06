@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080A0F"/>
+      <stop offset="55%" stop-color="#0D1117"/>
+      <stop offset="100%" stop-color="#090D14"/>
+    </linearGradient>
+    <linearGradient id="cyanGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#161B24"/>
+      <stop offset="100%" stop-color="#0E1218"/>
+    </linearGradient>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#1E2633" stroke-width="0.7" stroke-opacity="0.55"/>
+    </pattern>
+    <pattern id="crosshairs" width="120" height="120" patternUnits="userSpaceOnUse">
+      <path d="M 116 120 L 124 120 M 120 116 L 120 124" stroke="#303C4E" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- Base Canvas & Tactical Blueprint Grid -->
+  <rect width="1200" height="420" rx="10" fill="url(#bgGrad)"/>
+  <rect width="1200" height="420" rx="10" fill="url(#grid)"/>
+  <rect width="1200" height="420" rx="10" fill="url(#crosshairs)"/>
+
+  <!-- Ambient Accent Glows -->
+  <circle cx="920" cy="210" r="190" fill="#00F0FF" fill-opacity="0.045"/>
+  <circle cx="240" cy="180" r="160" fill="#10B981" fill-opacity="0.035"/>
+
+  <!-- Outer Industrial Frame -->
+  <rect x="14" y="14" width="1172" height="392" rx="6" fill="none" stroke="#263040" stroke-width="1.5"/>
+  <rect x="14" y="14" width="1172" height="3" fill="url(#cyanGlow)"/>
+
+  <!-- Corner Registration Marks -->
+  <path d="M 14 34 L 14 14 L 34 14" fill="none" stroke="#00F0FF" stroke-width="2.5"/>
+  <path d="M 1166 14 L 1186 14 L 1186 34" fill="none" stroke="#10B981" stroke-width="2.5"/>
+  <path d="M 14 386 L 14 406 L 34 406" fill="none" stroke="#00F0FF" stroke-width="2.5"/>
+  <path d="M 1166 406 L 1186 406 L 1186 386" fill="none" stroke="#10B981" stroke-width="2.5"/>
+
+  <!-- Top Telemetry Header Bar -->
+  <g font-family="ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace" font-size="11" letter-spacing="1.2">
+    <rect x="36" y="32" width="152" height="24" rx="3" fill="#0D1520" stroke="#00F0FF" stroke-width="1" stroke-opacity="0.6"/>
+    <circle cx="50" cy="44" r="3.5" fill="#10B981"/>
+    <text x="62" y="48" fill="#00F0FF" font-weight="700">SYS // AGT v2.6</text>
+
+    <rect x="198" y="32" width="194" height="24" rx="3" fill="#11161F" stroke="#2A3546" stroke-width="1"/>
+    <text x="210" y="48" fill="#94A3B8" font-weight="600">GIỚI HẠN: &lt;150D AGENTS.MD</text>
+
+    <rect x="402" y="32" width="144" height="24" rx="3" fill="#11161F" stroke="#2A3546" stroke-width="1"/>
+    <text x="416" y="48" fill="#F59E0B" font-weight="600">150+ LOCAL SKILLS</text>
+
+    <text x="1158" y="48" fill="#64748B" text-anchor="end">WORKSPACE // ~/PROJECTS</text>
+  </g>
+
+  <!-- LEFT COLUMN: Brand Identity & Value Proposition (Vietnamese) -->
+  <g transform="translate(36, 86)">
+    <!-- Geometric AGT Monogram Badge -->
+    <rect x="0" y="4" width="88" height="88" rx="8" fill="#0C131C" stroke="#00F0FF" stroke-width="1.8"/>
+    <rect x="6" y="10" width="76" height="76" rx="4" fill="none" stroke="#1E293B" stroke-width="1"/>
+    <text x="44" y="61" text-anchor="middle" fill="#F8FAFC" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace" font-size="34" font-weight="800" letter-spacing="-1">agt</text>
+    <rect x="22" y="72" width="44" height="3" rx="1.5" fill="#00F0FF"/>
+
+    <!-- Main Headline -->
+    <text x="108" y="44" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="42" font-weight="800" letter-spacing="-0.8">AGENT-TEAM</text>
+    <text x="398" y="44" fill="#00F0FF" font-family="ui-monospace, 'JetBrains Mono', Menlo, monospace" font-size="16" font-weight="700">// CLI</text>
+
+    <text x="108" y="74" fill="#94A3B8" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace" font-size="13.5" font-weight="600" letter-spacing="0.3">THIẾT LẬP ĐỘI NGŨ MULTI-AGENT &amp; SKILLS CHO ~/PROJECTS</text>
+
+    <!-- Divider Line -->
+    <line x1="0" y1="114" x2="590" y2="114" stroke="#1E293B" stroke-width="1.5"/>
+    <rect x="0" y="113" width="88" height="3" fill="#00F0FF"/>
+
+    <!-- Description Copy -->
+    <text x="0" y="146" fill="#CBD5E1" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="15.5" font-weight="400">
+      Công cụ CLI tương tác giúp phân quyền đội ngũ AI theo từng vai trò, gắn kho
+    </text>
+    <text x="0" y="170" fill="#CBD5E1" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="15.5" font-weight="400">
+      Skills cục bộ và giữ <tspan fill="#00F0FF" font-family="ui-monospace, monospace" font-weight="600">AGENTS.md &lt; 150 dòng</tspan> cho mọi dự án trong ~/Projects.
+    </text>
+
+    <!-- Terminal Command Prompt Preview -->
+    <rect x="0" y="192" width="585" height="44" rx="6" fill="#070A0E" stroke="#243042" stroke-width="1.2"/>
+    <text x="16" y="219" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace" font-size="13.5">
+      <tspan fill="#10B981" font-weight="700">$ agt --lang vi</tspan>
+      <tspan fill="#64748B">  # hoặc: </tspan>
+      <tspan fill="#38BDF8">agt init --target ~/Projects/Repo</tspan>
+    </text>
+    <rect x="502" y="202" width="70" height="24" rx="3" fill="#0F1D26" stroke="#00F0FF" stroke-opacity="0.4"/>
+    <text x="537" y="218" text-anchor="middle" fill="#00F0FF" font-family="ui-monospace, monospace" font-size="11" font-weight="700">EN / VI</text>
+
+    <!-- 3 Target Harness Pills -->
+    <g transform="translate(0, 254)" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace" font-size="11.5" font-weight="700">
+      <rect x="0" y="0" width="186" height="34" rx="4" fill="#0E1722" stroke="#00F0FF" stroke-width="1" stroke-opacity="0.65"/>
+      <circle cx="16" cy="17" r="4" fill="#00F0FF"/>
+      <text x="28" y="21" fill="#E2E8F0">ANTIGRAVITY (.agents)</text>
+
+      <rect x="198" y="0" width="186" height="34" rx="4" fill="#0E1918" stroke="#10B981" stroke-width="1" stroke-opacity="0.65"/>
+      <circle cx="214" cy="17" r="4" fill="#10B981"/>
+      <text x="226" y="21" fill="#E2E8F0">OPENAI CODEX (.codex)</text>
+
+      <rect x="396" y="0" width="189" height="34" rx="4" fill="#1A1512" stroke="#F59E0B" stroke-width="1" stroke-opacity="0.65"/>
+      <circle cx="412" cy="17" r="4" fill="#F59E0B"/>
+      <text x="424" y="21" fill="#E2E8F0">CLAUDE CODE (.claude)</text>
+    </g>
+  </g>
+
+  <!-- Vertical Structural Divider -->
+  <line x1="654" y1="72" x2="654" y2="380" stroke="#1E293B" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="654" y="66" text-anchor="middle" fill="#475569" font-family="ui-monospace, monospace" font-size="10">+</text>
+  <text x="654" y="392" text-anchor="middle" fill="#475569" font-family="ui-monospace, monospace" font-size="10">+</text>
+
+  <!-- RIGHT COLUMN: 5-Agent Tactical Topology Diagram -->
+  <g transform="translate(682, 74)" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace">
+    <!-- Topology Section Title -->
+    <text x="0" y="14" fill="#64748B" font-size="10.5" font-weight="700" letter-spacing="1.2">SƠ ĐỒ ĐIỀU PHỐI ĐỘI NGŨ 5 AGENTS // PHÂN QUYỀN RÕ RÀNG</text>
+
+    <!-- Connecting Bus Lines -->
+    <path d="M 240 86 L 240 122" stroke="#00F0FF" stroke-width="1.8"/>
+    <path d="M 115 122 L 365 122" stroke="#00F0FF" stroke-width="1.5" stroke-opacity="0.7"/>
+    <path d="M 115 122 L 115 144" stroke="#00F0FF" stroke-width="1.5" stroke-opacity="0.7"/>
+    <path d="M 365 122 L 365 144" stroke="#00F0FF" stroke-width="1.5" stroke-opacity="0.7"/>
+    <path d="M 115 212 L 115 236" stroke="#10B981" stroke-width="1.5" stroke-opacity="0.7"/>
+    <path d="M 365 212 L 365 236" stroke="#F59E0B" stroke-width="1.5" stroke-opacity="0.7"/>
+
+    <!-- Node 1: ORCHESTRATOR (Top Center Hub) -->
+    <g transform="translate(95, 28)">
+      <rect x="0" y="0" width="290" height="58" rx="6" fill="url(#cardGrad)" stroke="#00F0FF" stroke-width="1.6"/>
+      <rect x="0" y="0" width="6" height="58" rx="3" fill="#00F0FF"/>
+      <text x="18" y="23" fill="#F8FAFC" font-size="13" font-weight="800">01 // ORCHESTRATOR</text>
+      <rect x="202" y="9" width="76" height="18" rx="3" fill="#091D26"/>
+      <text x="240" y="21" text-anchor="middle" fill="#00F0FF" font-size="9.5" font-weight="700">READ-ONLY</text>
+      <text x="18" y="43" fill="#94A3B8" font-size="10.5">Lập kế hoạch • Chia việc • Điều phối</text>
+    </g>
+
+    <!-- Node 2: SEARCHER (Middle Left) -->
+    <g transform="translate(0, 144)">
+      <rect x="0" y="0" width="230" height="68" rx="6" fill="url(#cardGrad)" stroke="#38BDF8" stroke-width="1.2"/>
+      <rect x="0" y="0" width="5" height="68" rx="2.5" fill="#38BDF8"/>
+      <text x="16" y="24" fill="#F8FAFC" font-size="12.5" font-weight="700">02 // SEARCHER</text>
+      <text x="16" y="43" fill="#38BDF8" font-size="10" font-weight="600">CHẾ ĐỘ: ĐỌC + TRA CỨU</text>
+      <text x="16" y="58" fill="#94A3B8" font-size="10">Quét nhanh Repo, Graph &amp; Tài liệu</text>
+    </g>
+
+    <!-- Node 3: IMPLEMENTER (Middle Right) -->
+    <g transform="translate(250, 144)">
+      <rect x="0" y="0" width="230" height="68" rx="6" fill="url(#cardGrad)" stroke="#10B981" stroke-width="1.2"/>
+      <rect x="0" y="0" width="5" height="68" rx="2.5" fill="#10B981"/>
+      <text x="16" y="24" fill="#F8FAFC" font-size="12.5" font-weight="700">03 // IMPLEMENTER</text>
+      <text x="16" y="43" fill="#10B981" font-size="10" font-weight="600">CHẾ ĐỘ: CODE + BASH + TEST</text>
+      <text x="16" y="58" fill="#94A3B8" font-size="10">Viết code &amp; Kiểm thử đúng phạm vi</text>
+    </g>
+
+    <!-- Node 4: REVIEWER (Bottom Left) -->
+    <g transform="translate(0, 236)">
+      <rect x="0" y="0" width="230" height="68" rx="6" fill="url(#cardGrad)" stroke="#F59E0B" stroke-width="1.2"/>
+      <rect x="0" y="0" width="5" height="68" rx="2.5" fill="#F59E0B"/>
+      <text x="16" y="24" fill="#F8FAFC" font-size="12.5" font-weight="700">04 // REVIEWER</text>
+      <text x="16" y="43" fill="#F59E0B" font-size="10" font-weight="600">CHẾ ĐỘ: KIỂM ĐỊNH ĐỘC LẬP</text>
+      <text x="16" y="58" fill="#94A3B8" font-size="10">Rà soát lỗi, bảo mật &amp; kiến trúc</text>
+    </g>
+
+    <!-- Node 5: COMMITTER (Bottom Right) -->
+    <g transform="translate(250, 236)">
+      <rect x="0" y="0" width="230" height="68" rx="6" fill="url(#cardGrad)" stroke="#A855F7" stroke-width="1.2"/>
+      <rect x="0" y="0" width="5" height="68" rx="2.5" fill="#A855F7"/>
+      <text x="16" y="24" fill="#F8FAFC" font-size="12.5" font-weight="700">05 // COMMITTER</text>
+      <text x="16" y="43" fill="#C084FC" font-size="10" font-weight="600">CHẾ ĐỘ: QUẢN LÝ GIT COMMIT</text>
+      <text x="16" y="58" fill="#94A3B8" font-size="10">Kiểm tra diff &amp; đóng gói Commit</text>
+    </g>
+  </g>
+</svg>
