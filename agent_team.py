@@ -2073,8 +2073,11 @@ def cmd_status(target_dir: Path) -> None:
         for ag in data.get("agents", []):
             role_id = ag.get("id", "")
             stored_role = str(ag.get("role", ""))
-            if role_id in active_templates and not _matches_current_lang(stored_role):
-                display_role = active_templates[role_id]["role"]
+            if not _matches_current_lang(stored_role):
+                if role_id in active_templates:
+                    display_role = active_templates[role_id]["role"]
+                else:
+                    display_role = tr(f"Specialist — {role_id}", f"Chuyên gia — {role_id}")
             else:
                 display_role = stored_role
             w = tr("Write", "Ghi/Sửa") if ag.get("enable_write") else tr("Read-Only", "Chỉ đọc")
