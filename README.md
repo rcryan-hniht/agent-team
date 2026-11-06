@@ -35,13 +35,10 @@ It generates unified, cross-compatible agent definitions and applies local **Ski
 
 ### 1. Installation
 
-Clone the repository into `~/Projects/agent-team` and link the `agt` executable into `~/.local/bin`:
+Install `agt` into `~/.local/bin/agt` with a single `curl` command:
 
 ```bash
-git clone git@github.com:rcryan-hniht/agent-team.git ~/Projects/agent-team
-chmod +x ~/Projects/agent-team/agent_team.py
-mkdir -p ~/.local/bin
-ln -sf ~/Projects/agent-team/agent_team.py ~/.local/bin/agt
+curl -fsSL https://raw.githubusercontent.com/rcryan-hniht/agent-team/main/install.sh | bash
 ```
 
 ### 2. Usage

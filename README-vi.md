@@ -37,9 +37,15 @@ Nếu bạn muốn tham khảo thêm các bộ sưu tập mẫu từ cộng đ�
 
 ---
 
-## 2. Cách Sử Dụng Nhanh
+## 2. Cài Đặt & Sử Dụng Nhanh
 
-Công cụ được liên kết vào `~/.local/bin/agt`. Bạn có thể gõ lệnh từ bất kỳ đâu:
+### Cài đặt bằng 1 lệnh `curl` duy nhất
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rcryan-hniht/agent-team/main/install.sh | bash
+```
+
+Công cụ được cài và liên kết vào `~/.local/bin/agt`. Bạn có thể gõ lệnh từ bất kỳ đâu:
 
 ### A. Mở Menu Giao Diện Dòng Lệnh (Tiếng Anh mặc định / Tiếng Việt `--lang vi`)
 ```bash
