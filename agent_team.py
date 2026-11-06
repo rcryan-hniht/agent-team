@@ -152,36 +152,179 @@ class TeamConfig:
     updated_at: str = ""
 
 
-# ---------------------------------------------------------------------------
-# Model & Role Catalogs (Đồng bộ chuẩn Orpheus / Act2Morse + Antigravity/Codex/Claude)
-# ---------------------------------------------------------------------------
-AGY_MODEL_CHOICES: List[Tuple[str, str]] = [
-    ("gemini-4-argon-high", "Google Gemini 4 Argon (High) — Lead Orchestrator / Complex Architecture"),
-    ("claude-opus-5-5-medium", "Anthropic Claude Opus 5.5 (Medium) — Lead Orchestrator / Deep Design"),
-    ("gemini-3.1-pro-high", "Google Gemini 3.1 Pro (High) — Independent Reviewer & Security"),
-    ("gemini-3.8-flash-high", "Google Gemini 3.8 Flash (High) — Fast & Accurate TDD Implementer"),
-    ("gemini-3.8-flash-medium", "Google Gemini 3.8 Flash (Medium) — Focused Searcher & Documentation Scout"),
-    ("gemini-3.7-flash", "Google Gemini 3.7 Flash (Low) — Lightweight Conventional Committer"),
-    ("inherit", "Inherit active session model in Antigravity"),
-]
+VI_DIACRITIC_RE = re.compile(
+    r"[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ"
+    r"ÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]"
+)
 
-CODEX_MODEL_CHOICES: List[Tuple[str, str, str]] = [
-    ("gpt-6-astra", "high", "OpenAI GPT-6 Astra (high) — Main Orchestrator & Integration"),
-    ("gpt-6.1-sol", "xhigh", "OpenAI GPT-6.1 Sol (xhigh) — Deep Code Review, Security & Async Safety"),
-    ("gpt-6-sol", "xhigh", "OpenAI GPT-6.0 Sol (xhigh) — Minimal Implementation & TDD Execution"),
-    ("gpt-6-luna", "medium", "OpenAI GPT-6 Luna (medium) — Focused Searcher & Documentation Research"),
-    ("gpt-6-luna-low", "low", "OpenAI GPT-6 Luna (low) — Concise Conventional Committer"),
-    ("gpt-5-codex", "high", "OpenAI GPT-5 Codex (high) — Standard Coding Profile"),
-    ("o3", "high", "OpenAI o3 (high) — Reasoning & Architecture"),
-]
 
-CLAUDE_MODEL_CHOICES: List[Tuple[str, str]] = [
-    ("claude-opus-5-5-medium", "Claude Opus 5.5 Medium (Orchestrator / Deep Reasoning)"),
-    ("opus", "Claude Opus (Lead Architect / Reviewer)"),
-    ("sonnet", "Claude Sonnet (Implementer / Code Reviewer)"),
-    ("haiku", "Claude Haiku (Fast Searcher / Committer)"),
-    ("inherit", "Inherit from active Claude Code session"),
-]
+def _is_vi_text(text: str) -> bool:
+    return bool(text and VI_DIACRITIC_RE.search(text))
+
+
+def _matches_current_lang(text: str) -> bool:
+    if not text:
+        return False
+    return _is_vi_text(text) if CURRENT_LANG == "vi" else not _is_vi_text(text)
+
+
+# ---------------------------------------------------------------------------
+# Model & Role Catalogs (Bilingual EN / VI)
+# ---------------------------------------------------------------------------
+def get_agy_model_choices() -> List[Tuple[str, str]]:
+    return [
+        (
+            "gemini-4-argon-high",
+            tr(
+                "Google Gemini 4 Argon (High) — Lead Orchestrator / Complex Architecture",
+                "Google Gemini 4 Argon (High) — Điều phối viên trưởng / Kiến trúc phức tạp",
+            ),
+        ),
+        (
+            "claude-opus-5-5-medium",
+            tr(
+                "Anthropic Claude Opus 5.5 (Medium) — Lead Orchestrator / Deep Design",
+                "Anthropic Claude Opus 5.5 (Medium) — Điều phối viên trưởng / Thiết kế sâu",
+            ),
+        ),
+        (
+            "gemini-3.1-pro-high",
+            tr(
+                "Google Gemini 3.1 Pro (High) — Independent Reviewer & Security",
+                "Google Gemini 3.1 Pro (High) — Kiểm định độc lập & Bảo mật",
+            ),
+        ),
+        (
+            "gemini-3.8-flash-high",
+            tr(
+                "Google Gemini 3.8 Flash (High) — Fast & Accurate TDD Implementer",
+                "Google Gemini 3.8 Flash (High) — Thực thi code & TDD nhanh, chính xác",
+            ),
+        ),
+        (
+            "gemini-3.8-flash-medium",
+            tr(
+                "Google Gemini 3.8 Flash (Medium) — Focused Searcher & Documentation Scout",
+                "Google Gemini 3.8 Flash (Medium) — Trinh sát codebase & Tài liệu",
+            ),
+        ),
+        (
+            "gemini-3.7-flash",
+            tr(
+                "Google Gemini 3.7 Flash (Low) — Lightweight Conventional Committer",
+                "Google Gemini 3.7 Flash (Low) — Tạo Git Commit chuẩn Conventional Commits",
+            ),
+        ),
+        (
+            "inherit",
+            tr(
+                "Inherit active session model in Antigravity",
+                "Kế thừa model đang mở trong phiên Antigravity",
+            ),
+        ),
+    ]
+
+
+def get_codex_model_choices() -> List[Tuple[str, str, str]]:
+    return [
+        (
+            "gpt-6-astra",
+            "high",
+            tr(
+                "OpenAI GPT-6 Astra (high) — Main Orchestrator & Integration",
+                "OpenAI GPT-6 Astra (high) — Điều phối chính & Tích hợp hệ thống",
+            ),
+        ),
+        (
+            "gpt-6.1-sol",
+            "xhigh",
+            tr(
+                "OpenAI GPT-6.1 Sol (xhigh) — Deep Code Review, Security & Async Safety",
+                "OpenAI GPT-6.1 Sol (xhigh) — Kiểm định sâu, Bảo mật & An toàn bất đồng bộ",
+            ),
+        ),
+        (
+            "gpt-6-sol",
+            "xhigh",
+            tr(
+                "OpenAI GPT-6.0 Sol (xhigh) — Minimal Implementation & TDD Execution",
+                "OpenAI GPT-6.0 Sol (xhigh) — Thực thi code tối giản & Chạy TDD",
+            ),
+        ),
+        (
+            "gpt-6-luna",
+            "medium",
+            tr(
+                "OpenAI GPT-6 Luna (medium) — Focused Searcher & Documentation Research",
+                "OpenAI GPT-6 Luna (medium) — Trinh sát mã nguồn & Tra cứu tài liệu",
+            ),
+        ),
+        (
+            "gpt-6-luna-low",
+            "low",
+            tr(
+                "OpenAI GPT-6 Luna (low) — Concise Conventional Committer",
+                "OpenAI GPT-6 Luna (low) — Đóng gói Git Commit ngắn gọn",
+            ),
+        ),
+        (
+            "gpt-5-codex",
+            "high",
+            tr(
+                "OpenAI GPT-5 Codex (high) — Standard Coding Profile",
+                "OpenAI GPT-5 Codex (high) — Cấu hình lập trình tiêu chuẩn",
+            ),
+        ),
+        (
+            "o3",
+            "high",
+            tr(
+                "OpenAI o3 (high) — Reasoning & Architecture",
+                "OpenAI o3 (high) — Suy luận sâu & Thiết kế kiến trúc",
+            ),
+        ),
+    ]
+
+
+def get_claude_model_choices() -> List[Tuple[str, str]]:
+    return [
+        (
+            "claude-opus-5-5-medium",
+            tr(
+                "Claude Opus 5.5 Medium — Orchestrator / Deep Reasoning",
+                "Claude Opus 5.5 Medium — Điều phối viên / Suy luận sâu",
+            ),
+        ),
+        (
+            "opus",
+            tr(
+                "Claude Opus — Lead Architect / Reviewer",
+                "Claude Opus — Kiến trúc sư trưởng / Kiểm định viên",
+            ),
+        ),
+        (
+            "sonnet",
+            tr(
+                "Claude Sonnet — Implementer / Code Reviewer",
+                "Claude Sonnet — Thực thi code / Review mã nguồn",
+            ),
+        ),
+        (
+            "haiku",
+            tr(
+                "Claude Haiku — Fast Searcher / Committer",
+                "Claude Haiku — Trinh sát nhanh / Tạo Git Commit",
+            ),
+        ),
+        (
+            "inherit",
+            tr(
+                "Inherit from active Claude Code session",
+                "Kế thừa từ phiên Claude Code đang chạy",
+            ),
+        ),
+    ]
+
 
 READ_WRITE_TOOLS = [
     "run_command",
@@ -217,7 +360,7 @@ COMMITTER_TOOLS = [
     "list_dir",
 ]
 
-DEFAULT_AGENT_TEMPLATES: Dict[str, Dict] = {
+DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
     "orchestrator": {
         "title": "Astra / Argon: Architecture, Orchestration & Verification",
         "role": "Lead Orchestrator & Architect",
@@ -367,10 +510,167 @@ DEFAULT_AGENT_TEMPLATES: Dict[str, Dict] = {
     },
 }
 
+DEFAULT_AGENT_TEMPLATES_VI: Dict[str, Dict] = {
+    "orchestrator": {
+        "title": "Astra / Argon: Kiến trúc, Điều phối & Kiểm chứng tích hợp",
+        "role": "Điều phối viên & Kiến trúc sư trưởng",
+        "mission": (
+            "Phân rã yêu cầu thành các tác vụ độc lập, không chồng chéo quyền sửa file; giao thực thi code & test "
+            "cho implementer, kiểm định độc lập cho reviewer, tra cứu tài liệu/codebase cho searcher, và đóng gói "
+            "git commit cho committer. Kiểm chứng hợp đồng giữa các module và kết quả build/test cuối cùng."
+        ),
+        "provider": "multi",
+        "agy_model": "gemini-4-argon-high",
+        "claude_model": "claude-opus-5-5-medium",
+        "codex_model": "gpt-6-astra",
+        "reasoning_effort": "high",
+        "context_scope": "Toàn bộ kiến trúc repo, AGENTS.md, hợp đồng module và tích hợp hệ thống.",
+        "goal_criteria": (
+            "Không có 2 subagent sửa cùng một file; mọi phát hiện của reviewer được xử lý triệt để; "
+            "ứng dụng build và vượt qua toàn bộ bài test trước khi báo cáo hoàn thành."
+        ),
+        "enable_write": True,
+        "enable_subagents": True,
+        "enable_mcp": True,
+        "workspace_mode": "inherit",
+        "agy_tools": list(READ_WRITE_TOOLS),
+        "skills": [
+            "brainstorming",
+            "writing-plans",
+            "subagent-driven-development",
+            "dispatching-parallel-agents",
+            "swarm",
+        ],
+    },
+    "reviewer": {
+        "title": "3.1 Pro High / Sol 6.1: Kiểm định chất lượng code, Bảo mật & Kiểm thử",
+        "role": "Kiểm định viên chất lượng & Bảo mật độc lập",
+        "mission": (
+            "Kiểm định độc lập các thay đổi ở chế độ chỉ đọc: phát hiện lỗi logic, xung đột bất đồng bộ, "
+            "lỗ hổng bảo mật, đầu vào chưa kiểm tra và thiếu bài test hồi quy. "
+            "Báo cáo rõ file:dòng, mức độ ảnh hưởng và hướng sửa nhỏ gọn, an toàn nhất."
+        ),
+        "provider": "multi",
+        "agy_model": "gemini-3.1-pro-high",
+        "claude_model": "sonnet",
+        "codex_model": "gpt-6.1-sol",
+        "reasoning_effort": "xhigh",
+        "context_scope": "Kiểm tra chỉ đọc trên git diff, các module bị ảnh hưởng và bộ kiểm thử.",
+        "goal_criteria": (
+            "Phân biệt rõ hành vi đã kiểm chứng với giả định; dẫn chứng chính xác file:dòng cho từng phát hiện; "
+            "không tự ý ghi đè file trừ khi được giao sửa một lỗi cụ thể."
+        ),
+        "enable_write": False,
+        "enable_subagents": False,
+        "enable_mcp": False,
+        "workspace_mode": "inherit",
+        "agy_tools": list(REVIEWER_TOOLS),
+        "skills": [
+            "code-review",
+            "ponytail-review",
+            "ponytail-audit",
+            "requesting-code-review",
+        ],
+    },
+    "implementer": {
+        "title": "3.8 Flash High / Sol 6.0: Thực thi tối giản, TDD & Chạy kiểm thử",
+        "role": "Kỹ sư thực thi tính năng & TDD",
+        "mission": (
+            "Thực thi và kiểm thử với thay đổi nhỏ gọn, trọn vẹn nhất: viết bài test đơn vị/hồi quy trước, "
+            "chạy xác nhận fail (Red), viết code tối thiểu để vượt qua bài test (Green) và làm sạch code."
+        ),
+        "provider": "multi",
+        "agy_model": "gemini-3.8-flash-high",
+        "claude_model": "sonnet",
+        "codex_model": "gpt-6-sol",
+        "reasoning_effort": "xhigh",
+        "context_scope": "Các module/file được phân công trong tác vụ và bộ kiểm thử tương ứng.",
+        "goal_criteria": (
+            "Tuân thủ kiến trúc và hợp đồng module hiện có; bảo toàn xử lý lỗi và giải phóng tài nguyên; "
+            "báo cáo trung thực câu lệnh đã chạy và kết quả kiểm thử thực tế."
+        ),
+        "enable_write": True,
+        "enable_subagents": False,
+        "enable_mcp": True,
+        "workspace_mode": "share",
+        "agy_tools": list(READ_WRITE_TOOLS),
+        "skills": [
+            "test-driven-development",
+            "tdd",
+            "ponytail",
+            "codebase-design",
+            "systematic-debugging",
+            "verification-before-completion",
+        ],
+    },
+    "searcher": {
+        "title": "Luna / 3.8 Flash Medium: Trinh sát mã nguồn & Tra cứu tài liệu",
+        "role": "Trinh sát mã nguồn & Tài liệu chính thống",
+        "mission": (
+            "Tra cứu các câu hỏi trọng tâm trên tài liệu chính thống và khảo sát codebase ở chế độ chỉ đọc. "
+            "Trả về báo cáo cô đọng kèm URL, chữ ký API, đường dẫn file:dòng và các giới hạn tương thích."
+        ),
+        "provider": "multi",
+        "agy_model": "gemini-3.8-flash-medium",
+        "claude_model": "haiku",
+        "codex_model": "gpt-6-luna",
+        "reasoning_effort": "medium",
+        "context_scope": "Truy cập chỉ đọc trên toàn bộ codebase, tài liệu cục bộ và tài liệu web chính thống.",
+        "goal_criteria": (
+            "Xác minh thông tin trước khi đề xuất thư viện hoặc cấu hình; tuyệt đối không sửa đổi code "
+            "và không đưa thông tin nhạy cảm vào truy vấn tìm kiếm."
+        ),
+        "enable_write": False,
+        "enable_subagents": False,
+        "enable_mcp": True,
+        "workspace_mode": "inherit",
+        "agy_tools": list(SEARCHER_TOOLS),
+        "skills": [
+            "research",
+            "domain-modeling",
+            "diagnosing-bugs",
+        ],
+    },
+    "committer": {
+        "title": "3.7 Flash Low / Luna: Tạo Git Commit chuẩn Conventional Commits",
+        "role": "Chuyên viên đóng gói Git Commit",
+        "mission": (
+            "Kiểm tra trạng thái git (`git status -s`, `git diff --staged`) và soạn thông điệp commit "
+            "ngắn gọn, chuẩn Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`)."
+        ),
+        "provider": "multi",
+        "agy_model": "gemini-3.7-flash",
+        "claude_model": "haiku",
+        "codex_model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "context_scope": "Cây thư mục git, các thay đổi đã stage và lịch sử commit.",
+        "goal_criteria": (
+            "Tiêu đề ở thể mệnh lệnh, chữ thường, tối đa 50-72 ký tự, không dấu chấm cuối; "
+            "commit nguyên tử; tuyệt đối không stage hoặc commit secrets hay file cấu hình nhạy cảm."
+        ),
+        "enable_write": False,
+        "enable_subagents": False,
+        "enable_mcp": False,
+        "workspace_mode": "inherit",
+        "agy_tools": list(COMMITTER_TOOLS),
+        "skills": [
+            "finishing-a-development-branch",
+            "pr",
+        ],
+    },
+}
+
+
+def get_agent_templates() -> Dict[str, Dict]:
+    return DEFAULT_AGENT_TEMPLATES_VI if CURRENT_LANG == "vi" else DEFAULT_AGENT_TEMPLATES_EN
+
+
 SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
     "core-subagents-tdd": {
-        "label": "Core Subagents, Planning & TDD",
-        "description": "Subagent orchestration, planning, TDD, systematic debugging, and two-axis code review.",
+        "label_en": "Core Subagents, Planning & TDD",
+        "label_vi": "Điều phối Subagents, Lập kế hoạch & TDD cốt lõi",
+        "description_en": "Subagent orchestration, planning, TDD, systematic debugging, and two-axis code review.",
+        "description_vi": "Điều phối subagents, lập kế hoạch, TDD, gỡ lỗi có hệ thống và kiểm định code 2 trục.",
         "skills": [
             "brainstorming",
             "writing-plans",
@@ -391,8 +691,10 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
         ],
     },
     "ponytail-lean": {
-        "label": "Ponytail Lean / YAGNI Senior Mode",
-        "description": "Minimalist code changes, anti-overengineering, pragmatic review, and tech debt auditing.",
+        "label_en": "Ponytail Lean / YAGNI Senior Mode",
+        "label_vi": "Chế độ Ponytail Tinh gọn / YAGNI",
+        "description_en": "Minimalist code changes, anti-overengineering, pragmatic review, and tech debt auditing.",
+        "description_vi": "Code tối giản, chống phức tạp hóa, review thực dụng và kiểm toán nợ kỹ thuật.",
         "skills": [
             "ponytail",
             "ponytail-review",
@@ -402,8 +704,10 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
         ],
     },
     "frontend-taste-ui": {
-        "label": "Frontend Taste & UI/UX Pro Max",
-        "description": "Anti-slop art direction, minimalist/brutalist UI, motion design, and shadcn/tailwind.",
+        "label_en": "Frontend Taste & UI/UX Pro Max",
+        "label_vi": "Thiết kế Giao diện Frontend & UI/UX Pro Max",
+        "description_en": "Anti-slop art direction, minimalist/brutalist UI, motion design, and shadcn/tailwind.",
+        "description_vi": "Định hướng thẩm mỹ cao cấp, UI tối giản/brutalist, chuyển động mượt và shadcn/tailwind.",
         "skills": [
             "design-taste-frontend",
             "ui-ux-pro-max",
@@ -423,8 +727,10 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
         ],
     },
     "architecture-archify": {
-        "label": "Architecture Diagrams, Domain Modeling & Playwright",
-        "description": "Interactive architecture diagrams, domain modeling, and Playwright verification.",
+        "label_en": "Architecture Diagrams, Domain Modeling & Playwright",
+        "label_vi": "Sơ đồ Kiến trúc, Mô hình hóa Miền & Playwright",
+        "description_en": "Interactive architecture diagrams, domain modeling, and Playwright verification.",
+        "description_vi": "Sơ đồ kiến trúc trực quan, thiết kế domain model và kiểm thử tự động Playwright.",
         "skills": [
             "archify",
             "domain-modeling",
@@ -435,8 +741,10 @@ SKILL_BUNDLES: Dict[str, Dict[str, object]] = {
         ],
     },
     "agy-swarm": {
-        "label": "Antigravity Native Swarm & Customizations",
-        "description": "Parallel multi-agent swarm message board and Antigravity customization guides.",
+        "label_en": "Antigravity Native Swarm & Customizations",
+        "label_vi": "Antigravity Native Swarm & Tùy biến Hệ thống",
+        "description_en": "Parallel multi-agent swarm message board and Antigravity customization guides.",
+        "description_vi": "Điều phối bầy đàn đa tác tử song song và hướng dẫn tùy biến Antigravity.",
         "skills": [
             "swarm",
             "agy-customizations",
@@ -728,11 +1036,12 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
     title = ask_text(tr(f"[{role_id}] Short description header", f"[{role_id}] Tiêu đề ngắn (Description header)"), template["title"])
     mission = ask_text(tr(f"[{role_id}] Specific mission", f"[{role_id}] Nhiệm vụ cụ thể (Mission)"), template["mission"])
 
+    agy_choices = get_agy_model_choices()
     default_agy_idx = next(
-        (i for i, (k, _) in enumerate(AGY_MODEL_CHOICES) if k == template["agy_model"]),
+        (i for i, (k, _) in enumerate(agy_choices) if k == template["agy_model"]),
         0,
     )
-    agy_opts = list(AGY_MODEL_CHOICES) + [("custom", tr("Enter a custom model name for Antigravity", "Tự nhập tên model bất kỳ cho Antigravity"))]
+    agy_opts = list(agy_choices) + [("custom", tr("Enter a custom model name for Antigravity", "Tự nhập tên model bất kỳ cho Antigravity"))]
     agy_model = ask_choice(
         tr(f"[{role_id}] Select Model for Antigravity (agy)", f"[{role_id}] Chọn Model cho Antigravity (agy)"),
         agy_opts,
@@ -741,11 +1050,12 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
     if agy_model == "custom":
         agy_model = ask_text(tr(f"[{role_id}] Enter Antigravity model name", f"[{role_id}] Nhập tên model Antigravity"), template["agy_model"])
 
-    codex_opts = [(k, f"{desc}") for k, _, desc in CODEX_MODEL_CHOICES] + [
+    codex_choices = get_codex_model_choices()
+    codex_opts = [(k, f"{desc}") for k, _, desc in codex_choices] + [
         ("custom", tr("Enter a custom model name for OpenAI Codex", "Tự nhập tên model bất kỳ cho OpenAI Codex"))
     ]
     default_codex_idx = next(
-        (i for i, (k, _, _) in enumerate(CODEX_MODEL_CHOICES) if k == template["codex_model"]),
+        (i for i, (k, _, _) in enumerate(codex_choices) if k == template["codex_model"]),
         0,
     )
     codex_choice = ask_choice(
@@ -757,11 +1067,16 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
         codex_model = ask_text(tr(f"[{role_id}] Enter Codex model name", f"[{role_id}] Nhập tên model Codex"), template["codex_model"])
         reasoning_effort = ask_choice(
             tr(f"[{role_id}] Reasoning effort (model_reasoning_effort)", f"[{role_id}] Mức độ suy luận (model_reasoning_effort)"),
-            [("xhigh", "Extra High (xhigh)"), ("high", "High (high)"), ("medium", "Medium (medium)"), ("low", "Low/Fast (low)")],
+            [
+                ("xhigh", tr("Extra High (xhigh)", "Cực cao (xhigh)")),
+                ("high", tr("High (high)", "Cao (high)")),
+                ("medium", tr("Medium (medium)", "Trung bình (medium)")),
+                ("low", tr("Low/Fast (low)", "Thấp/Nhanh (low)")),
+            ],
             default_index=1,
         )
     else:
-        matched = next((item for item in CODEX_MODEL_CHOICES if item[0] == codex_choice), None)
+        matched = next((item for item in codex_choices if item[0] == codex_choice), None)
         if matched:
             codex_model = "gpt-6-luna" if matched[0] == "gpt-6-luna-low" else matched[0]
             reasoning_effort = matched[1]
@@ -769,11 +1084,12 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
             codex_model = codex_choice
             reasoning_effort = template["reasoning_effort"]
 
+    claude_choices = get_claude_model_choices()
     default_claude_idx = next(
-        (i for i, (k, _) in enumerate(CLAUDE_MODEL_CHOICES) if k == template["claude_model"]),
+        (i for i, (k, _) in enumerate(claude_choices) if k == template["claude_model"]),
         0,
     )
-    claude_opts = list(CLAUDE_MODEL_CHOICES) + [("custom", tr("Enter a custom model name for Claude Code", "Tự nhập tên model cho Claude Code"))]
+    claude_opts = list(claude_choices) + [("custom", tr("Enter a custom model name for Claude Code", "Tự nhập tên model cho Claude Code"))]
     claude_model = ask_choice(
         tr(f"[{role_id}] Select Model for Claude Code (.claude)", f"[{role_id}] Chọn Model cho Claude Code (.claude)"),
         claude_opts,
@@ -866,12 +1182,13 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         tr("Project Tech Stack / Languages", "Tech Stack / Ngôn ngữ của Project"),
         existing_data.get("tech_stack", detected_stack) if existing_data else detected_stack,
     )
+    stored_ctx = existing_data.get("project_context", "") if existing_data else ""
     default_ctx = (
-        existing_data.get("project_context")
-        if existing_data
+        stored_ctx
+        if _matches_current_lang(stored_ctx)
         else tr(
             f"{project_name} ({tech_stack}). Keep changes small and complete, prioritize TDD and independent code review.",
-            f"Dự án {project_name} ({tech_stack}). Giữ thay đổi nhỏ gọn (minimal complete changes), ưu tiên TDD và kiểm định độc lập.",
+            f"Dự án {project_name} ({tech_stack}). Giữ thay đổi nhỏ gọn, ưu tiên TDD và kiểm định độc lập.",
         )
     )
     project_context = ask_text(
@@ -879,9 +1196,10 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         default_ctx,
     )
 
+    stored_goal = existing_data.get("project_goal", "") if existing_data else ""
     default_goal = (
-        existing_data.get("project_goal")
-        if existing_data
+        stored_goal
+        if _matches_current_lang(stored_goal)
         else tr(
             f"Develop, test, and maintain {project_name} through a directly orchestrated Multi-Agent team.",
             f"Phát triển, kiểm thử và duy trì {project_name} thông qua đội ngũ Multi-Agent điều phối trực tiếp.",
@@ -916,7 +1234,7 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         ),
     ]
     selected_extra_rules = ask_multi_choice(
-        tr("Select Workspace Rules to include in this Project", "Chọn các Quy tắc Đặc thù (Workspace Rules) muốn gắn vào Project này"),
+        tr("Select Workspace Rules to include in this Project", "Chọn các Quy tắc Đặc thù muốn gắn vào Project này"),
         rule_options,
         default_indices=[0, 1],
     )
@@ -928,9 +1246,27 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         selected_extra_rules.append(f"custom:{custom_rule.strip()}")
 
     harness_options = [
-        ("agy", "Google Antigravity (AGENTS.md, .agents/agents.json, .agents/agents/*/agent.md, .agents/skills.json)"),
-        ("codex", "OpenAI Codex CLI (.codex/config.toml & .agents/agents/*/agent.toml)"),
-        ("claude", "Anthropic Claude Code (CLAUDE.md & .claude/agents/*.md)"),
+        (
+            "agy",
+            tr(
+                "Google Antigravity — AGENTS.md, .agents/agents.json, .agents/agents/*/agent.md, .agents/skills.json",
+                "Google Antigravity — AGENTS.md, .agents/agents.json, .agents/agents/*/agent.md, .agents/skills.json",
+            ),
+        ),
+        (
+            "codex",
+            tr(
+                "OpenAI Codex CLI — .codex/config.toml & .agents/agents/*/agent.toml",
+                "OpenAI Codex CLI — .codex/config.toml & .agents/agents/*/agent.toml",
+            ),
+        ),
+        (
+            "claude",
+            tr(
+                "Anthropic Claude Code — CLAUDE.md & .claude/agents/*.md",
+                "Anthropic Claude Code — CLAUDE.md & .claude/agents/*.md",
+            ),
+        ),
     ]
     harnesses = ask_multi_choice(
         tr("Select target harnesses to generate configs for", "Chọn các công cụ điều phối cần sinh cấu hình"),
@@ -948,11 +1284,41 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         )
     )
     role_options = [
-        ("orchestrator", "Lead Orchestrator & Architect (Agy: gemini-4-argon-high | Codex: gpt-6-astra high)"),
-        ("reviewer", "Independent Read-Only Reviewer (Agy: gemini-3.1-pro-high | Codex: gpt-6.1-sol xhigh)"),
-        ("implementer", "Feature & TDD Implementer (Agy: gemini-3.8-flash-high | Codex: gpt-6-sol xhigh)"),
-        ("searcher", "Documentation & Codebase Scout (Agy: gemini-3.8-flash-medium | Codex: gpt-6-luna medium)"),
-        ("committer", "Conventional Git Committer (Agy: gemini-3.7-flash | Codex: gpt-6-luna low)"),
+        (
+            "orchestrator",
+            tr(
+                "Lead Orchestrator & Architect — Agy: gemini-4-argon-high | Codex: gpt-6-astra high",
+                "Điều phối viên & Kiến trúc sư trưởng — Agy: gemini-4-argon-high | Codex: gpt-6-astra high",
+            ),
+        ),
+        (
+            "reviewer",
+            tr(
+                "Independent Read-Only Reviewer — Agy: gemini-3.1-pro-high | Codex: gpt-6.1-sol xhigh",
+                "Kiểm định viên độc lập (Read-Only) — Agy: gemini-3.1-pro-high | Codex: gpt-6.1-sol xhigh",
+            ),
+        ),
+        (
+            "implementer",
+            tr(
+                "Feature & TDD Implementer — Agy: gemini-3.8-flash-high | Codex: gpt-6-sol xhigh",
+                "Kỹ sư thực thi tính năng & TDD — Agy: gemini-3.8-flash-high | Codex: gpt-6-sol xhigh",
+            ),
+        ),
+        (
+            "searcher",
+            tr(
+                "Documentation & Codebase Scout — Agy: gemini-3.8-flash-medium | Codex: gpt-6-luna medium",
+                "Trinh sát mã nguồn & Tài liệu — Agy: gemini-3.8-flash-medium | Codex: gpt-6-luna medium",
+            ),
+        ),
+        (
+            "committer",
+            tr(
+                "Conventional Git Committer — Agy: gemini-3.7-flash | Codex: gpt-6-luna low",
+                "Chuyên viên đóng gói Git Commit — Agy: gemini-3.7-flash | Codex: gpt-6-luna low",
+            ),
+        ),
     ]
     selected_roles = ask_multi_choice(
         tr("Select Agents to include in this Project's roster", "Chọn các Agents trong đội hình của Project này"),
@@ -960,6 +1326,7 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         default_indices=[0, 1, 2, 3, 4],
     )
 
+    active_templates = get_agent_templates()
     while ask_yes_no(
         tr(
             "Add a custom specialist Agent (e.g. ui-designer, security-auditor, ml-tuner)?",
@@ -972,18 +1339,30 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
             "custom-specialist",
         )
         custom_id = re.sub(r"[^a-z0-9_-]", "-", custom_id.lower()).strip("-") or "custom-agent"
-        if custom_id not in DEFAULT_AGENT_TEMPLATES:
-            DEFAULT_AGENT_TEMPLATES[custom_id] = {
-                "title": f"Specialized {custom_id.replace('-', ' ').title()} Agent",
-                "role": f"Specialist ({custom_id})",
-                "mission": f"Execute specialized {custom_id} tasks delegated by the Orchestrator.",
+        if custom_id not in active_templates:
+            active_templates[custom_id] = {
+                "title": tr(
+                    f"Specialized {custom_id.replace('-', ' ').title()} Agent",
+                    f"Agent chuyên biệt {custom_id.replace('-', ' ').title()}",
+                ),
+                "role": tr(f"Specialist — {custom_id}", f"Chuyên gia — {custom_id}"),
+                "mission": tr(
+                    f"Execute specialized {custom_id} tasks delegated by the Orchestrator.",
+                    f"Thực thi các tác vụ chuyên biệt {custom_id} do Orchestrator phân công.",
+                ),
                 "provider": "multi",
                 "agy_model": "gemini-3.8-flash-high",
                 "claude_model": "sonnet",
                 "codex_model": "gpt-6-sol",
                 "reasoning_effort": "high",
-                "context_scope": f"Modules and documentation related to {custom_id}.",
-                "goal_criteria": f"Complete assigned {custom_id} tasks with verifiable output.",
+                "context_scope": tr(
+                    f"Modules and documentation related to {custom_id}.",
+                    f"Các module và tài liệu liên quan tới {custom_id}.",
+                ),
+                "goal_criteria": tr(
+                    f"Complete assigned {custom_id} tasks with verifiable output.",
+                    f"Hoàn thành tác vụ {custom_id} được giao với kết quả kiểm chứng được.",
+                ),
                 "enable_write": True,
                 "enable_subagents": False,
                 "enable_mcp": True,
@@ -1006,7 +1385,7 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
             "quick",
             tr(
                 "Review standard summary per Agent and only customize specific ones",
-                "Xem tóm tắt chuẩn Orpheus/Act2Morse cho từng Agent và chỉ chỉnh sửa Agent nào cần đổi",
+                "Xem tóm tắt chuẩn cho từng Agent và chỉ chỉnh sửa Agent nào cần đổi",
             ),
         ),
     ]
@@ -1019,11 +1398,17 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
 
     agents: List[AgentSpec] = []
     for role_id in selected_roles:
-        tpl = dict(DEFAULT_AGENT_TEMPLATES[role_id])
+        tpl = dict(active_templates[role_id])
         if existing_data and "agents" in existing_data:
             for old_ag in existing_data["agents"]:
                 if old_ag.get("id") == role_id:
-                    tpl.update(old_ag)
+                    for k in ("agy_model", "claude_model", "codex_model", "reasoning_effort", "enable_write", "enable_subagents", "enable_mcp", "workspace_mode", "agy_tools", "skills"):
+                        if k in old_ag:
+                            tpl[k] = old_ag[k]
+                    for text_key in ("title", "role", "mission", "context_scope", "goal_criteria"):
+                        val = str(old_ag.get(text_key, ""))
+                        if _matches_current_lang(val):
+                            tpl[text_key] = val
         spec = configure_single_agent(role_id, tpl, customize_deeply)
         agents.append(spec)
 
@@ -1044,7 +1429,9 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         )
     )
     bundle_keys = list(SKILL_BUNDLES.keys())
-    bundle_opts = [(k, f"{SKILL_BUNDLES[k]['label']} — {SKILL_BUNDLES[k]['description']}") for k in bundle_keys]
+    label_key = "label_vi" if CURRENT_LANG == "vi" else "label_en"
+    desc_key = "description_vi" if CURRENT_LANG == "vi" else "description_en"
+    bundle_opts = [(k, f"{SKILL_BUNDLES[k][label_key]} — {SKILL_BUNDLES[k][desc_key]}") for k in bundle_keys]
     chosen_bundles = ask_multi_choice(
         tr("Select Skill Bundles to apply to this Project", "Chọn các Gói Kỹ năng muốn apply cho Project này"),
         bundle_opts,
@@ -1566,9 +1953,10 @@ def build_preset_config(
     tech_stack = detect_tech_stack(project_path)
     discovered = discover_local_skills()
 
+    active_templates = get_agent_templates()
     agents: List[AgentSpec] = []
     for role_id in ("orchestrator", "reviewer", "implementer", "committer", "searcher"):
-        tpl = DEFAULT_AGENT_TEMPLATES[role_id]
+        tpl = active_templates[role_id]
         agents.append(
             AgentSpec(
                 id=role_id,
@@ -1656,25 +2044,42 @@ def cmd_status(target_dir: Path) -> None:
 
     if cfg_file.exists():
         data = json.loads(cfg_file.read_text(encoding="utf-8"))
+        proj_name = data.get("project_name", project_path.name)
+        stored_goal = str(data.get("project_goal", ""))
+        display_goal = (
+            stored_goal
+            if _matches_current_lang(stored_goal)
+            else tr(
+                f"Develop, test, and maintain {proj_name} through a directly orchestrated Multi-Agent team.",
+                f"Phát triển, kiểm thử và duy trì {proj_name} thông qua đội ngũ Multi-Agent điều phối trực tiếp.",
+            )
+        )
+        active_templates = get_agent_templates()
         print(
             c(
                 tr(
-                    f"\n📊 AI Team Status at: {data['project_name']} ({data['project_path']})",
-                    f"\n📊 Trạng thái Đội ngũ AI tại: {data['project_name']} ({data['project_path']})",
+                    f"\n📊 AI Team Status at: {proj_name} ({data['project_path']})",
+                    f"\n📊 Trạng thái Đội ngũ AI tại: {proj_name} ({data['project_path']})",
                 ),
                 BOLD + GREEN,
             )
         )
         print(f"  • Tech Stack : {data.get('tech_stack')}")
-        print(f"  • {tr('Goal       ', 'Mục tiêu   ')}: {data.get('project_goal')}")
+        print(f"  • {tr('Goal       ', 'Mục tiêu   ')}: {display_goal}")
         print(f"  • {tr('Harnesses  ', 'Công cụ    ')}: {', '.join(data.get('harnesses', []))}")
         print(f"  • Skill Mode : {data.get('skill_apply_mode')}")
         print(f"  • {tr('Updated    ', 'Cập nhật   ')}: {data.get('updated_at')}")
         print(c(tr("\n  🤖 Agent Roster:", "\n  🤖 Danh sách Agents:"), BOLD + CYAN))
         for ag in data.get("agents", []):
-            w = "Write" if ag.get("enable_write") else "Read-Only"
+            role_id = ag.get("id", "")
+            stored_role = str(ag.get("role", ""))
+            if role_id in active_templates and not _matches_current_lang(stored_role):
+                display_role = active_templates[role_id]["role"]
+            else:
+                display_role = stored_role
+            w = tr("Write", "Ghi/Sửa") if ag.get("enable_write") else tr("Read-Only", "Chỉ đọc")
             print(
-                f"     - [{BOLD}{ag['id']}{RESET}] {ag['role']}\n"
+                f"     - [{BOLD}{role_id}{RESET}] {display_role}\n"
                 f"       Agy: {c(ag['agy_model'], CYAN)} | Codex: {c(ag['codex_model'], CYAN)} ({ag.get('reasoning_effort', 'high')}) | Claude: {c(ag['claude_model'], CYAN)} [{w}]"
             )
         skills = [s["name"] for s in data.get("selected_skills", [])]
@@ -1896,9 +2301,9 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command")
 
     p_init = subparsers.add_parser("init", add_help=False, help="Run the Multi-Agent setup wizard")
-    p_init.add_argument("--lang", type=str, default="en", choices=["en", "vi"])
-    p_init.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
-    p_init.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode with standard preset")
+    p_init.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
+    p_init.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
+    p_init.add_argument("--yes", "-y", action="store_true", default=argparse.SUPPRESS, help="Non-interactive mode with standard preset")
     p_init.add_argument("--goal", type=str, default="", help="Primary project goal (used with --yes)")
     p_init.add_argument("--context", type=str, default="", help="Project context (used with --yes)")
     p_init.add_argument(
@@ -1920,21 +2325,21 @@ def main() -> None:
         choices=["symlink", "copy", "json-only"],
         help="Skill linking mode (symlink, copy, json-only)",
     )
-    p_init.add_argument("--dry-run", action="store_true", help="Preview generated files without writing")
+    p_init.add_argument("--dry-run", action="store_true", default=argparse.SUPPRESS, help="Preview generated files without writing")
 
     p_list = subparsers.add_parser("list-skills", add_help=False, help="List all discovered local Skills")
-    p_list.add_argument("--lang", type=str, default="en", choices=["en", "vi"])
+    p_list.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
 
     p_status = subparsers.add_parser("status", add_help=False, help="Inspect active AI Team status for a Project")
-    p_status.add_argument("--lang", type=str, default="en", choices=["en", "vi"])
-    p_status.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
+    p_status.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
+    p_status.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
 
     p_menu = subparsers.add_parser("menu", add_help=False, help="Open interactive dashboard menu")
-    p_menu.add_argument("--lang", type=str, default="en", choices=["en", "vi"])
-    p_menu.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
+    p_menu.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
+    p_menu.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
 
     args = parser.parse_args()
-    CURRENT_LANG = getattr(args, "lang", lang)
+    CURRENT_LANG = lang if "--lang" in raw_argv else getattr(args, "lang", "en")
     projects_root = Path("/home/killua/Projects")
 
     if args.command == "list-skills":
