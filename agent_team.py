@@ -93,13 +93,13 @@ def banner() -> None:
     logo_3 = c("───────────", DIM + CYAN)
 
     if CURRENT_LANG == "vi":
-        r1 = f"{c('AGENT-TEAM CLI', BOLD)} {c('//', DIM)} Thiết lập Đội ngũ Multi-Agent & Skills cho ~/Projects"
+        r1 = f"{c('AGENT-TEAM CLI', BOLD)} {c('//', DIM)} Thiết lập Đội ngũ Multi-Agent & Kho Skills"
         r2 = f"{c('HARNESS ', BOLD + YELLOW)}: Antigravity {c('(.agents)', DIM)} • Codex {c('(.codex)', DIM)} • Claude {c('(.claude)', DIM)}"
         r3 = f"{c('ĐỘI HÌNH', BOLD + GREEN)}: Orchestrator • Reviewer • Implementer • Searcher • Committer"
         bot_left = "[ WORKSPACE: ~/Projects ]"
         bot_right = "[ TRẠNG THÁI: ● SẴN SÀNG ]"
     else:
-        r1 = f"{c('AGENT-TEAM CLI', BOLD)} {c('//', DIM)} Multi-Agent Orchestration & Skills Setup for ~/Projects"
+        r1 = f"{c('AGENT-TEAM CLI', BOLD)} {c('//', DIM)} Multi-Agent Orchestration & Skills Generator"
         r2 = f"{c('HARNESS ', BOLD + YELLOW)}: Antigravity {c('(.agents)', DIM)} • Codex {c('(.codex)', DIM)} • Claude {c('(.claude)', DIM)}"
         r3 = f"{c('TOPOLOGY', BOLD + GREEN)}: Orchestrator • Reviewer • Implementer • Searcher • Committer"
         bot_left = "[ WORKSPACE: ~/Projects ]"
