@@ -65,60 +65,50 @@ def _visible_len(text: str) -> int:
     return len(ANSI_ESCAPE_RE.sub("", text))
 
 
-def _frame_row(left_col: str, right_col: str, inner_width: int = 88) -> str:
-    content = f"  {left_col}  {c('│', DIM + CYAN)}  {right_col}"
-    pad = max(0, inner_width - _visible_len(content))
-    return f"{c('│', BOLD + CYAN)}{content}{' ' * pad}{c('│', BOLD + CYAN)}"
+def _box_line(text: str, inner_width: int = 54) -> str:
+    pad = max(0, inner_width - _visible_len(text))
+    return f"{c('│', CYAN)}  {text}{' ' * pad}  {c('│', CYAN)}"
 
 
 def banner() -> None:
-    width = 88
-    top_left = "[ SYS // AGT v2.6 ]"
-    top_right = (
-        "[ GIỚI HẠN: <150D AGENTS.MD | VI ]"
-        if CURRENT_LANG == "vi"
-        else "[ BUDGET: <150L AGENTS.MD | EN ]"
-    )
-    top_fill = max(2, width - len(top_left) - len(top_right) - 8)
-    top_bar = (
-        f"\n{c('+', BOLD + GREEN)}{c('── ', BOLD + CYAN)}"
-        f"{c(top_left, BOLD + GREEN)}"
-        f"{c(' ' + '─' * top_fill + ' ', DIM + CYAN)}"
-        f"{c(top_right, BOLD + YELLOW)}"
-        f"{c(' ──', BOLD + CYAN)}{c('+', BOLD + GREEN)}"
-    )
-
-    logo_1 = c("▄▀█ █▀▀ ▀█▀", BOLD + CYAN)
-    logo_2 = c("█▀█ █▄█  █ ", BOLD + GREEN)
-    logo_3 = c("───────────", DIM + CYAN)
+    box_w = 52
+    ascii_art = [
+        c("   █████╗  ██████╗ ████████╗", BOLD + CYAN),
+        c("  ██╔══██╗██╔════╝ ╚══██╔══╝", BOLD + CYAN),
+        c("  ███████║██║  ███╗   ██║   ", BOLD + CYAN),
+        c("  ██╔══██║██║   ██║   ██║   ", BOLD + GREEN),
+        c("  ██║  ██║╚██████╔╝   ██║   ", BOLD + GREEN),
+        c("  ╚═╝  ╚═╝ ╚═════╝    ╚═╝   ", DIM + GREEN),
+    ]
 
     if CURRENT_LANG == "vi":
-        r1 = f"{c('AGENT-TEAM CLI', BOLD)} {c('//', DIM)} Thiết lập Đội ngũ Multi-Agent & Kho Skills"
-        r2 = f"{c('HARNESS ', BOLD + YELLOW)}: Antigravity {c('(.agents)', DIM)} • Codex {c('(.codex)', DIM)} • Claude {c('(.claude)', DIM)}"
-        r3 = f"{c('ĐỘI HÌNH', BOLD + GREEN)}: Orchestrator • Reviewer • Implementer • Searcher • Committer"
-        bot_left = "[ WORKSPACE: ~/Projects ]"
-        bot_right = "[ TRẠNG THÁI: ● SẴN SÀNG ]"
+        header_title = " ✦ AGENT-TEAM // ĐIỀU PHỐI ĐỘI NGŨ AI & SKILLS "
+        line_1 = f"{c('▸ HARNESS', BOLD + YELLOW)} : Antigravity • OpenAI Codex • Claude Code"
+        line_2 = f"{c('▸ AGENTS ', BOLD + GREEN)} : Orchestrator • Reviewer • Implementer"
+        line_3 = f"            Searcher • Committer • Custom Roles"
+        footer_tag = " ◈ .agents   ◈ .codex   ◈ .claude   ◈ 150+ skills "
     else:
-        r1 = f"{c('AGENT-TEAM CLI', BOLD)} {c('//', DIM)} Multi-Agent Orchestration & Skills Generator"
-        r2 = f"{c('HARNESS ', BOLD + YELLOW)}: Antigravity {c('(.agents)', DIM)} • Codex {c('(.codex)', DIM)} • Claude {c('(.claude)', DIM)}"
-        r3 = f"{c('TOPOLOGY', BOLD + GREEN)}: Orchestrator • Reviewer • Implementer • Searcher • Committer"
-        bot_left = "[ WORKSPACE: ~/Projects ]"
-        bot_right = "[ STATUS: ● READY ]"
+        header_title = " ✦ AGENT-TEAM // MULTI-AGENT & SKILLS GENERATOR "
+        line_1 = f"{c('▸ HARNESS', BOLD + YELLOW)} : Antigravity • OpenAI Codex • Claude Code"
+        line_2 = f"{c('▸ ROSTER ', BOLD + GREEN)} : Orchestrator • Reviewer • Implementer"
+        line_3 = f"            Searcher • Committer • Custom Roles"
+        footer_tag = " ◈ .agents   ◈ .codex   ◈ .claude   ◈ 150+ skills "
 
-    bot_fill = max(2, width - len(bot_left) - len(bot_right) - 8)
-    bot_bar = (
-        f"{c('+', BOLD + GREEN)}{c('── ', BOLD + CYAN)}"
-        f"{c(bot_left, DIM + CYAN)}"
-        f"{c(' ' + '─' * bot_fill + ' ', DIM + CYAN)}"
-        f"{c(bot_right, BOLD + GREEN)}"
-        f"{c(' ──', BOLD + CYAN)}{c('+', BOLD + GREEN)}"
-    )
+    top_dashes = max(1, (box_w + 4) - len(header_title) - 3)
+    bot_dashes = max(1, (box_w + 4) - len(footer_tag) - 3)
 
-    print(top_bar)
-    print(_frame_row(logo_1, r1, width))
-    print(_frame_row(logo_2, r2, width))
-    print(_frame_row(logo_3, r3, width))
-    print(bot_bar)
+    right_rows = [
+        f"{c('╭───', CYAN)}{c(header_title, BOLD + CYAN)}{c('─' * top_dashes + '╮', CYAN)}",
+        _box_line(line_1, box_w),
+        _box_line(line_2, box_w),
+        _box_line(line_3, box_w),
+        f"{c('╰───', CYAN)}{c(footer_tag, DIM + CYAN)}{c('─' * bot_dashes + '╯', CYAN)}",
+        f"   {c('⚡', YELLOW)} {c('cd ~/project-example && agt', DIM)}",
+    ]
+
+    print()
+    for left, right in zip(ascii_art, right_rows):
+        print(f"{left}   {right}")
 
 
 # ---------------------------------------------------------------------------

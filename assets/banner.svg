@@ -51,7 +51,7 @@
     <text x="62" y="48" fill="#00F0FF" font-weight="700">SYS // AGT v2.6</text>
 
     <rect x="198" y="32" width="186" height="24" rx="3" fill="#11161F" stroke="#2A3546" stroke-width="1"/>
-    <text x="210" y="48" fill="#94A3B8" font-weight="600">BUDGET: &lt;150L AGENTS.MD</text>
+    <text x="210" y="48" fill="#94A3B8" font-weight="600">.AGENTS • .CODEX • .CLAUDE</text>
 
     <rect x="394" y="32" width="144" height="24" rx="3" fill="#11161F" stroke="#2A3546" stroke-width="1"/>
     <text x="408" y="48" fill="#F59E0B" font-weight="600">150+ LOCAL SKILLS</text>
