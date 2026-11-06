@@ -1502,14 +1502,152 @@ def print_summary(cfg: TeamConfig, created_files: List[str], dry_run: bool = Fal
     )
 
 
+def print_cli_help(lang: str = "vi") -> None:
+    banner()
+    if lang == "en":
+        print(
+            f"\n{c('USAGE:', BOLD + YELLOW)}\n"
+            f"  {c('agt', BOLD + GREEN)} [command] [options]\n\n"
+            f"{c('COMMANDS:', BOLD + YELLOW)}\n"
+            f"  {c('(no command)', BOLD + CYAN)}  Open the interactive CLI dashboard menu (or run wizard)\n"
+            f"  {c('init', BOLD + CYAN)}          Run the Multi-Agent & Skills setup wizard for a Project/Repo\n"
+            f"  {c('status', BOLD + CYAN)}        Inspect active Agent roster, models, and skills in a Project\n"
+            f"  {c('list-skills', BOLD + CYAN)}   List all discovered local Skills (Plugins + Hephaestus + Builtin)\n\n"
+            f"{c('OPTIONS:', BOLD + YELLOW)}\n"
+            f"  {c('-t, --target <path>', CYAN)}     Target project directory (default: current directory)\n"
+            f"  {c('-y, --yes', CYAN)}               Non-interactive mode using standard 5-agent preset\n"
+            f"  {c('--goal <text>', CYAN)}           Primary project goal (used with --yes)\n"
+            f"  {c('--context <text>', CYAN)}        Project context description (used with --yes)\n"
+            f"  {c('--harnesses <list>', CYAN)}      Target harnesses: agy,codex,claude (default: all)\n"
+            f"  {c('--skill-mode <mode>', CYAN)}     Skill linking mode: symlink | copy | json-only\n"
+            f"  {c('--lang <vi|en>', CYAN)}          CLI display language: vi (Tiếng Việt) or en (English)\n"
+            f"  {c('--dry-run', CYAN)}               Preview generated files without writing to disk\n"
+            f"  {c('-h, --help', CYAN)}              Show this help message\n"
+        )
+    else:
+        print(
+            f"\n{c('CÁCH SỬ DỤNG:', BOLD + YELLOW)}\n"
+            f"  {c('agt', BOLD + GREEN)} [lệnh] [tùy chọn]\n\n"
+            f"{c('CÁC LỆNH CHÍNH:', BOLD + YELLOW)}\n"
+            f"  {c('(không truyền lệnh)', BOLD + CYAN)} Mở Bảng điều khiển tương tác Tiếng Việt (TUI Menu / Wizard)\n"
+            f"  {c('init', BOLD + CYAN)}                Chạy Wizard thiết lập đội ngũ AI & Skills cho Project/Repo\n"
+            f"  {c('status', BOLD + CYAN)}              Xem trạng thái đội ngũ Agents, Models & Skills của Project\n"
+            f"  {c('list-skills', BOLD + CYAN)}         Liệt kê toàn bộ 150+ Skills đang có trên máy\n\n"
+            f"{c('TÙY CHỌN (OPTIONS):', BOLD + YELLOW)}\n"
+            f"  {c('-t, --target <path>', CYAN)}     Đường dẫn tới project/repo cần thiết lập (mặc định: `.`)\n"
+            f"  {c('-y, --yes', CYAN)}               Khởi tạo tự động bằng Preset 5 Agents chuẩn (không hỏi đáp)\n"
+            f"  {c('--goal <text>', CYAN)}           Mục tiêu chính của project (dùng kèm `--yes`)\n"
+            f"  {c('--context <text>', CYAN)}        Ngữ cảnh kiến trúc của project (dùng kèm `--yes`)\n"
+            f"  {c('--harnesses <list>', CYAN)}      Công cụ xuất cấu hình: `agy,codex,claude` (mặc định: cả 3)\n"
+            f"  {c('--skill-mode <mode>', CYAN)}     Chế độ gắn skills: `symlink` | `copy` | `json-only`\n"
+            f"  {c('--lang <vi|en>', CYAN)}          Ngôn ngữ giao diện CLI: `vi` (Tiếng Việt) hoặc `en` (Tiếng Anh)\n"
+            f"  {c('--dry-run', CYAN)}               Xem trước danh sách file sẽ sinh ra mà không ghi xuống ổ cứng\n"
+            f"  {c('-h, --help', CYAN)}              Hiển thị bảng hướng dẫn Tiếng Việt này\n\n"
+            f"{c('VÍ DỤ NHANH:', BOLD + YELLOW)}\n"
+            f"  • Mở giao diện tương tác tại ~/Projects : {c('cd ~/Projects && agt', GREEN)}\n"
+            f"  • Tạo nhanh đội AI cho 1 repo           : {c('agt init -t ~/Projects/Orpheus -y', GREEN)}\n"
+            f"  • Kiểm tra trạng thái đội AI            : {c('agt status -t ~/Projects/Orpheus', GREEN)}\n"
+        )
+
+
+def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str = "vi") -> None:
+    """Bảng điều khiển dòng lệnh Tiếng Việt (hoặc Tiếng Anh) khi gõ `agt` trực tiếp."""
+    current_lang = lang
+    while True:
+        banner()
+        cwd_str = str(target_path.resolve())
+        if current_lang == "vi":
+            print(f"📍 Thư mục làm việc hiện tại: {c(cwd_str, BOLD + GREEN)}")
+            menu_opts = [
+                ("wizard", "Thiết lập đội ngũ AI & Skills theo từng bước (Interactive Wizard)"),
+                ("preset", "Khởi tạo nhanh đội hình 5 Agents chuẩn cho 1 Project (Quick Preset)"),
+                ("status", "Xem trạng thái đội ngũ AI & Skills của Project"),
+                ("list-skills", "Tra cứu danh sách 150+ Skills đang có trên máy"),
+                ("lang", "Chuyển ngôn ngữ giao diện sang Tiếng Anh (Switch to English)"),
+                ("exit", "Thoát (Exit)"),
+            ]
+            prompt_title = "BẢNG ĐIỀU KHIỂN CHÍNH — Chọn tác vụ bạn muốn thực hiện"
+        else:
+            print(f"📍 Current working directory: {c(cwd_str, BOLD + GREEN)}")
+            menu_opts = [
+                ("wizard", "Configure Multi-Agent Team & Skills step-by-step (Interactive Wizard)"),
+                ("preset", "Quick-initialize standard 5-Agent Team (Quick Preset)"),
+                ("status", "Inspect active Agent Team & Skills status for a Project"),
+                ("list-skills", "Browse all 150+ discovered local Skills"),
+                ("lang", "Chuyển ngôn ngữ giao diện sang Tiếng Việt (Switch to Vietnamese)"),
+                ("exit", "Exit"),
+            ]
+            prompt_title = "MAIN DASHBOARD — Select an action"
+
+        action = ask_choice(prompt_title, menu_opts, default_index=0)
+        if action == "exit":
+            print(c("\n👋 Tạm biệt! Chúc bạn code hiệu quả cùng đội ngũ AI." if current_lang == "vi" else "\n👋 Goodbye!", CYAN))
+            return
+        if action == "lang":
+            current_lang = "en" if current_lang == "vi" else "vi"
+            continue
+        if action == "list-skills":
+            cmd_list_skills()
+            return
+        if action == "status":
+            proj = select_project_directory(target_path, projects_root)
+            cmd_status(proj)
+            return
+        if action == "preset":
+            proj = select_project_directory(target_path, projects_root)
+            default_goal = (
+                f"Phát triển, kiểm thử và duy trì {proj.name} với đội ngũ 5 Agents."
+                if current_lang == "vi"
+                else f"Develop, test, and maintain {proj.name} with a 5-Agent team."
+            )
+            goal = ask_text(
+                "Nhập mục tiêu chính của Project (Goal)" if current_lang == "vi" else "Enter primary project goal",
+                default_goal,
+            )
+            cfg = build_preset_config(
+                target_dir=proj,
+                goal=goal,
+                context="",
+                harnesses=["agy", "codex", "claude"],
+                bundles=["core-subagents-tdd", "ponytail-lean", "agy-swarm"],
+                skill_apply_mode="symlink",
+            )
+            created = write_project_configuration(cfg, dry_run=False)
+            print_summary(cfg, created, dry_run=False)
+            return
+        if action == "wizard":
+            cfg = run_interactive_wizard(target_path, projects_root)
+            created = write_project_configuration(cfg, dry_run=False)
+            print_summary(cfg, created, dry_run=False)
+            return
+
+
 def main() -> None:
+    # Kiểm tra nhanh cờ --lang và -h/--help để hiển thị giao diện Tiếng Việt trọn vẹn
+    raw_argv = sys.argv[1:]
+    lang = "vi"
+    if "--lang" in raw_argv:
+        idx = raw_argv.index("--lang")
+        if idx + 1 < len(raw_argv) and raw_argv[idx + 1] in ("vi", "en"):
+            lang = raw_argv[idx + 1]
+
+    if "-h" in raw_argv or "--help" in raw_argv:
+        print_cli_help(lang=lang)
+        return
+
     parser = argparse.ArgumentParser(
         prog="agt",
+        add_help=False,
         description="CLI Wizard (agt) thiết lập đội ngũ Multi-Agent (Orchestrator, Reviewer, Implementer, Committer, Searcher) & Skills cho ~/Projects.",
     )
+    parser.add_argument("--lang", type=str, default="vi", choices=["vi", "en"], help="Ngôn ngữ giao diện (vi/en)")
+    parser.add_argument("--target", "-t", type=str, default=".", help="Đường dẫn tới project/repo")
+    parser.add_argument("--yes", "-y", action="store_true", help="Chạy tự động với preset chuẩn")
+    parser.add_argument("--dry-run", action="store_true", help="Chỉ xem trước file sẽ tạo")
     subparsers = parser.add_subparsers(dest="command")
 
-    p_init = subparsers.add_parser("init", help="Chạy wizard thiết lập đội ngũ AI cho một Project/Repo")
+    p_init = subparsers.add_parser("init", add_help=False, help="Chạy wizard thiết lập đội ngũ AI cho một Project/Repo")
+    p_init.add_argument("--lang", type=str, default="vi", choices=["vi", "en"])
     p_init.add_argument("--target", "-t", type=str, default=".", help="Đường dẫn tới project/repo cần thiết lập")
     p_init.add_argument("--yes", "-y", action="store_true", help="Chạy tự động với preset chuẩn Orpheus/Act2Morse")
     p_init.add_argument("--goal", type=str, default="", help="Mục tiêu chính của project (dùng kèm --yes)")
@@ -1535,10 +1673,16 @@ def main() -> None:
     )
     p_init.add_argument("--dry-run", action="store_true", help="Chỉ hiển thị danh sách file sẽ tạo, không ghi xuống đĩa")
 
-    subparsers.add_parser("list-skills", help="Liệt kê toàn bộ Skills đang có trên máy (Plugins + Hephaestus + Builtin)")
+    p_list = subparsers.add_parser("list-skills", add_help=False, help="Liệt kê toàn bộ Skills đang có trên máy")
+    p_list.add_argument("--lang", type=str, default="vi", choices=["vi", "en"])
 
-    p_status = subparsers.add_parser("status", help="Xem cấu hình đội ngũ AI hiện tại của một Project")
+    p_status = subparsers.add_parser("status", add_help=False, help="Xem cấu hình đội ngũ AI hiện tại của một Project")
+    p_status.add_argument("--lang", type=str, default="vi", choices=["vi", "en"])
     p_status.add_argument("--target", "-t", type=str, default=".", help="Đường dẫn tới project/repo")
+
+    p_menu = subparsers.add_parser("menu", add_help=False, help="Mở bảng điều khiển tương tác Tiếng Việt")
+    p_menu.add_argument("--lang", type=str, default="vi", choices=["vi", "en"])
+    p_menu.add_argument("--target", "-t", type=str, default=".", help="Đường dẫn tới project/repo")
 
     args = parser.parse_args()
     projects_root = Path("/home/killua/Projects")
@@ -1554,6 +1698,11 @@ def main() -> None:
     target_path = Path(getattr(args, "target", "."))
     auto_yes = getattr(args, "yes", False)
     dry_run = getattr(args, "dry_run", False)
+
+    # Nếu gõ `agt` không kèm lệnh con ở terminal tương tác -> mở Bảng điều khiển Tiếng Việt
+    if args.command in (None, "menu") and not auto_yes and not dry_run and sys.stdin.isatty():
+        run_interactive_dashboard(target_path, projects_root, lang=getattr(args, "lang", lang))
+        return
 
     if auto_yes:
         harnesses = [h.strip() for h in getattr(args, "harnesses", "agy,codex,claude").split(",") if h.strip()]

@@ -1,84 +1,140 @@
-# 🤖 `agt` — Multi-Agent Team & Skills CLI Generator
+# 🤖 `agt` (`agent-team`) — Multi-Agent Team & Skills CLI Generator
 
-Công cụ CLI tương tác (`agt`) giúp bạn thiết lập một **Đội ngũ AI (Multi-Agent Team)** gồm **Orchestrator**, **Reviewer**, **Implementer**, **Searcher**, **Committer** (hoặc bất kỳ vai trò tùy chỉnh nào) cho từng dự án trong `~/Projects`, đồng thời đảm bảo `AGENTS.md` luôn gọn gàng **dưới 150 dòng (< 150 lines)**.
+**English** | [Tiếng Việt](./README-vi.md)
 
-Khi chạy lệnh, công cụ sẽ hỏi chi tiết về:
-- **Nhiệm vụ riêng (Mission)** của từng agent
-- **Provider & Model** (`inherit`, `google/pro/flash`, `anthropic/opus/sonnet/haiku`, `openai/gpt-5-codex/o3`)
-- **Ngữ cảnh (Context/Scope)** & **Mục tiêu/Tiêu chí hoàn thành (Completion Criteria)**
-- **Quyền công cụ** (`Read-Only` vs `Read+Write+Bash`, `Subagent Dispatch`, `Workspace Isolation`)
-- **Tự động quét & gắn Skills** từ kho skills sẵn có trên máy của bạn (`~/.gemini/config/plugins/*`, `superpowers`, `mattpocock-skills`, `ponytail`, `ui-ux-pro-max`, `taste-skill`, `native_swarm`...) vào từng repo.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://www.python.org/)
 
----
+`agt` is an interactive, zero-dependency CLI wizard that scaffolds a coordinated **Multi-Agent AI Team** (**Orchestrator**, **Reviewer**, **Implementer**, **Searcher**, **Committer**, or custom specialist roles) for any repository inside your `~/Projects` workspace.
 
-## 1. Các Repo Mã Nguồn Mở Liên Quan (Tham khảo)
-
-Nếu bạn muốn tham khảo thêm các bộ sưu tập mẫu từ cộng đồng:
-1. **[`wshobson/agents`](https://github.com/wshobson/agents)**: Kho sưu tập hơn 100+ subagents và skills đa nền tảng (Claude Code, Codex, Antigravity, Cursor).
-2. **[`obra/superpowers`](https://github.com/obra/superpowers)** *(Đã cài sẵn trên máy bạn tại `~/.gemini/config/plugins/superpowers`)*: Hệ thống workflow chuẩn (`brainstorming`, `writing-plans`, `subagent-driven-development`, `dispatching-parallel-agents`, `test-driven-development`).
-3. **[`mattpocock/skills`](https://github.com/mattpocock/skills)** *(Đã cài sẵn tại `~/.gemini/config/plugins/mattpocock-skills`)*: Bộ kỹ năng chuyên sâu cho `code-review` (song song 2 trục Spec & Standards), `tdd`, `codebase-design`, `writing-for-agents`.
-4. **[`VoltAgent/awesome-claude-code-subagents`](https://github.com/VoltAgent/awesome-claude-code-subagents)**: Danh sách các mẫu `.claude/agents/*.md` chia theo từng vai trò kỹ thuật.
-5. **[`intellectronica/ruler`](https://github.com/intellectronica/ruler)**: Công cụ đồng bộ file quy tắc ra `AGENTS.md`, `CLAUDE.md`.
-
-> **Điểm khác biệt của `agt`**: Thay vì chỉ chép các mẫu tĩnh, `agt` là **Interactive Wizard** đặt câu hỏi riêng cho từng dự án trong `~/Projects`, kết nối trực tiếp với kho **150+ Skills đang cài trên máy bạn**, giữ `AGENTS.md` luôn **< 150 lines**, và xuất đồng thời cả 3 chuẩn (`agy`, `codex`, `claude`) để bạn điều phối ngay trong công cụ đang mở.
+It generates unified, cross-compatible agent definitions and applies local **Skills** across all three major agentic coding harnesses:
+- **Google Antigravity (`agy`)**: `AGENTS.md`, `.agents/README.md`, `.agents/agents.json`, `.agents/agents/<role>/agent.md`, `.agents/skills.json`, `.agents/skills/`
+- **OpenAI Codex CLI (`codex`)**: `AGENTS.md`, `.codex/config.toml`, `.agents/agents/<role>/agent.toml`
+- **Anthropic Claude Code (`claude`)**: `CLAUDE.md`, `.claude/agents/<role>.md`
 
 ---
 
-## 2. Cách Sử Dụng Nhanh
+## ✨ Key Features
 
-Công cụ đã được liên kết vào `~/.local/bin/agt`. Bạn có thể gõ lệnh từ bất kỳ đâu:
+- **Interactive Multi-Agent Setup Wizard**: Asks step-by-step questions for your project context, primary goals, and each agent's mission, provider, model, reasoning effort, scope, completion criteria, and tool permissions (`Read-Only` vs `Read+Write+Bash`).
+- **Strict `< 150 Lines` `AGENTS.md` Budget**: Enforces a hard limit of under 150 lines on root `AGENTS.md` files (preserving existing repository sections while pushing detailed tables into `.agents/README.md`) to prevent context window bloat.
+- **Automatic Local Skill Discovery & Linking**: Scans your local skill libraries (`~/.gemini/config/plugins`, `~/Projects/Hephaestus/.agents/skills`, and built-in Antigravity skills) and applies selected skill bundles via `symlink`, `copy`, or `.agents/skills.json`.
+- **Bilingual CLI Interface (`Tiếng Việt` & `English`)**: Full Vietnamese interactive terminal UI by default (`--lang vi`), with seamless switching to English (`--lang en`).
 
-### A. Chạy Interactive Wizard ngay trong `~/Projects` hoặc trong một Repo
+---
+
+## 🚀 Quick Start
+
+### 1. Installation
+
+Clone the repository into `~/Projects/agent-team` and link the `agt` executable into `~/.local/bin`:
+
+```bash
+git clone git@github.com:rcryan-hniht/agent-team.git ~/Projects/agent-team
+chmod +x ~/Projects/agent-team/agent_team.py
+mkdir -p ~/.local/bin
+ln -sf ~/Projects/agent-team/agent_team.py ~/.local/bin/agt
+```
+
+### 2. Usage
+
+#### A. Launch the Interactive TUI / Wizard
+Run `agt` from `~/Projects` (to pick from a list of all your repositories) or directly inside any project folder:
+
 ```bash
 cd ~/Projects
 agt
 ```
-- Nếu bạn gõ tại `~/Projects`, CLI sẽ liệt kê toàn bộ các repo con (`Act2Morse`, `Hephaestus`, `Orpheus`, `uav-agri-autonomy`, v.v.) để bạn chọn repo muốn thiết lập.
-- Nếu bạn `cd ~/Projects/<tên-repo>` rồi gõ `agt`, CLI sẽ tự động nhận diện ngôn ngữ/framework của repo đó và hỏi từng bước thiết lập.
 
-### B. Tạo nhanh bằng Preset (Không cần hỏi đáp)
+Or jump straight into the setup wizard:
+
 ```bash
-agt init --target ~/Projects/Orpheus --yes \
-  --goal "Xây dựng và tối ưu hệ thống với đội ngũ 5 agents"
+agt init
 ```
 
-### C. Xem danh sách toàn bộ Skills trên máy & Trạng thái đội AI của một Repo
-```bash
-# Liệt kê tất cả skills đang có trên máy theo từng plugin
-agt list-skills
+Switch CLI language between Vietnamese (`vi`) and English (`en`):
 
-# Kiểm tra đội hình AI và skills đã gắn trong một repo
-agt status --target ~/Projects/Orpheus
+```bash
+agt --lang vi
+agt --lang en
+```
+
+#### B. One-Command Preset Initialization (Non-Interactive)
+Bootstrap the standard 5-agent team (`orchestrator`, `reviewer`, `implementer`, `committer`, `searcher`) with default models and skill bundles:
+
+```bash
+agt init --target ~/Projects/my-repo --yes \
+  --goal "Build and verify core features with a 5-agent team"
+```
+
+#### C. Inspect Applied Agents & Local Skills
+```bash
+# View the active agent roster, models, and skills in a repository
+agt status --target ~/Projects/my-repo
+
+# List all discovered local skills grouped by plugin/source
+agt list-skills
 ```
 
 ---
 
-## 3. Cấu Trúc File Được Sinh Ra Tự Động Cho Mỗi Project
+## 🏗️ Default Agent Roster & Model Mapping
+
+| Role | Workspace Path | Default Model (`agy`) | Default Model (`codex`) | Mode | Purpose |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`orchestrator`** | `.agents/agents/orchestrator/agent.md` | `gemini-4-argon-high` / `claude-opus-5-5-medium` | `gpt-6-astra` (`high`) | Read/Coord | Architecture, task breakdown, delegation, and final integration verification |
+| **`reviewer`** | `.agents/agents/reviewer/agent.md` | `gemini-3.1-pro-high` | `gpt-6.1-sol` (`xhigh`) | Read-Only | Independent code review along Spec Compliance, Security, Async Safety, and Test Quality |
+| **`implementer`** | `.agents/agents/implementer/agent.md` | `gemini-3.8-flash-high` | `gpt-6-sol` (`xhigh`) | Read+Write | Minimal complete implementation, TDD (Red-Green-Refactor), and test execution |
+| **`searcher`** | `.agents/agents/searcher/agent.md` | `gemini-3.8-flash-medium` | `gpt-6-luna` (`medium`) | Read-Only | Focused research against primary documentation and fast codebase scouting |
+| **`committer`** | `.agents/agents/committer/agent.md` | `gemini-3.7-flash` | `gpt-6-luna` (`low`) | Read-Only | Concise, atomic Conventional Commits creation |
+
+---
+
+## 📂 Generated Directory Structure
 
 ```text
 <project-root>/
-├── AGENTS.md                                  # Chuẩn chung (OpenAI Codex, Antigravity, Claude)
-├── GEMINI.md                                  # Entrypoint cho Google Antigravity (agy)
-├── CLAUDE.md                                  # Entrypoint cho Anthropic Claude Code
+├── AGENTS.md                                  # Compact (< 150 lines) universal instructions & context pointers
+├── CLAUDE.md                                  # Entrypoint for Anthropic Claude Code (points to @AGENTS.md)
 ├── .agents/
-│   ├── team-config.json                       # Lưu cấu hình để chỉnh sửa lại bất cứ lúc nào
-│   ├── skills.json                            # Đăng ký & lọc (include_only) các skills cho repo
+│   ├── README.md                              # Full role-to-model mapping table & applied skills catalog
+│   ├── agents.json                            # Subagent registry for Antigravity CLI (agy)
+│   ├── skills.json                            # Scoped skill discovery manifest (include_only)
+│   ├── team-config.json                       # Saved wizard state for fast re-configuration
 │   ├── rules/
-│   │   └── agent-team.md                      # Quy tắc phân quyền & điều phối đội ngũ
-│   ├── subagents/
-│   │   ├── orchestrator.json / .md            # Payload chuẩn cho define_subagent & invoke_subagent
-│   │   ├── searcher.json / .md
-│   │   ├── implementer.json / .md
-│   │   └── reviewer.json / .md
-│   └── skills/
-│       └── team-orchestrator/
-│           └── SKILL.md                       # Skill tự động khởi chạy đội hình trong agy/claude
+│   │   └── commit-restrictions.md             # Optional guardrail preventing accidental commits of local agent docs
+│   ├── agents/
+│   │   ├── orchestrator/
+│   │   │   ├── agent.md                       # Antigravity subagent definition (YAML frontmatter + prompt)
+│   │   │   └── agent.toml                     # OpenAI Codex subagent instructions & reasoning effort
+│   │   ├── reviewer/ (agent.md, agent.toml)
+│   │   ├── implementer/ (agent.md, agent.toml)
+│   │   ├── searcher/ (agent.md, agent.toml)
+│   │   └── committer/ (agent.md, agent.toml)
+│   └── skills/                                # Symlinked or copied workspace skills
 ├── .claude/
 │   └── agents/
-│       ├── orchestrator.md                    # Subagent YAML frontmatter chuẩn Claude Code
-│       ├── searcher.md
+│       ├── orchestrator.md                    # Claude Code subagent definition
+│       ├── reviewer.md
 │       ├── implementer.md
-│       └── reviewer.md
+│       ├── searcher.md
+│       └── committer.md
 └── .codex/
-    └── config.toml                            # Profiles (model, sandbox, approval) cho OpenAI Codex CLI
+    └── config.toml                            # OpenAI Codex CLI multi-agent configuration
 ```
+
+---
+
+## 🔗 Related Open-Source Projects
+
+- [`wshobson/agents`](https://github.com/wshobson/agents) — Multi-harness agent & plugin collection.
+- [`obra/superpowers`](https://github.com/obra/superpowers) — Agentic software development workflow skills (`brainstorming`, `writing-plans`, `subagent-driven-development`, `test-driven-development`).
+- [`mattpocock/skills`](https://github.com/mattpocock/skills) — Deep module design, TDD, two-axis `code-review`, and `writing-for-agents` skills.
+- [`VoltAgent/awesome-claude-code-subagents`](https://github.com/VoltAgent/awesome-claude-code-subagents) — Curated `.claude/agents/` role templates.
+- [`intellectronica/ruler`](https://github.com/intellectronica/ruler) — Cross-tool rules synchronization utility.
+
+---
+
+## 📄 License
+
+Released under the [MIT License](./LICENSE).
