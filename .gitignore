@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv*/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environment & Secrets
+.env
+.env.*
+*.log
+
+# OS & Editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local Generated Workspace Agent Configs
+.agents/
+.claude/
+.codex/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.superpowers/
+graphify-out/cache/
+prompt.md
