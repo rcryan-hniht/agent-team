@@ -72,8 +72,11 @@ agt init --target ~/project-example --yes \
   --goal "Build and verify core features with a 5-agent team"
 ```
 
-#### C. Inspect Applied Agents & Local Skills
+#### C. Inspect Applied Agents, Live Running Tasks & Local Skills
 ```bash
+# Check live running Agent CLI processes, active subagents, and task checklists
+agt ps --target ~/project-example
+
 # View the active agent roster, models, and skills in a repository
 agt status --target ~/project-example
 

@@ -62,13 +62,16 @@ agt init --target ~/project-example --yes \
   --goal "Xây dựng và tối ưu hệ thống với đội ngũ 5 agents"
 ```
 
-### C. Xem danh sách toàn bộ Skills trên máy & Trạng thái đội AI của một Repo
+### C. Giám sát Agents/Tasks đang chạy, Trạng thái đội AI & Danh sách Skills
 ```bash
-# Liệt kê tất cả skills đang có trên máy theo từng plugin
-agt list-skills
+# Kiểm tra tiến trình Agents, subagents và checklist task đang chạy
+agt ps --target ~/project-example --lang vi
 
 # Kiểm tra đội hình AI và skills đã gắn trong một repo
 agt status --target ~/project-example
+
+# Liệt kê tất cả skills đang có trên máy theo từng plugin
+agt list-skills
 
 # Chuyển đổi ngôn ngữ giao diện CLI (vi / en)
 agt --lang vi

@@ -1642,22 +1642,42 @@ def build_agents_readme_md(cfg: TeamConfig) -> str:
     )
 
 
-def build_agents_json(cfg: TeamConfig) -> List[Dict[str, str]]:
-    """Sinh file .agents/agents.json theo đúng chuẩn Orpheus / Act2Morse."""
-    return [
-        {
-            "name": ag.id,
-            "path": f"agents/{ag.id}/agent.md",
-        }
-        for ag in cfg.agents
-    ]
+def _to_agy_model_tier(agy_model: str) -> str:
+    """
+    Map a descriptive model string (e.g. 'gemini-4-argon-high') to a valid
+    Antigravity ModelTier enum ('pro', 'flash', 'flash_lite', 'inherit')
+    required by agy's AgentFrontmatter loader.
+    """
+    raw = (agy_model or "").strip().lower()
+    if raw in ("pro", "flash", "flash_lite", "inherit"):
+        return raw
+    if any(k in raw for k in ("argon", "pro", "opus", "ultra")):
+        return "pro"
+    if any(k in raw for k in ("lite", "3.7-flash", "haiku")):
+        return "flash_lite"
+    if any(k in raw for k in ("flash", "sonnet")):
+        return "flash"
+    return "inherit"
+
+
+def build_agents_json(cfg: TeamConfig) -> Dict[str, List[Dict[str, str]]]:
+    """Sinh file .agents/agents.json theo chuẩn customizations.JSONConfig của Antigravity."""
+    return {
+        "entries": [
+            {
+                "path": ".agents/agents",
+            }
+        ]
+    }
 
 
 def build_single_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
     """
     Sinh file `.agents/agents/<role>/agent.md` theo đúng chuẩn YAML frontmatter của Antigravity:
-    name, description, model, tools + Markdown instructions.
+    name, description, model (pro|flash|flash_lite|inherit), mainAgent, subagent, tools
+    + `# Agent System Instructions`.
     """
+    model_tier = _to_agy_model_tier(ag.agy_model)
     tools_yaml = "\n".join(f"  - {t}" for t in ag.agy_tools)
     graphify_line = (
         "\n- Follow AGENTS.md. If graphify-out/graph.json exists, run `graphify query` before source searches/reads."
@@ -1679,13 +1699,16 @@ def build_single_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
         f"---\n"
         f"name: {ag.id}\n"
         f"description: \"{ag.title}\"\n"
-        f"model: {ag.agy_model}\n"
+        f"model: {model_tier}\n"
+        f"mainAgent: true\n"
+        f"subagent: true\n"
         f"tools:\n"
         f"{tools_yaml}\n"
         f"---\n\n"
-        f"# {ag.id.replace('-', ' ').title()} Instructions\n\n"
+        f"# Agent System Instructions\n\n"
         f"Project: **{cfg.project_name}** ({cfg.tech_stack})\n"
         f"- **Role**: {ag.role}\n"
+        f"- **Preferred Model**: `{ag.agy_model}` (Tier: `{model_tier}`)\n"
         f"- **Mission**: {ag.mission}\n"
         f"- **Context & Scope**: {ag.context_scope}\n"
         f"- **Completion Criteria**: {ag.goal_criteria}"
@@ -2091,7 +2114,7 @@ def cmd_status(target_dir: Path) -> None:
         return
 
     if agents_json.exists():
-        items = json.loads(agents_json.read_text(encoding="utf-8"))
+        raw_agents = json.loads(agents_json.read_text(encoding="utf-8"))
         print(
             c(
                 tr(
@@ -2101,8 +2124,15 @@ def cmd_status(target_dir: Path) -> None:
                 BOLD + GREEN,
             )
         )
-        for item in items:
-            print(f"   • {BOLD}{item.get('name')}{RESET} -> `.agents/{item.get('path')}`")
+        if isinstance(raw_agents, list):
+            for item in raw_agents:
+                print(f"   • {BOLD}{item.get('name')}{RESET} -> `.agents/{item.get('path')}`")
+        else:
+            agents_dir = project_path / ".agents" / "agents"
+            if agents_dir.is_dir():
+                for child in sorted(agents_dir.iterdir()):
+                    if (child / "agent.md").exists():
+                        print(f"   • {BOLD}{child.name}{RESET} -> `.agents/agents/{child.name}/agent.md`")
         return
 
     print(
@@ -2115,6 +2145,278 @@ def cmd_status(target_dir: Path) -> None:
         )
     )
     print(tr("Run `agt` to initialize now.", "Hãy gõ `agt` để khởi tạo ngay."))
+
+
+def parse_yaml_frontmatter(md_path: Path) -> Dict[str, str]:
+    """Parse key-value pairs from a Markdown file's YAML frontmatter."""
+    result: Dict[str, str] = {}
+    try:
+        text = md_path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return result
+    if not text.startswith("---"):
+        return result
+    parts = text.split("---", 2)
+    if len(parts) < 3:
+        return result
+    for raw_line in parts[1].splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("-") or ":" not in line:
+            continue
+        k, v = line.split(":", 1)
+        result[k.strip()] = v.strip().strip('"').strip("'")
+    return result
+
+
+def cmd_ps(target_dir: Path) -> None:
+    """
+    Inspect live running Agent CLI processes (agy / codex / claude),
+    active Antigravity sessions/subagents/tasks, and workspace agent readiness.
+    """
+    project_path = target_dir.resolve()
+    print(
+        c(
+            tr(
+                f"\n🛰️  Live Agent & Task Monitor — {project_path.name} ({project_path})",
+                f"\n🛰️  Giám sát Agents & Tác vụ đang chạy — {project_path.name} ({project_path})",
+            ),
+            BOLD + GREEN,
+        )
+    )
+
+    # 1. Workspace Agent Readiness (.agents/agents/*/agent.md)
+    print(
+        c(
+            tr(
+                "\n  1. Workspace Agents Readiness (`agy` / `codex` / `claude`):",
+                "\n  1. Trạng thái sẵn sàng của Agents trong Project (`agy` / `codex` / `claude`):",
+            ),
+            BOLD + CYAN,
+        )
+    )
+    agents_dir = project_path / ".agents" / "agents"
+    valid_tiers = {"pro", "flash", "flash_lite", "inherit"}
+    if agents_dir.is_dir():
+        found_any = False
+        for role_dir in sorted(agents_dir.iterdir()):
+            md_path = role_dir / "agent.md"
+            toml_path = role_dir / "agent.toml"
+            if not md_path.exists():
+                continue
+            found_any = True
+            fm = parse_yaml_frontmatter(md_path)
+            model_val = fm.get("model", "inherit")
+            main_ag = fm.get("mainAgent", "")
+            sub_ag = fm.get("subagent", "")
+            is_valid = model_val in valid_tiers
+            status_badge = (
+                c(tr("✔ Ready in /agents", "✔ Sẵn sàng trong /agents"), GREEN)
+                if is_valid and main_ag == "true"
+                else (
+                    c(tr("✔ Valid subagent", "✔ Subagent hợp lệ"), GREEN)
+                    if is_valid
+                    else c(
+                        tr(
+                            f"✖ Invalid model '{model_val}' (run `agt init` to fix)",
+                            f"✖ Model '{model_val}' không hợp lệ (chạy `agt init` để sửa)",
+                        ),
+                        RED,
+                    )
+                )
+            )
+            codex_badge = c("codex ✔", CYAN) if toml_path.exists() else c("codex -", DIM)
+            print(
+                f"     • [{BOLD}{role_dir.name:<12}{RESET}] "
+                f"tier={c(model_val, YELLOW)} | main={main_ag or 'false'} | sub={sub_ag or 'false'} "
+                f"| {codex_badge} -> {status_badge}"
+            )
+        if not found_any:
+            print(
+                f"     {c(tr('No agent.md files found in .agents/agents/.', 'Chưa có file agent.md trong .agents/agents/.'), YELLOW)}"
+            )
+    else:
+        print(
+            f"     {c(tr('No .agents/agents/ directory found in this project.', 'Chưa có thư mục .agents/agents/ tại project này.'), YELLOW)}"
+        )
+
+    # 2. Running OS Processes for agy / codex / claude
+    print(
+        c(
+            tr(
+                "\n  2. Running Agent CLI Processes (`agy`, `codex`, `claude`):",
+                "\n  2. Tiến trình Agent CLI đang chạy (`agy`, `codex`, `claude`):",
+            ),
+            BOLD + CYAN,
+        )
+    )
+    proc_root = Path("/proc")
+    running_procs: List[Dict[str, str]] = []
+    now_ts = datetime.now().timestamp()
+    if proc_root.is_dir():
+        for entry in proc_root.iterdir():
+            if not entry.name.isdigit():
+                continue
+            try:
+                comm = (entry / "comm").read_text(encoding="utf-8", errors="ignore").strip()
+                if comm not in ("agy", "codex", "claude"):
+                    continue
+                cmdline_raw = (entry / "cmdline").read_bytes().replace(b"\x00", b" ").decode("utf-8", errors="ignore").strip()
+                cwd_link = os.readlink(str(entry / "cwd"))
+                stat_mtime = (entry / "stat").stat().st_mtime
+                elapsed_sec = max(0, int(now_ts - stat_mtime))
+                mins, secs = divmod(elapsed_sec, 60)
+                hrs, mins = divmod(mins, 60)
+                elapsed_str = f"{hrs:02d}:{mins:02d}:{secs:02d}" if hrs else f"{mins:02d}:{secs:02d}"
+                running_procs.append(
+                    {
+                        "pid": entry.name,
+                        "comm": comm,
+                        "cwd": cwd_link,
+                        "cmdline": cmdline_raw or comm,
+                        "elapsed": elapsed_str,
+                    }
+                )
+            except Exception:
+                continue
+
+    if running_procs:
+        for p in running_procs:
+            in_proj = Path(p["cwd"]).resolve() == project_path
+            proj_tag = (
+                c(tr(" [THIS PROJECT]", " [PROJECT NÀY]"), BOLD + GREEN)
+                if in_proj
+                else ""
+            )
+            print(
+                f"     • PID {BOLD}{p['pid']}{RESET} ({c(p['comm'], BOLD + MAGENTA)}) "
+                f"— {tr('up', 'chạy')} {p['elapsed']} — cwd: {c(p['cwd'], CYAN)}{proj_tag}"
+            )
+    else:
+        print(
+            f"     {c(tr('No active agy / codex / claude processes detected.', 'Không có tiến trình agy / codex / claude nào đang chạy.'), DIM)}"
+        )
+
+    # 3. Active Antigravity Sessions, Subagents & Checklist Tasks
+    print(
+        c(
+            tr(
+                "\n  3. Recent Antigravity Sessions, Subagents & Tasks:",
+                "\n  3. Phiên làm việc Antigravity, Subagents & Tasks gần nhất:",
+            ),
+            BOLD + CYAN,
+        )
+    )
+    brain_root = Path.home() / ".gemini" / "antigravity-cli" / "brain"
+    sessions_found = 0
+    if brain_root.is_dir():
+        candidates: List[Tuple[float, Path]] = []
+        for conv_dir in brain_root.iterdir():
+            if not conv_dir.is_dir():
+                continue
+            tr_path = conv_dir / ".system_generated" / "logs" / "transcript.jsonl"
+            if tr_path.exists():
+                try:
+                    candidates.append((tr_path.stat().st_mtime, conv_dir))
+                except Exception:
+                    pass
+        candidates.sort(key=lambda x: x[0], reverse=True)
+
+        for mtime, conv_dir in candidates[:3]:
+            sessions_found += 1
+            tr_path = conv_dir / ".system_generated" / "logs" / "transcript.jsonl"
+            age_sec = max(0, int(now_ts - mtime))
+            if age_sec < 120:
+                state_str = c(tr("● ACTIVE NOW", "● ĐANG HOẠT ĐỘNG"), BOLD + GREEN)
+            elif age_sec < 3600:
+                state_str = c(tr(f"◐ Idle ({age_sec // 60}m ago)", f"◐ Nghỉ ({age_sec // 60} phút trước)"), YELLOW)
+            else:
+                state_str = c(tr(f"○ Inactive ({age_sec // 3600}h ago)", f"○ Cũ ({age_sec // 3600} giờ trước)"), DIM)
+
+            last_tool = "-"
+            subagents_invoked: List[Dict[str, str]] = []
+            try:
+                lines = tr_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+                for ln in lines[-80:]:
+                    try:
+                        obj = json.loads(ln)
+                    except Exception:
+                        continue
+                    for tc in obj.get("tool_calls", []) or []:
+                        tname = tc.get("name", "")
+                        if tname:
+                            last_tool = tname
+                        if tname == "invoke_subagent":
+                            args_obj = tc.get("arguments") or tc.get("args") or {}
+                            if isinstance(args_obj, str):
+                                try:
+                                    args_obj = json.loads(args_obj)
+                                except Exception:
+                                    args_obj = {}
+                            if isinstance(args_obj, dict):
+                                subagents_invoked.append(
+                                    {
+                                        "type": str(args_obj.get("TypeName", "subagent")),
+                                        "role": str(args_obj.get("Role", "")),
+                                        "prompt": str(args_obj.get("Prompt", ""))[:70].replace("\n", " "),
+                                    }
+                                )
+            except Exception:
+                lines = []
+
+            print(
+                f"     • {BOLD}Session {conv_dir.name[:8]}…{RESET} [{state_str}] "
+                f"— {tr('steps', 'bước')}: {len(lines)} | {tr('last tool', 'tool gần nhất')}: {c(last_tool, CYAN)}"
+            )
+            if subagents_invoked:
+                for sa in subagents_invoked[-4:]:
+                    print(
+                        f"       ↳ 🤖 {c(sa['type'], BOLD + MAGENTA)} ({sa['role']}): \"{sa['prompt']}…\""
+                    )
+            else:
+                print(
+                    f"       ↳ {c(tr('Main agent handling tasks directly (no subagents spawned in recent steps).', 'Main agent đang xử lý trực tiếp (chưa gọi subagent ở các bước gần đây).'), DIM)}"
+                )
+
+            task_md = conv_dir / "task.md"
+            if task_md.exists():
+                try:
+                    t_lines = task_md.read_text(encoding="utf-8", errors="ignore").splitlines()
+                    in_prog = [l.strip() for l in t_lines if "[/]" in l]
+                    pending = [l.strip() for l in t_lines if "[ ]" in l]
+                    done = [l.strip() for l in t_lines if "[x]" in l or "[X]" in l]
+                    print(
+                        f"       ↳ 📋 {tr('Checklist', 'Tiến độ task.md')}: "
+                        f"{c(str(len(in_prog)) + tr(' running', ' đang chạy'), YELLOW)} | "
+                        f"{c(str(len(pending)) + tr(' pending', ' chờ'), CYAN)} | "
+                        f"{c(str(len(done)) + tr(' done', ' xong'), GREEN)}"
+                    )
+                    for ip in in_prog[:3]:
+                        print(f"          ⚡ {c(ip, BOLD + YELLOW)}")
+                except Exception:
+                    pass
+
+    if sessions_found == 0:
+        print(
+            f"     {c(tr('No Antigravity session transcripts found.', 'Không tìm thấy lịch sử phiên Antigravity nào.'), DIM)}"
+        )
+
+    print(
+        c(
+            tr(
+                "\n  💡 Tips inside your coding tool:",
+                "\n  💡 Mẹo kiểm tra trực tiếp bên trong công cụ:",
+            ),
+            BOLD + YELLOW,
+        )
+    )
+    print(
+        tr(
+            f"     • Inside {BOLD}agy{RESET}  : Type {c('/agents', GREEN)} to switch/view workspace agents (or press {c('k', YELLOW)} to kill a running subagent), and {c('/tasks', GREEN)} for background tasks.\n"
+            f"     • Inside {BOLD}shell{RESET}: Run {c('agt ps', GREEN)} (or {c('agt tasks', GREEN)}) anytime to inspect live processes, subagents, and checklists.",
+            f"     • Trong {BOLD}agy{RESET}     : Gõ {c('/agents', GREEN)} để xem/chuyển đổi agents (nhấn {c('k', YELLOW)} để dừng subagent đang chạy), và {c('/tasks', GREEN)} để xem tác vụ nền.\n"
+            f"     • Ngoài {BOLD}terminal{RESET}: Gõ {c('agt ps', GREEN)} (hoặc {c('agt tasks', GREEN)}) bất cứ lúc nào để kiểm tra tiến trình, subagents và checklist.",
+        )
+    )
 
 
 def print_summary(cfg: TeamConfig, created_files: List[str], dry_run: bool = False) -> None:
@@ -2160,6 +2462,7 @@ def print_cli_help(lang: str = "en") -> None:
             f"{c('COMMANDS:', BOLD + YELLOW)}\n"
             f"  {c('(no command)', BOLD + CYAN)}  Open the interactive CLI dashboard menu (or run wizard)\n"
             f"  {c('init', BOLD + CYAN)}          Run the Multi-Agent & Skills setup wizard for a Project/Repo\n"
+            f"  {c('ps / tasks', BOLD + CYAN)}    Check live running Agent processes, subagents, and tasks\n"
             f"  {c('status', BOLD + CYAN)}        Inspect active Agent roster, models, and skills in a Project\n"
             f"  {c('list-skills', BOLD + CYAN)}   List all discovered local Skills\n\n"
             f"{c('OPTIONS:', BOLD + YELLOW)}\n"
@@ -2174,7 +2477,7 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('-h, --help', CYAN)}              Show this help message\n\n"
             f"{c('EXAMPLES:', BOLD + YELLOW)}\n"
             f"  • Launch interactive setup in a project      : {c('cd ~/project-example && agt', GREEN)}\n"
-            f"  • Launch in Vietnamese mode                  : {c('agt --lang vi', GREEN)}\n"
+            f"  • Check running agents & active tasks        : {c('agt ps -t ~/project-example', GREEN)}\n"
             f"  • Quick preset init for a repository         : {c('agt init -t ~/project-example -y', GREEN)}\n"
             f"  • Inspect AI team status                     : {c('agt status -t ~/project-example', GREEN)}\n"
         )
@@ -2185,6 +2488,7 @@ def print_cli_help(lang: str = "en") -> None:
             f"{c('CÁC LỆNH CHÍNH:', BOLD + YELLOW)}\n"
             f"  {c('(không truyền lệnh)', BOLD + CYAN)} Mở Bảng điều khiển tương tác (TUI Menu / Wizard)\n"
             f"  {c('init', BOLD + CYAN)}                Chạy Wizard thiết lập đội ngũ AI & Skills cho Project/Repo\n"
+            f"  {c('ps / tasks', BOLD + CYAN)}          Kiểm tra Agents nào đang chạy task nào (tiến trình, subagents, checklist)\n"
             f"  {c('status', BOLD + CYAN)}              Xem trạng thái đội ngũ Agents, Models & Skills của Project\n"
             f"  {c('list-skills', BOLD + CYAN)}         Liệt kê toàn bộ 150+ Skills đang có trên máy\n\n"
             f"{c('TÙY CHỌN (OPTIONS):', BOLD + YELLOW)}\n"
@@ -2199,7 +2503,7 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('-h, --help', CYAN)}              Hiển thị bảng hướng dẫn này\n\n"
             f"{c('VÍ DỤ:', BOLD + YELLOW)}\n"
             f"  • Thiết lập đội AI cho một project       : {c('cd ~/project-example && agt', GREEN)}\n"
-            f"  • Mở giao diện Tiếng Việt                : {c('cd ~/project-example && agt --lang vi', GREEN)}\n"
+            f"  • Kiểm tra agents & tasks đang chạy      : {c('agt ps -t ~/project-example --lang vi', GREEN)}\n"
             f"  • Tạo nhanh đội AI bằng Preset           : {c('agt init -t ~/project-example -y', GREEN)}\n"
             f"  • Kiểm tra trạng thái đội AI             : {c('agt status -t ~/project-example', GREEN)}\n"
         )
@@ -2217,6 +2521,7 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             menu_opts = [
                 ("wizard", "Thiết lập đội ngũ AI & Skills theo từng bước (Interactive Wizard)"),
                 ("preset", "Khởi tạo nhanh đội hình 5 Agents chuẩn cho 1 Project (Quick Preset)"),
+                ("ps", "Kiểm tra Agents nào đang chạy task nào (Live Agent & Task Monitor)"),
                 ("status", "Xem trạng thái đội ngũ AI & Skills của Project"),
                 ("list-skills", "Tra cứu danh sách 150+ Skills đang có trên máy"),
                 ("lang", "Switch CLI language to English (Chuyển sang Tiếng Anh)"),
@@ -2228,6 +2533,7 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             menu_opts = [
                 ("wizard", "Configure Multi-Agent Team & Skills step-by-step (Interactive Wizard)"),
                 ("preset", "Quick-initialize standard 5-Agent Team (Quick Preset)"),
+                ("ps", "Check live running Agents, subagents & active tasks (`agt ps`)"),
                 ("status", "Inspect active Agent Team & Skills status for a Project"),
                 ("list-skills", "Browse all 150+ discovered local Skills"),
                 ("lang", "Chuyển ngôn ngữ giao diện sang Tiếng Việt (Switch to Vietnamese)"),
@@ -2244,6 +2550,10 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             continue
         if action == "list-skills":
             cmd_list_skills()
+            return
+        if action == "ps":
+            proj = select_project_directory(target_path, projects_root)
+            cmd_ps(proj)
             return
         if action == "status":
             proj = select_project_directory(target_path, projects_root)
@@ -2337,6 +2647,14 @@ def main() -> None:
     p_status.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_status.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
 
+    p_ps = subparsers.add_parser("ps", add_help=False, help="Check live running Agent processes, subagents, and tasks")
+    p_ps.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
+    p_ps.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
+
+    p_tasks = subparsers.add_parser("tasks", add_help=False, help="Alias for `ps` — check live running Agents and tasks")
+    p_tasks.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
+    p_tasks.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
+
     p_menu = subparsers.add_parser("menu", add_help=False, help="Open interactive dashboard menu")
     p_menu.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_menu.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
@@ -2351,6 +2669,10 @@ def main() -> None:
 
     if args.command == "status":
         cmd_status(Path(args.target))
+        return
+
+    if args.command in ("ps", "tasks"):
+        cmd_ps(Path(args.target))
         return
 
     target_path = Path(getattr(args, "target", "."))
