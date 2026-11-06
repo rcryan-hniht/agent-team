@@ -28,6 +28,7 @@ Thumbs.db
 .agents/
 .claude/
 .codex/
+.omc/
 AGENTS.md
 CLAUDE.md
 GEMINI.md

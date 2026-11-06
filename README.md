@@ -112,11 +112,13 @@ agt fallback --target ~/project-example --role reviewer \
 
 | Role | Workspace Path | Default Model (`agy`) | Default Model (`codex`) | Mode | Purpose |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`orchestrator`** | `.agents/agents/orchestrator/agent.md` | `gemini-4-argon-high` / `claude-opus-5-5-medium` | `gpt-6-astra` (`high`) | Read/Coord | Architecture, task breakdown, delegation, and final integration verification |
-| **`reviewer`** | `.agents/agents/reviewer/agent.md` | `gemini-3.1-pro-high` | `gpt-6.1-sol` (`xhigh`) | Read-Only | Independent code review along Spec Compliance, Security, Async Safety, and Test Quality |
-| **`implementer`** | `.agents/agents/implementer/agent.md` | `gemini-3.8-flash-high` | `gpt-6-sol` (`xhigh`) | Read+Write | Minimal complete implementation, TDD (Red-Green-Refactor), and test execution |
-| **`searcher`** | `.agents/agents/searcher/agent.md` | `gemini-3.8-flash-medium` | `gpt-6-luna` (`medium`) | Read-Only | Focused research against primary documentation and fast codebase scouting |
-| **`committer`** | `.agents/agents/committer/agent.md` | `gemini-3.7-flash` | `gpt-6-luna` (`low`) | Read-Only | Concise, atomic Conventional Commits creation |
+| **`lead-architect`** | `.agents/agents/lead-architect/agent.md` | `gemini-4-argon-high` / `claude-opus-5-5-medium` | `gpt-6-astra` (`high`) | Read-Only | Phase 1: Solution architecture, technical specifications, and task breakdown |
+| **`lead-critic`** | `.agents/agents/lead-critic/agent.md` | `gemini-3.1-pro-high` / `claude-opus-5-5-medium` | `gpt-6.1-sol` (`xhigh`) | Read-Only | Phase 1: 2-round technical stress-testing, challenge assumptions, and YAGNI verification |
+| **`orchestrator`** | `.agents/agents/orchestrator/agent.md` | `gemini-4-argon-high` / `claude-opus-5-5-medium` | `gpt-6-astra` (`high`) | Read/Coord | Phase 2: Overall execution orchestration, task delegation, and integration verification |
+| **`reviewer`** | `.agents/agents/reviewer/agent.md` | `gemini-3.1-pro-high` | `gpt-6.1-sol` (`xhigh`) | Read-Only | Phase 2: Independent code review along Spec Compliance, Security, and Test Quality |
+| **`implementer`** | `.agents/agents/implementer/agent.md` | `gemini-3.8-flash-high` | `gpt-6-sol` (`xhigh`) | Read+Write | Phase 2: Minimal complete implementation, TDD (Red-Green-Refactor), and test execution |
+| **`searcher`** | `.agents/agents/searcher/agent.md` | `gemini-3.8-flash-medium` | `gpt-6-luna` (`medium`) | Read-Only | Phase 2: Focused research against primary documentation and fast codebase scouting |
+| **`committer`** | `.agents/agents/committer/agent.md` | `gemini-3.7-flash` | `gpt-6-luna` (`low`) | Read-Only | Phase 2: Concise, atomic Conventional Commits creation |
 
 ---
 
@@ -134,17 +136,27 @@ agt fallback --target ~/project-example --role reviewer \
 │   ├── rules/
 │   │   └── commit-restrictions.md             # Optional guardrail preventing accidental commits of local agent docs
 │   ├── agents/
-│   │   ├── orchestrator/
-│   │   │   ├── agent.md                       # Antigravity subagent definition (YAML frontmatter + prompt)
-│   │   │   └── agent.toml                     # OpenAI Codex subagent instructions & reasoning effort
+│   │   ├── lead-architect/ (agent.md, agent.toml) # Phase 1: Strategic architecture & RFC proposal
+│   │   ├── lead-critic/ (agent.md, agent.toml)    # Phase 1: 2-round debate & stress-test
+│   │   ├── orchestrator/ (agent.md, agent.toml)   # Phase 2: Execution orchestrator
 │   │   ├── reviewer/ (agent.md, agent.toml)
 │   │   ├── implementer/ (agent.md, agent.toml)
 │   │   ├── searcher/ (agent.md, agent.toml)
 │   │   └── committer/ (agent.md, agent.toml)
+│   ├── subagents/                             # Payload for Antigravity define_subagent / invoke_subagent
+│   │   ├── lead-architect.json (.md)
+│   │   ├── lead-critic.json (.md)
+│   │   ├── orchestrator.json (.md)
+│   │   ├── reviewer.json (.md)
+│   │   ├── implementer.json (.md)
+│   │   ├── searcher.json (.md)
+│   │   └── committer.json (.md)
 │   └── skills/                                # Symlinked or copied workspace skills
 ├── .claude/
 │   └── agents/
-│       ├── orchestrator.md                    # Claude Code subagent definition
+│       ├── lead-architect.md                  # Claude Code subagent definition
+│       ├── lead-critic.md
+│       ├── orchestrator.md
 │       ├── reviewer.md
 │       ├── implementer.md
 │       ├── searcher.md

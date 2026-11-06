@@ -116,15 +116,27 @@ agt fallback --target ~/project-example --role reviewer \
 │   ├── rules/
 │   │   └── commit-restrictions.md             # (Tùy chọn) Chặn commit nhầm AGENTS.md / SKILL.md
 │   ├── agents/
-│   │   ├── orchestrator/ (agent.md, agent.toml)
-│   │   ├── reviewer/ (agent.md, agent.toml)
-│   │   ├── implementer/ (agent.md, agent.toml)
-│   │   ├── searcher/ (agent.md, agent.toml)
-│   │   └── committer/ (agent.md, agent.toml)
+│   │   ├── lead-architect/ (agent.md, agent.toml) # Pha 1: Kiến trúc sư trưởng & Đề xuất giải pháp
+│   │   ├── lead-critic/ (agent.md, agent.toml)    # Pha 1: Phản biện trưởng & Stress-test 2 vòng
+│   │   ├── orchestrator/ (agent.md, agent.toml)   # Pha 2: Tổng điều phối thực thi
+│   │   ├── reviewer/ (agent.md, agent.toml)       # Pha 2: Kiểm định độc lập chất lượng & bảo mật
+│   │   ├── implementer/ (agent.md, agent.toml)    # Pha 2: Kỹ sư TDD thực thi
+│   │   ├── searcher/ (agent.md, agent.toml)       # Pha 2: Trinh sát mã nguồn & tra cứu tài liệu
+│   │   └── committer/ (agent.md, agent.toml)      # Pha 2: Đóng gói Conventional Commits
+│   ├── subagents/                             # Payload define_subagent / invoke_subagent Antigravity
+│   │   ├── lead-architect.json (.md)
+│   │   ├── lead-critic.json (.md)
+│   │   ├── orchestrator.json (.md)
+│   │   ├── reviewer.json (.md)
+│   │   ├── implementer.json (.md)
+│   │   ├── searcher.json (.md)
+│   │   └── committer.json (.md)
 │   └── skills/                                # Các skills được symlink hoặc copy vào dự án
 ├── .claude/
 │   └── agents/
-│       ├── orchestrator.md                    # Subagent YAML frontmatter chuẩn Claude Code
+│       ├── lead-architect.md                  # Subagent YAML frontmatter chuẩn Claude Code
+│       ├── lead-critic.md
+│       ├── orchestrator.md
 │       ├── reviewer.md
 │       ├── implementer.md
 │       ├── searcher.md

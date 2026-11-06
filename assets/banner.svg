@@ -1,253 +1,310 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 488" width="100%" height="100%">
   <defs>
-    <!-- Background Gradients -->
-    <linearGradient id="bgCanvas" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#06080D"/>
-      <stop offset="50%" stop-color="#0A0E17"/>
-      <stop offset="100%" stop-color="#070A10"/>
+    <!-- Oasis Starlight Light Background Gradients -->
+    <linearGradient id="oaBgCanvas" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f7f4ed"/>
+      <stop offset="50%" stop-color="#f5f2ea"/>
+      <stop offset="100%" stop-color="#eee8da"/>
     </linearGradient>
 
-    <linearGradient id="neonCyan" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#00F0FF"/>
-      <stop offset="100%" stop-color="#10B981"/>
+    <!-- Oasis Starlight Accents & Gradients -->
+    <linearGradient id="oaSapphire" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#023c75"/>
+      <stop offset="50%" stop-color="#186aa2"/>
+      <stop offset="100%" stop-color="#366e5e"/>
     </linearGradient>
 
-    <linearGradient id="purplePink" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#A855F7"/>
-      <stop offset="100%" stop-color="#EC4899"/>
+    <linearGradient id="oaCarmine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9b0303"/>
+      <stop offset="50%" stop-color="#bb141a"/>
+      <stop offset="100%" stop-color="#a55512"/>
     </linearGradient>
 
-    <linearGradient id="amberGold" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#F59E0B"/>
-      <stop offset="100%" stop-color="#EF4444"/>
+    <linearGradient id="oaOchre" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#685f10"/>
+      <stop offset="100%" stop-color="#a55512"/>
     </linearGradient>
 
-    <linearGradient id="cardBg" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#131A26" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#0B1019" stop-opacity="0.95"/>
+    <!-- Card Backgrounds -->
+    <linearGradient id="oaCardBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fcfbfa" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="#f6f3eb" stop-opacity="0.98"/>
     </linearGradient>
 
-    <linearGradient id="cardOrchBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#132332" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#0C141E" stop-opacity="0.95"/>
+    <linearGradient id="oaCardCriticBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fdf7f7" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="#f9efef" stop-opacity="0.98"/>
     </linearGradient>
 
-    <!-- Technical Grid & Patterns -->
-    <pattern id="dotGrid" width="24" height="24" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1" fill="#1E293B" fill-opacity="0.6"/>
+    <linearGradient id="oaCardOrchBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f3f8fc" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="#edf4f9" stop-opacity="0.98"/>
+    </linearGradient>
+
+    <!-- Technical Warm Desert Dot & Crosshair Patterns -->
+    <pattern id="oaDotGrid" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="0.85" fill="#cfc7b4" fill-opacity="0.6"/>
     </pattern>
 
-    <pattern id="crosshairGrid" width="120" height="120" patternUnits="userSpaceOnUse">
-      <path d="M 116 120 L 124 120 M 120 116 L 120 124" stroke="#253246" stroke-width="0.8"/>
+    <pattern id="oaCrosshairGrid" width="110" height="110" patternUnits="userSpaceOnUse">
+      <path d="M 106 110 L 114 110 M 110 106 L 110 114" stroke="#d5ccba" stroke-width="0.8"/>
     </pattern>
 
-    <!-- Glow Filters -->
-    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <!-- Subtle Warm Drop Shadow Filter -->
+    <filter id="oaSoftShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#4d4528" flood-opacity="0.06"/>
     </filter>
   </defs>
 
   <!-- 1. Background Layers -->
-  <rect width="1200" height="440" rx="12" fill="url(#bgCanvas)"/>
-  <rect width="1200" height="440" rx="12" fill="url(#dotGrid)"/>
-  <rect width="1200" height="440" rx="12" fill="url(#crosshairGrid)"/>
+  <rect width="1200" height="488" rx="8" fill="url(#oaBgCanvas)"/>
+  <rect width="1200" height="488" rx="8" fill="url(#oaDotGrid)"/>
+  <rect width="1200" height="488" rx="8" fill="url(#oaCrosshairGrid)"/>
 
-  <!-- Ambient Light Orbs -->
-  <circle cx="200" cy="120" r="180" fill="#00F0FF" fill-opacity="0.045"/>
-  <circle cx="980" cy="220" r="210" fill="#10B981" fill-opacity="0.04"/>
-  <circle cx="600" cy="400" r="160" fill="#A855F7" fill-opacity="0.03"/>
+  <!-- Ambient Light Orbs (Oasis Starlight Warm/Cool Harmony) -->
+  <circle cx="160" cy="110" r="160" fill="#023c75" fill-opacity="0.035"/>
+  <circle cx="1060" cy="120" r="170" fill="#9b0303" fill-opacity="0.025"/>
+  <circle cx="890" cy="320" r="180" fill="#685f10" fill-opacity="0.03"/>
 
-  <!-- Industrial Outer Border -->
-  <rect x="14" y="14" width="1172" height="412" rx="8" fill="none" stroke="#1E293B" stroke-width="1.2"/>
-  <rect x="14" y="14" width="1172" height="3" rx="1.5" fill="url(#neonCyan)"/>
+  <!-- Industrial Outer Border & Starlight Accent Line -->
+  <rect x="14" y="14" width="1172" height="460" rx="6" fill="none" stroke="#c8c0ad" stroke-width="1.2"/>
+  <rect x="14" y="14" width="1172" height="3" rx="1.5" fill="url(#oaSapphire)"/>
 
-  <!-- High-Precision Corner Markers -->
-  <path d="M 14 36 L 14 14 L 36 14" fill="none" stroke="#00F0FF" stroke-width="2.5"/>
-  <path d="M 1164 14 L 1186 14 L 1186 36" fill="none" stroke="#10B981" stroke-width="2.5"/>
-  <path d="M 14 404 L 14 426 L 36 426" fill="none" stroke="#00F0FF" stroke-width="2.5"/>
-  <path d="M 1164 426 L 1186 426 L 1186 404" fill="none" stroke="#10B981" stroke-width="2.5"/>
+  <!-- Precision Corner Markers -->
+  <path d="M 14 36 L 14 14 L 36 14" fill="none" stroke="#023c75" stroke-width="2.2"/>
+  <path d="M 1164 14 L 1186 14 L 1186 36" fill="none" stroke="#685f10" stroke-width="2.2"/>
+  <path d="M 14 452 L 14 474 L 36 474" fill="none" stroke="#023c75" stroke-width="2.2"/>
+  <path d="M 1164 474 L 1186 474 L 1186 452" fill="none" stroke="#9b0303" stroke-width="2.2"/>
 
-  <!-- 2. Header Telemetry HUD -->
-  <g font-family="ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace" font-size="11">
+  <!-- 2. Header Telemetry HUD Bar -->
+  <g font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace" font-size="11">
     <!-- CLI Badge -->
-    <rect x="36" y="30" width="126" height="26" rx="4" fill="#0A1624" stroke="#00F0FF" stroke-width="1" stroke-opacity="0.7"/>
-    <circle cx="48" cy="43" r="3.5" fill="#00F0FF" filter="url(#cyanGlow)"/>
-    <text x="60" y="47" fill="#00F0FF" font-weight="800" letter-spacing="1">AGT // CLI v3.0</text>
+    <rect x="36" y="28" width="126" height="24" rx="3" fill="#eaf2f8" stroke="#3d648c" stroke-width="1"/>
+    <circle cx="48" cy="40" r="3" fill="#023c75"/>
+    <text x="58" y="44" fill="#023c75" font-weight="800" letter-spacing="0.8">AGT // CLI v3.0</text>
 
-    <!-- Cross-Provider Badge -->
-    <rect x="172" y="30" width="206" height="26" rx="4" fill="#0F1722" stroke="#2B394E" stroke-width="1"/>
-    <text x="184" y="47" fill="#94A3B8" font-weight="600" letter-spacing="0.8">.AGENTS • .CODEX • .CLAUDE</text>
+    <!-- Palette Badge -->
+    <rect x="170" y="28" width="220" height="24" rx="3" fill="#f4efe2" stroke="#c5bc9f" stroke-width="1"/>
+    <circle cx="182" cy="40" r="3" fill="#685f10"/>
+    <text x="192" y="44" fill="#685f10" font-weight="700" letter-spacing="0.6">OASIS STARLIGHT LIGHT</text>
 
-    <!-- Fallback Engine Badge -->
-    <rect x="388" y="30" width="166" height="26" rx="4" fill="#131926" stroke="#38BDF8" stroke-width="1" stroke-opacity="0.6"/>
-    <circle cx="400" cy="43" r="3.5" fill="#38BDF8"/>
-    <text x="412" y="47" fill="#38BDF8" font-weight="700" letter-spacing="0.5">FALLBACK ENGINE</text>
+    <!-- Cross-Harness Badge -->
+    <rect x="398" y="28" width="196" height="24" rx="3" fill="#eee8da" stroke="#c5bc9f" stroke-width="1"/>
+    <text x="408" y="44" fill="#4f4a23" font-weight="600" letter-spacing="0.5">.AGENTS • .CODEX • .CLAUDE</text>
 
-    <!-- Process Monitor Badge -->
-    <rect x="564" y="30" width="138" height="26" rx="4" fill="#171A21" stroke="#F59E0B" stroke-width="1" stroke-opacity="0.6"/>
-    <circle cx="576" cy="43" r="3.5" fill="#F59E0B"/>
-    <text x="588" y="47" fill="#F59E0B" font-weight="700" letter-spacing="0.5">LIVE PS MONITOR</text>
+    <!-- Topology Badge -->
+    <rect x="602" y="28" width="224" height="24" rx="3" fill="#faeeee" stroke="#d59090" stroke-width="1"/>
+    <circle cx="614" cy="40" r="3" fill="#9b0303"/>
+    <text x="624" y="44" fill="#9b0303" font-weight="700" letter-spacing="0.5">2-PHASE LEAD DEBATE &amp; TDD</text>
 
     <!-- Workspace Target -->
-    <text x="1158" y="47" fill="#64748B" text-anchor="end" font-weight="500" letter-spacing="1">WORKSPACE // ~/PROJECTS</text>
+    <text x="1158" y="44" fill="#68707a" text-anchor="end" font-weight="600" letter-spacing="1">WORKSPACE // ~/PROJECTS</text>
   </g>
 
-  <!-- 3. LEFT COLUMN: Hero Branding & Capability Suite -->
-  <g transform="translate(36, 84)">
+  <!-- 3. LEFT COLUMN: Hero Branding & Capability Engine -->
+  <g transform="translate(36, 76)">
     <!-- Monogram Box -->
-    <rect x="0" y="4" width="86" height="86" rx="8" fill="#08101C" stroke="#00F0FF" stroke-width="1.8"/>
-    <rect x="6" y="10" width="74" height="74" rx="4" fill="none" stroke="#1E2A3A" stroke-width="1"/>
-    <text x="43" y="60" text-anchor="middle" fill="#FFFFFF" font-family="ui-monospace, 'JetBrains Mono', Menlo, monospace" font-size="34" font-weight="900" letter-spacing="-1">agt</text>
-    <rect x="22" y="70" width="42" height="3" rx="1.5" fill="url(#neonCyan)"/>
+    <rect x="0" y="4" width="86" height="86" rx="6" fill="#fcfbfa" stroke="#3d648c" stroke-width="1.8" filter="url(#oaSoftShadow)"/>
+    <rect x="6" y="10" width="74" height="74" rx="3" fill="none" stroke="#d5ccba" stroke-width="1"/>
+    <text x="43" y="60" text-anchor="middle" fill="#023c75" font-family="ui-monospace, 'JetBrains Mono', Menlo, monospace" font-size="34" font-weight="900" letter-spacing="-1">agt</text>
+    <rect x="22" y="70" width="42" height="2.5" rx="1.2" fill="url(#oaSapphire)"/>
 
     <!-- Title & Tagline -->
-    <text x="104" y="42" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="40" font-weight="900" letter-spacing="-0.8">AGENT-TEAM</text>
-    <rect x="382" y="18" width="68" height="24" rx="4" fill="#0F2432" stroke="#00F0FF" stroke-width="1"/>
-    <text x="416" y="34" text-anchor="middle" fill="#00F0FF" font-family="ui-monospace, monospace" font-size="11.5" font-weight="800" letter-spacing="1">CORE</text>
+    <text x="104" y="40" fill="#181811" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="38" font-weight="900" letter-spacing="-0.8">AGENT-TEAM</text>
+    <rect x="378" y="16" width="62" height="22" rx="3" fill="#eaf2f8" stroke="#3d648c" stroke-width="1"/>
+    <text x="409" y="31" text-anchor="middle" fill="#023c75" font-family="ui-monospace, monospace" font-size="11" font-weight="800" letter-spacing="1">v3.0</text>
 
-    <text x="104" y="72" fill="#94A3B8" font-family="ui-monospace, 'JetBrains Mono', Menlo, monospace" font-size="13.5" font-weight="600" letter-spacing="0.6">MULTI-AGENT ORCHESTRATION &amp; SKILLS GENERATOR</text>
+    <text x="104" y="70" fill="#2a649f" font-family="ui-monospace, 'JetBrains Mono', Menlo, monospace" font-size="13" font-weight="700" letter-spacing="0.8">MULTI-AGENT ORCHESTRATION &amp; SKILLS GENERATOR</text>
 
-    <!-- Sleek Neon Divider -->
-    <line x1="0" y1="110" x2="570" y2="110" stroke="#1E293B" stroke-width="1.2"/>
-    <rect x="0" y="109" width="96" height="3" rx="1.5" fill="url(#neonCyan)"/>
+    <!-- Sleek Metallic Divider -->
+    <line x1="0" y1="106" x2="520" y2="106" stroke="#d5ccba" stroke-width="1.2"/>
+    <rect x="0" y="105" width="88" height="2.5" rx="1" fill="url(#oaSapphire)"/>
 
-    <!-- Value Proposition Lines -->
-    <text x="0" y="142" fill="#CBD5E1" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="15" font-weight="400">
+    <!-- Value Proposition -->
+    <text x="0" y="136" fill="#353b45" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="14.5" font-weight="400">
       Zero-dependency CLI wizard configuring bounded, role-isolated AI teams with
     </text>
-    <text x="0" y="166" fill="#CBD5E1" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="15" font-weight="400">
-      cross-provider fallbacks, live process tracking, and <tspan fill="#00F0FF" font-family="ui-monospace, monospace" font-weight="700">AGENTS.md &lt; 150 lines</tspan>.
+    <text x="0" y="159" fill="#353b45" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="14.5" font-weight="400">
+      cross-provider fallbacks, live process tracking, and <tspan fill="#023c75" font-family="ui-monospace, monospace" font-weight="700">AGENTS.md &lt; 150 lines</tspan>.
     </text>
 
     <!-- Terminal Command Sandbox -->
-    <rect x="0" y="190" width="570" height="52" rx="6" fill="#06090E" stroke="#222F42" stroke-width="1.2"/>
-    <circle cx="20" cy="216" r="4" fill="#EF4444"/>
-    <circle cx="34" cy="216" r="4" fill="#F59E0B"/>
-    <circle cx="48" cy="216" r="4" fill="#10B981"/>
-    <text x="68" y="221" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace" font-size="13">
-      <tspan fill="#10B981" font-weight="700">$ cd ~/project-example</tspan>
-      <tspan fill="#64748B"> &amp;&amp; </tspan>
-      <tspan fill="#00F0FF" font-weight="700">agt</tspan>
-      <tspan fill="#64748B"> || </tspan>
-      <tspan fill="#38BDF8">agt fallback --step-down</tspan>
+    <rect x="0" y="184" width="520" height="52" rx="5" fill="#ece5d5" stroke="#c5bc9f" stroke-width="1.2" filter="url(#oaSoftShadow)"/>
+    <circle cx="20" cy="210" r="3.5" fill="#9b0303"/>
+    <circle cx="33" cy="210" r="3.5" fill="#685f10"/>
+    <circle cx="46" cy="210" r="3.5" fill="#1d5c14"/>
+    <text x="64" y="214" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace" font-size="12.5">
+      <tspan fill="#023c75" font-weight="700">$ cd ~/project-example</tspan>
+      <tspan fill="#68707a"> &amp;&amp; </tspan>
+      <tspan fill="#181811" font-weight="700">agt</tspan>
+      <tspan fill="#68707a"> || </tspan>
+      <tspan fill="#704931">agt fallback --step-down</tspan>
     </text>
 
-    <!-- Feature Quick Pills -->
-    <g transform="translate(0, 260)" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace" font-size="11" font-weight="700">
+    <!-- Harness Feature Pills -->
+    <g transform="translate(0, 252)" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace" font-size="10.5" font-weight="700">
       <!-- Pill 1: Antigravity -->
-      <rect x="0" y="0" width="182" height="34" rx="4" fill="#0B1622" stroke="#00F0FF" stroke-width="1" stroke-opacity="0.6"/>
-      <circle cx="16" cy="17" r="4" fill="#00F0FF"/>
-      <text x="28" y="21" fill="#E2E8F0">ANTIGRAVITY (`agy`)</text>
+      <rect x="0" y="0" width="166" height="32" rx="3" fill="#eaf2f8" stroke="#3d648c" stroke-width="1"/>
+      <circle cx="14" cy="16" r="3.5" fill="#023c75"/>
+      <text x="26" y="20" fill="#023c75">ANTIGRAVITY (`agy`)</text>
 
       <!-- Pill 2: Codex -->
-      <rect x="194" y="0" width="182" height="34" rx="4" fill="#0B1A17" stroke="#10B981" stroke-width="1" stroke-opacity="0.6"/>
-      <circle cx="210" cy="17" r="4" fill="#10B981"/>
-      <text x="222" y="21" fill="#E2E8F0">OPENAI CODEX (`codex`)</text>
+      <rect x="176" y="0" width="168" height="32" rx="3" fill="#f4efe2" stroke="#c5bc9f" stroke-width="1"/>
+      <circle cx="190" cy="16" r="3.5" fill="#685f10"/>
+      <text x="202" y="20" fill="#4f4a23">OPENAI CODEX (`codex`)</text>
 
       <!-- Pill 3: Claude Code -->
-      <rect x="388" y="0" width="182" height="34" rx="4" fill="#1A1412" stroke="#F59E0B" stroke-width="1" stroke-opacity="0.6"/>
-      <circle cx="404" cy="17" r="4" fill="#F59E0B"/>
-      <text x="416" y="21" fill="#E2E8F0">CLAUDE CODE (`claude`)</text>
+      <rect x="354" y="0" width="166" height="32" rx="3" fill="#faeeee" stroke="#d59090" stroke-width="1"/>
+      <circle cx="368" cy="16" r="3.5" fill="#9b0303"/>
+      <text x="380" y="20" fill="#9b0303">CLAUDE CODE (`claude`)</text>
     </g>
 
-    <!-- Live Status Metric Footer -->
-    <g transform="translate(0, 308)" font-family="ui-monospace, monospace" font-size="11" fill="#64748B">
-      <text x="0" y="16">STATUS: <tspan fill="#10B981" font-weight="700">● 5 AGENTS READY</tspan></text>
-      <text x="180" y="16">FALLBACK: <tspan fill="#38BDF8" font-weight="700">ARGON → OPUS → FLASH → SOL</tspan></text>
-      <text x="440" y="16">BUDGET: <tspan fill="#F59E0B" font-weight="700">&lt;150L AGENTS.MD</tspan></text>
+    <!-- Status Metric Strip -->
+    <g transform="translate(0, 300)" font-family="ui-monospace, monospace" font-size="11" fill="#4f4a23">
+      <text x="0" y="14">STATUS: <tspan fill="#1d5c14" font-weight="700">● 7 ROLES READY</tspan></text>
+      <text x="175" y="14">FALLBACK: <tspan fill="#023c75" font-weight="700">→OPUS→FLASH→SOL</tspan></text>
+      <text x="420" y="14">BUDGET: <tspan fill="#685f10" font-weight="700">&lt;150L</tspan></text>
+    </g>
+
+    <!-- Bottom Feature Callout -->
+    <g transform="translate(0, 332)" font-family="ui-monospace, monospace" font-size="10.5">
+      <rect x="0" y="0" width="520" height="42" rx="4" fill="#eee8da" stroke="#c8c0ad" stroke-width="1"/>
+      <text x="14" y="18" fill="#181811">ARCHITECTURE: <tspan fill="#023c75" font-weight="700">Phase 1 (Lead Debate) ➔ Phase 2 (Hierarchical TDD)</tspan></text>
+      <text x="14" y="32" fill="#68707a">SKILLS ENGINE: <tspan fill="#1d5c14" font-weight="700">28+ Applied</tspan> • <tspan fill="#685f10" font-weight="700">150+ Discovered</tspan> • Symlink / Copy Mode</text>
     </g>
   </g>
 
-  <!-- Vertical Structural Grid Divider -->
-  <line x1="638" y1="68" x2="638" y2="410" stroke="#1E293B" stroke-width="1" stroke-dasharray="3 3"/>
-  <circle cx="638" cy="74" r="3" fill="#00F0FF" fill-opacity="0.6"/>
-  <circle cx="638" cy="406" r="3" fill="#10B981" fill-opacity="0.6"/>
+  <!-- Structural Vertical Divider -->
+  <line x1="582" y1="65" x2="582" y2="455" stroke="#c8c0ad" stroke-width="1" stroke-dasharray="3 3"/>
+  <circle cx="582" cy="72" r="2.5" fill="#023c75" fill-opacity="0.8"/>
+  <circle cx="582" cy="448" r="2.5" fill="#9b0303" fill-opacity="0.8"/>
 
-  <!-- 4. RIGHT COLUMN: 5-Agent Topology & Fallback Architecture -->
-  <g transform="translate(664, 72)" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace">
-    <!-- Header -->
-    <text x="0" y="14" fill="#64748B" font-size="10.5" font-weight="700" letter-spacing="1.4">TACTICAL ROSTER // ORCHESTRATION &amp; FALLBACK</text>
+  <!-- 4. RIGHT COLUMN: 2-Phase 7-Role Architecture Topology -->
+  <g transform="translate(606, 68)" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace">
 
-    <!-- Connecting Topology Bus Wiring -->
-    <path d="M 245 88 L 245 120" stroke="#00F0FF" stroke-width="1.8"/>
-    <path d="M 115 120 L 375 120" stroke="#00F0FF" stroke-width="1.4" stroke-opacity="0.7"/>
-    <path d="M 115 120 L 115 140" stroke="#00F0FF" stroke-width="1.4" stroke-opacity="0.7"/>
-    <path d="M 375 120 L 375 140" stroke="#00F0FF" stroke-width="1.4" stroke-opacity="0.7"/>
-    <path d="M 115 220 L 115 240" stroke="#38BDF8" stroke-width="1.4" stroke-opacity="0.7"/>
-    <path d="M 375 220 L 375 240" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.7"/>
+    <!-- Section Header: Phase 1 -->
+    <text x="0" y="12" fill="#023c75" font-size="10.5" font-weight="800" letter-spacing="1.2">PHASE 1 // BOUNDED 2-ROUND LEAD DEBATE</text>
+    <text x="568" y="12" fill="#68707a" text-anchor="end" font-size="9.5">STRATEGIC CONSENSUS GATE</text>
 
-    <!-- Agent 01: Lead Orchestrator (Top Center) -->
-    <g transform="translate(85, 26)">
-      <rect x="0" y="0" width="320" height="62" rx="6" fill="url(#cardOrchBg)" stroke="#00F0FF" stroke-width="1.6"/>
-      <rect x="0" y="0" width="6" height="62" rx="3" fill="#00F0FF"/>
-      <circle cx="20" cy="20" r="3.5" fill="#00F0FF"/>
-      <text x="32" y="24" fill="#F8FAFC" font-size="13" font-weight="800">01 // ORCHESTRATOR</text>
-      <rect x="236" y="10" width="72" height="18" rx="3" fill="#07202B"/>
-      <text x="272" y="22" text-anchor="middle" fill="#00F0FF" font-size="9" font-weight="800">LEAD ARCH</text>
-      <text x="20" y="42" fill="#94A3B8" font-size="10.5">Argon / Opus 5.5 • Decompose • Dispatch</text>
-      <text x="20" y="55" fill="#38BDF8" font-size="9" font-weight="600">FALLBACK: Argon → Opus 5.5 → Flash → Sol 6.1</text>
+    <!-- Phase 1 Container & Wiring -->
+    <rect x="0" y="20" width="568" height="88" rx="5" fill="#f0ece0" stroke="#c8c0ad" stroke-width="1"/>
+
+    <!-- Agent 01: Lead Architect (owl) -->
+    <g transform="translate(10, 28)">
+      <rect x="0" y="0" width="222" height="72" rx="4" fill="url(#oaCardBg)" stroke="#3d648c" stroke-width="1.2" filter="url(#oaSoftShadow)"/>
+      <rect x="0" y="0" width="4" height="72" rx="2" fill="#023c75"/>
+      <text x="12" y="18" fill="#181811" font-size="11.5" font-weight="800">01 LEAD ARCHITECT 🦉</text>
+      <text x="12" y="34" fill="#68707a" font-size="9.5">owl • Strategy &amp; System Spec</text>
+      <text x="12" y="49" fill="#023c75" font-size="9" font-weight="600">argon (h) • astra (h) • opus [RO]</text>
+      <text x="12" y="62" fill="#68707a" font-size="8.5">fallback: →opus→flash→astra</text>
     </g>
 
-    <!-- Agent 02: Searcher (Middle Left) -->
-    <g transform="translate(0, 140)">
-      <rect x="0" y="0" width="230" height="80" rx="6" fill="url(#cardBg)" stroke="#38BDF8" stroke-width="1.2"/>
-      <rect x="0" y="0" width="5" height="80" rx="2.5" fill="#38BDF8"/>
-      <circle cx="16" cy="20" r="3.5" fill="#38BDF8"/>
-      <text x="28" y="24" fill="#F8FAFC" font-size="12" font-weight="800">02 // SEARCHER</text>
-      <rect x="156" y="11" width="62" height="17" rx="3" fill="#081E2E"/>
-      <text x="187" y="23" text-anchor="middle" fill="#38BDF8" font-size="8.5" font-weight="700">SCOUT</text>
-      <text x="16" y="44" fill="#94A3B8" font-size="10">3.8 Flash Med / Luna Med</text>
-      <text x="16" y="58" fill="#64748B" font-size="9.5">Graphify • Web Docs • Read</text>
-      <text x="16" y="71" fill="#38BDF8" font-size="8.5" font-weight="600">3.8M → 3.8H → Haiku → Luna</text>
+    <!-- Bi-directional Debate Connector -->
+    <g transform="translate(242, 42)">
+      <line x1="0" y1="18" x2="84" y2="18" stroke="#c5bc9f" stroke-width="1.2" stroke-dasharray="2 2"/>
+      <path d="M 6 14 L 0 18 L 6 22" fill="none" stroke="#023c75" stroke-width="1.6"/>
+      <path d="M 78 14 L 84 18 L 78 22" fill="none" stroke="#9b0303" stroke-width="1.6"/>
+      <rect x="14" y="7" width="56" height="22" rx="3" fill="#eee8da" stroke="#c5bc9f" stroke-width="1"/>
+      <text x="42" y="18" text-anchor="middle" fill="#181811" font-size="8" font-weight="700">2-ROUND</text>
+      <text x="42" y="26" text-anchor="middle" fill="#68707a" font-size="7.5">DEBATE</text>
     </g>
 
-    <!-- Agent 03: Implementer (Middle Right) -->
-    <g transform="translate(260, 140)">
-      <rect x="0" y="0" width="230" height="80" rx="6" fill="url(#cardBg)" stroke="#10B981" stroke-width="1.2"/>
-      <rect x="0" y="0" width="5" height="80" rx="2.5" fill="#10B981"/>
-      <circle cx="16" cy="20" r="3.5" fill="#10B981"/>
-      <text x="28" y="24" fill="#F8FAFC" font-size="12" font-weight="800">03 // IMPLEMENTER</text>
-      <rect x="156" y="11" width="62" height="17" rx="3" fill="#08241A"/>
-      <text x="187" y="23" text-anchor="middle" fill="#10B981" font-size="8.5" font-weight="700">TDD CODE</text>
-      <text x="16" y="44" fill="#94A3B8" font-size="10">3.8 Flash High / Sol 6.0</text>
-      <text x="16" y="58" fill="#64748B" font-size="9.5">Red-Green-Refactor • Write</text>
-      <text x="16" y="71" fill="#10B981" font-size="8.5" font-weight="600">3.8H → 3.1P → Sonnet → Sol</text>
+    <!-- Agent 02: Lead Critic (cat) -->
+    <g transform="translate(336, 28)">
+      <rect x="0" y="0" width="222" height="72" rx="4" fill="url(#oaCardCriticBg)" stroke="#d59090" stroke-width="1.2" filter="url(#oaSoftShadow)"/>
+      <rect x="0" y="0" width="4" height="72" rx="2" fill="#9b0303"/>
+      <text x="12" y="18" fill="#181811" font-size="11.5" font-weight="800">02 LEAD CRITIC 🐱</text>
+      <text x="12" y="34" fill="#68707a" font-size="9.5">cat • Stress-Test &amp; Security</text>
+      <text x="12" y="49" fill="#9b0303" font-size="9" font-weight="600">pro-3.1 (h) • sol-6.1 (xh) • opus</text>
+      <text x="12" y="62" fill="#68707a" font-size="8.5">fallback: →opus→flash→sol</text>
     </g>
 
-    <!-- Agent 04: Reviewer (Bottom Left) -->
-    <g transform="translate(0, 240)">
-      <rect x="0" y="0" width="230" height="80" rx="6" fill="url(#cardBg)" stroke="#F59E0B" stroke-width="1.2"/>
-      <rect x="0" y="0" width="5" height="80" rx="2.5" fill="#F59E0B"/>
-      <circle cx="16" cy="20" r="3.5" fill="#F59E0B"/>
-      <text x="28" y="24" fill="#F8FAFC" font-size="12" font-weight="800">04 // REVIEWER</text>
-      <rect x="156" y="11" width="62" height="17" rx="3" fill="#241B08"/>
-      <text x="187" y="23" text-anchor="middle" fill="#F59E0B" font-size="8.5" font-weight="700">SECURITY</text>
-      <text x="16" y="44" fill="#94A3B8" font-size="10">3.1 Pro High / Sol 6.1 (xhigh)</text>
-      <text x="16" y="58" fill="#64748B" font-size="9.5">Two-Axis Review • Read-Only</text>
-      <text x="16" y="71" fill="#F59E0B" font-size="8.5" font-weight="600">3.1P → Opus → 3.8H → Sol 6.1</text>
+    <!-- Consensus Gate Transition Line & Badge -->
+    <line x1="284" y1="108" x2="284" y2="136" stroke="#023c75" stroke-width="1.4"/>
+    <polygon points="284,138 280,132 288,132" fill="#023c75"/>
+    <g transform="translate(164, 116)">
+      <rect x="0" y="0" width="240" height="18" rx="3" fill="#e1d8c1" stroke="#3d648c" stroke-width="1" filter="url(#oaSoftShadow)"/>
+      <text x="120" y="12.5" text-anchor="middle" fill="#023c75" font-size="8.5" font-weight="800" letter-spacing="0.5">▼ CONSENSUS_REACHED ➔ PHASE 2</text>
     </g>
 
-    <!-- Agent 05: Committer (Bottom Right) -->
-    <g transform="translate(260, 240)">
-      <rect x="0" y="0" width="230" height="80" rx="6" fill="url(#cardBg)" stroke="#A855F7" stroke-width="1.2"/>
-      <rect x="0" y="0" width="5" height="80" rx="2.5" fill="#A855F7"/>
-      <circle cx="16" cy="20" r="3.5" fill="#A855F7"/>
-      <text x="28" y="24" fill="#F8FAFC" font-size="12" font-weight="800">05 // COMMITTER</text>
-      <rect x="156" y="11" width="62" height="17" rx="3" fill="#20102B"/>
-      <text x="187" y="23" text-anchor="middle" fill="#C084FC" font-size="8.5" font-weight="700">GIT GATE</text>
-      <text x="16" y="44" fill="#94A3B8" font-size="10">3.7 Flash Low / Luna Low</text>
-      <text x="16" y="58" fill="#64748B" font-size="9.5">Conventional Git • Clean Diff</text>
-      <text x="16" y="71" fill="#C084FC" font-size="8.5" font-weight="600">3.7F → 3.8M → Haiku → Luna</text>
+    <!-- Section Header: Phase 2 -->
+    <g transform="translate(0, 142)">
+      <text x="0" y="10" fill="#023c75" font-size="10.5" font-weight="800" letter-spacing="1.2">PHASE 2 // HIERARCHICAL EXECUTION TEAM</text>
+      <text x="568" y="10" fill="#68707a" text-anchor="end" font-size="9.5">ORCHESTRATOR &amp; 4 WORKERS</text>
+
+      <!-- Agent 03: Orchestrator (octopus) -->
+      <g transform="translate(0, 18)">
+        <rect x="0" y="0" width="568" height="58" rx="4" fill="url(#oaCardOrchBg)" stroke="#3d648c" stroke-width="1.4" filter="url(#oaSoftShadow)"/>
+        <rect x="0" y="0" width="5" height="58" rx="2.5" fill="#023c75"/>
+        <circle cx="18" cy="18" r="3.5" fill="#023c75"/>
+        <text x="28" y="22" fill="#181811" font-size="12" font-weight="800">03 // ORCHESTRATOR 🐙</text>
+        <rect x="466" y="8" width="92" height="18" rx="3" fill="#d2e5ef"/>
+        <text x="512" y="20" text-anchor="middle" fill="#023c75" font-size="8.5" font-weight="800">DISPATCHER</text>
+        <text x="18" y="38" fill="#4b4f59" font-size="9.5">octopus • Master Coordinator (Zero Direct Code Edits) • Coordinates 4 Workers</text>
+        <text x="18" y="50" fill="#023c75" font-size="8.5" font-weight="600">argon (h) • astra (h) • opus-5.5 [RO]  <tspan fill="#68707a">|  fallback: →opus→sol</tspan></text>
+      </g>
+
+      <!-- Dispatcher Tree Lines to 4 Subagents -->
+      <path d="M 284 76 L 284 94" stroke="#023c75" stroke-width="1.2"/>
+      <path d="M 136 94 L 432 94" stroke="#c8c0ad" stroke-width="1"/>
+      <path d="M 136 94 L 136 102" stroke="#c8c0ad" stroke-width="1"/>
+      <path d="M 432 94 L 432 102" stroke="#c8c0ad" stroke-width="1"/>
+
+      <!-- 4 Worker Cards (2x2 Grid) -->
+
+      <!-- Agent 04: Searcher (bat) -->
+      <g transform="translate(0, 102)">
+        <rect x="0" y="0" width="276" height="66" rx="4" fill="url(#oaCardBg)" stroke="#c5bc9f" stroke-width="1" filter="url(#oaSoftShadow)"/>
+        <rect x="0" y="0" width="4" height="66" rx="2" fill="#685f10"/>
+        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">04 SEARCHER 🦇</text>
+        <rect x="206" y="6" width="60" height="15" rx="2.5" fill="#f4efe2"/>
+        <text x="236" y="16.5" text-anchor="middle" fill="#685f10" font-size="8" font-weight="700">SCOUT [RO]</text>
+        <text x="12" y="32" fill="#68707a" font-size="9">bat • Codebase &amp; Docs Scout</text>
+        <text x="12" y="46" fill="#4f4a23" font-size="8.5">flash-3.8 (m) • luna (m) • haiku</text>
+        <text x="12" y="58" fill="#868d90" font-size="8">fallback: →haiku→luna</text>
+      </g>
+
+      <!-- Agent 05: Implementer (rabbit) -->
+      <g transform="translate(292, 102)">
+        <rect x="0" y="0" width="276" height="66" rx="4" fill="url(#oaCardBg)" stroke="#85ad83" stroke-width="1.2" filter="url(#oaSoftShadow)"/>
+        <rect x="0" y="0" width="4" height="66" rx="2" fill="#1d5c14"/>
+        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">05 IMPLEMENTER 🐰</text>
+        <rect x="198" y="6" width="68" height="15" rx="2.5" fill="#d7ebd7"/>
+        <text x="232" y="16.5" text-anchor="middle" fill="#1d5c14" font-size="8" font-weight="700">TDD [WRITE]</text>
+        <text x="12" y="32" fill="#68707a" font-size="9">rabbit • Red-Green-Refactor Code</text>
+        <text x="12" y="46" fill="#1d5c14" font-size="8.5">flash-3.8 (h) • sol-6 (xh) • sonnet</text>
+        <text x="12" y="58" fill="#868d90" font-size="8">fallback: →pro→sonnet→sol</text>
+      </g>
+
+      <!-- Agent 06: Reviewer (frog) -->
+      <g transform="translate(0, 176)">
+        <rect x="0" y="0" width="276" height="66" rx="4" fill="url(#oaCardCriticBg)" stroke="#d59090" stroke-width="1.2" filter="url(#oaSoftShadow)"/>
+        <rect x="0" y="0" width="4" height="66" rx="2" fill="#9b0303"/>
+        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">06 REVIEWER 🐸</text>
+        <rect x="188" y="6" width="78" height="15" rx="2.5" fill="#f5d5d5"/>
+        <text x="227" y="16.5" text-anchor="middle" fill="#9b0303" font-size="8" font-weight="700">SECURITY [RO]</text>
+        <text x="12" y="32" fill="#68707a" font-size="9">frog • Spec &amp; Standard Quality Review</text>
+        <text x="12" y="46" fill="#9b0303" font-size="8.5">pro-3.1 (h) • sol-6.1 (xh) • sonnet</text>
+        <text x="12" y="58" fill="#868d90" font-size="8">fallback: →opus→sol</text>
+      </g>
+
+      <!-- Agent 07: Committer (penguin) -->
+      <g transform="translate(292, 176)">
+        <rect x="0" y="0" width="276" height="66" rx="4" fill="url(#oaCardBg)" stroke="#8da9c4" stroke-width="1" filter="url(#oaSoftShadow)"/>
+        <rect x="0" y="0" width="4" height="66" rx="2" fill="#2a649f"/>
+        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">07 COMMITTER 🐧</text>
+        <rect x="188" y="6" width="78" height="15" rx="2.5" fill="#d5e4f2"/>
+        <text x="227" y="16.5" text-anchor="middle" fill="#184571" font-size="8" font-weight="700">GIT GATE [RO]</text>
+        <text x="12" y="32" fill="#68707a" font-size="9">penguin • Conventional Commits</text>
+        <text x="12" y="46" fill="#184571" font-size="8.5">flash-3.7 (l) • luna (low) • haiku</text>
+        <text x="12" y="58" fill="#868d90" font-size="8">fallback: →haiku→luna</text>
+      </g>
     </g>
 
-    <!-- Command Help Teaser -->
-    <g transform="translate(0, 332)" font-size="10" fill="#64748B">
-      <rect x="0" y="0" width="490" height="24" rx="4" fill="#0A0E17" stroke="#1E293B" stroke-width="1"/>
-      <text x="14" y="16">COMMANDS: <tspan fill="#00F0FF">agt</tspan> • <tspan fill="#10B981">agt init</tspan> • <tspan fill="#38BDF8">agt fallback</tspan> • <tspan fill="#F59E0B">agt ps</tspan> • <tspan fill="#A855F7">agt status</tspan></text>
+    <!-- Bottom Command Quick Links -->
+    <g transform="translate(0, 396)" font-size="10" fill="#4f4a23">
+      <rect x="0" y="0" width="568" height="24" rx="3" fill="#eee8da" stroke="#c8c0ad" stroke-width="1"/>
+      <text x="14" y="16">COMMANDS: <tspan fill="#023c75" font-weight="700">agt</tspan> • <tspan fill="#181811">agt init</tspan> • <tspan fill="#023c75" font-weight="700">agt status</tspan> • <tspan fill="#9b0303" font-weight="700">agt fallback</tspan> • <tspan fill="#685f10" font-weight="700">agt ps</tspan> • <tspan fill="#1d5c14" font-weight="700">agt list-skills</tspan></text>
     </g>
   </g>
 </svg>
