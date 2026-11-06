@@ -618,7 +618,27 @@ def ask_multi_choice(
 # ---------------------------------------------------------------------------
 def select_project_directory(initial_dir: Path, projects_root: Path) -> Path:
     resolved = initial_dir.resolve()
-    if resolved == projects_root.resolve():
+    if resolved != projects_root.resolve():
+        is_self_repo = resolved == Path(__file__).resolve().parent
+        use_current = ask_yes_no(
+            tr(
+                f"You are currently in project directory '{resolved.name}' ({resolved}). Set up Multi-Agent team for this directory?",
+                f"Bạn đang đứng tại thư mục project '{resolved.name}' ({resolved}). Bạn có muốn thiết lập Multi-Agent cho thư mục này không?",
+            ),
+            default=not is_self_repo,
+        )
+        if use_current:
+            return resolved
+        print(
+            c(
+                tr(
+                    f"\n📂 Select a Project/Repo in {projects_root} to configure:",
+                    f"\n📂 Hãy chọn Project/Repo trong {projects_root} muốn thiết lập đội AI:",
+                ),
+                BOLD + YELLOW,
+            )
+        )
+    else:
         print(
             c(
                 tr(
@@ -628,6 +648,8 @@ def select_project_directory(initial_dir: Path, projects_root: Path) -> Path:
                 BOLD + YELLOW,
             )
         )
+
+    if projects_root.exists() and projects_root.is_dir():
         subdirs = sorted(
             [
                 d
@@ -817,8 +839,9 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
     )
 
 
-def run_interactive_wizard(target_dir: Path, projects_root: Path) -> TeamConfig:
-    banner()
+def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: bool = True) -> TeamConfig:
+    if show_banner:
+        banner()
     project_path = select_project_directory(target_dir, projects_root)
     project_name = project_path.name
     detected_stack = detect_tech_stack(project_path)
@@ -1851,7 +1874,7 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             print_summary(cfg, created, dry_run=False)
             return
         if action == "wizard":
-            cfg = run_interactive_wizard(target_path, projects_root)
+            cfg = run_interactive_wizard(target_path, projects_root, show_banner=False)
             created = write_project_configuration(cfg, dry_run=False)
             print_summary(cfg, created, dry_run=False)
             return
