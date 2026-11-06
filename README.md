@@ -41,13 +41,13 @@ Install `agt` into `~/.local/bin/agt` with a single `curl` command:
 curl -fsSL https://raw.githubusercontent.com/rcryan-hniht/agent-team/main/install.sh | bash
 ```
 
-### 2. Usage
+### 2. Examples
 
 #### A. Launch the Interactive TUI / Wizard
-Run `agt` from `~/Projects` (to pick from a list of all your repositories) or directly inside any project folder:
+Run `agt` inside your project directory:
 
 ```bash
-cd ~/Projects
+cd ~/project-example
 agt
 ```
 
@@ -68,14 +68,14 @@ agt --lang en
 Bootstrap the standard 5-agent team (`orchestrator`, `reviewer`, `implementer`, `committer`, `searcher`) with default models and skill bundles:
 
 ```bash
-agt init --target ~/Projects/my-repo --yes \
+agt init --target ~/project-example --yes \
   --goal "Build and verify core features with a 5-agent team"
 ```
 
 #### C. Inspect Applied Agents & Local Skills
 ```bash
 # View the active agent roster, models, and skills in a repository
-agt status --target ~/Projects/my-repo
+agt status --target ~/project-example
 
 # List all discovered local skills grouped by plugin/source
 agt list-skills

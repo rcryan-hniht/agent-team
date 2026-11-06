@@ -1774,10 +1774,11 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('--lang <en|vi>', CYAN)}          CLI display language: en (English, default) or vi (Tiếng Việt)\n"
             f"  {c('--dry-run', CYAN)}               Preview generated files without writing to disk\n"
             f"  {c('-h, --help', CYAN)}              Show this help message\n\n"
-            f"{c('QUICK EXAMPLES:', BOLD + YELLOW)}\n"
-            f"  • Launch interactive dashboard in ~/Projects : {c('cd ~/Projects && agt', GREEN)}\n"
+            f"{c('EXAMPLES:', BOLD + YELLOW)}\n"
+            f"  • Launch interactive setup in a project      : {c('cd ~/project-example && agt', GREEN)}\n"
             f"  • Launch in Vietnamese mode                  : {c('agt --lang vi', GREEN)}\n"
-            f"  • Quick preset init for a repository         : {c('agt init -t ~/Projects/Orpheus -y', GREEN)}\n"
+            f"  • Quick preset init for a repository         : {c('agt init -t ~/project-example -y', GREEN)}\n"
+            f"  • Inspect AI team status                     : {c('agt status -t ~/project-example', GREEN)}\n"
         )
     else:
         print(
@@ -1798,10 +1799,11 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('--lang <en|vi>', CYAN)}          Ngôn ngữ giao diện CLI: `en` (Tiếng Anh, mặc định) hoặc `vi` (Tiếng Việt)\n"
             f"  {c('--dry-run', CYAN)}               Xem trước danh sách file sẽ sinh ra mà không ghi xuống ổ cứng\n"
             f"  {c('-h, --help', CYAN)}              Hiển thị bảng hướng dẫn này\n\n"
-            f"{c('VÍ DỤ NHANH:', BOLD + YELLOW)}\n"
-            f"  • Mở giao diện Tiếng Việt tại ~/Projects : {c('cd ~/Projects && agt --lang vi', GREEN)}\n"
-            f"  • Tạo nhanh đội AI cho 1 repo            : {c('agt init -t ~/Projects/Orpheus -y', GREEN)}\n"
-            f"  • Kiểm tra trạng thái đội AI             : {c('agt status -t ~/Projects/Orpheus', GREEN)}\n"
+            f"{c('VÍ DỤ:', BOLD + YELLOW)}\n"
+            f"  • Thiết lập đội AI cho một project       : {c('cd ~/project-example && agt', GREEN)}\n"
+            f"  • Mở giao diện Tiếng Việt                : {c('cd ~/project-example && agt --lang vi', GREEN)}\n"
+            f"  • Tạo nhanh đội AI bằng Preset           : {c('agt init -t ~/project-example -y', GREEN)}\n"
+            f"  • Kiểm tra trạng thái đội AI             : {c('agt status -t ~/project-example', GREEN)}\n"
         )
 
 

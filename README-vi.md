@@ -47,19 +47,18 @@ curl -fsSL https://raw.githubusercontent.com/rcryan-hniht/agent-team/main/instal
 
 Công cụ được cài và liên kết vào `~/.local/bin/agt`. Bạn có thể gõ lệnh từ bất kỳ đâu:
 
-### A. Mở Menu Giao Diện Dòng Lệnh (Tiếng Anh mặc định / Tiếng Việt `--lang vi`)
+### A. Ví dụ mở Menu Giao Diện Dòng Lệnh (Tiếng Anh mặc định / Tiếng Việt `--lang vi`)
 ```bash
-cd ~/Projects
+cd ~/project-example
 agt             # Mặc định hiển thị Tiếng Anh (English)
 agt --lang vi   # Mở giao diện dòng lệnh hoàn toàn bằng Tiếng Việt
 ```
-- Khi gõ `agt` (hoặc `agt --lang vi`), Bảng điều khiển tương tác sẽ hiện ra (Thiết lập đội ngũ AI theo từng bước, Tạo nhanh theo Preset, Xem trạng thái Project, Tra cứu kho Skills, hoặc Đổi ngôn ngữ `English ⇄ Tiếng Việt` ngay trong menu).
-- Nếu bạn gõ tại `~/Projects`, CLI sẽ liệt kê toàn bộ các repo con (`Act2Morse`, `Hephaestus`, `Orpheus`, `uav-agri-autonomy`, v.v.) để bạn chọn repo muốn thiết lập.
-- Nếu bạn `cd ~/Projects/<tên-repo>` rồi gõ `agt`, CLI sẽ tự động nhận diện ngôn ngữ/framework của repo đó và hỏi từng bước thiết lập.
+- Khi đứng tại thư mục dự án (ví dụ `~/project-example`) và gõ `agt`, CLI sẽ hỏi bạn có muốn thiết lập Multi-Agent cho thư mục đó không, tự động nhận diện ngôn ngữ/framework và hỏi từng bước thiết lập.
+- Nếu gõ tại `~/Projects`, CLI sẽ liệt kê toàn bộ các repo con để bạn chọn repo muốn thiết lập.
 
 ### B. Tạo nhanh bằng Preset (Không cần hỏi đáp)
 ```bash
-agt init --target ~/Projects/Orpheus --yes \
+agt init --target ~/project-example --yes \
   --goal "Xây dựng và tối ưu hệ thống với đội ngũ 5 agents"
 ```
 
@@ -69,7 +68,7 @@ agt init --target ~/Projects/Orpheus --yes \
 agt list-skills
 
 # Kiểm tra đội hình AI và skills đã gắn trong một repo
-agt status --target ~/Projects/Orpheus
+agt status --target ~/project-example
 
 # Chuyển đổi ngôn ngữ giao diện CLI (vi / en)
 agt --lang vi
