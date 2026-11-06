@@ -133,6 +133,7 @@ class AgentSpec:
     workspace_mode: str  # inherit | share | branch
     agy_tools: List[str] = field(default_factory=list)
     skills: List[str] = field(default_factory=list)
+    fallback_chain: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -326,6 +327,187 @@ def get_claude_model_choices() -> List[Tuple[str, str]]:
     ]
 
 
+def get_cross_provider_fallback_catalog() -> List[Tuple[str, str]]:
+    """Unified cross-provider catalog for building ordered model fallback chains."""
+    return [
+        (
+            "agy:gemini-4-argon-high",
+            tr(
+                "Antigravity — Gemini 4 Argon (High) [Tier: pro]",
+                "Antigravity — Gemini 4 Argon (High) [Tier: pro]",
+            ),
+        ),
+        (
+            "agy:claude-opus-5-5-medium",
+            tr(
+                "Antigravity — Claude Opus 5.5 (Medium) [Tier: pro]",
+                "Antigravity — Claude Opus 5.5 (Medium) [Tier: pro]",
+            ),
+        ),
+        (
+            "agy:gemini-3.1-pro-high",
+            tr(
+                "Antigravity — Gemini 3.1 Pro (High) [Tier: pro]",
+                "Antigravity — Gemini 3.1 Pro (High) [Tier: pro]",
+            ),
+        ),
+        (
+            "agy:gemini-3.8-flash-high",
+            tr(
+                "Antigravity — Gemini 3.8 Flash (High) [Tier: flash]",
+                "Antigravity — Gemini 3.8 Flash (High) [Tier: flash]",
+            ),
+        ),
+        (
+            "agy:gemini-3.8-flash-medium",
+            tr(
+                "Antigravity — Gemini 3.8 Flash (Medium) [Tier: flash]",
+                "Antigravity — Gemini 3.8 Flash (Medium) [Tier: flash]",
+            ),
+        ),
+        (
+            "agy:gemini-3.7-flash",
+            tr(
+                "Antigravity — Gemini 3.7 Flash (Low) [Tier: flash_lite]",
+                "Antigravity — Gemini 3.7 Flash (Low) [Tier: flash_lite]",
+            ),
+        ),
+        (
+            "codex:gpt-6.1-sol (xhigh)",
+            tr(
+                "OpenAI Codex — GPT-6.1 Sol (xhigh)",
+                "OpenAI Codex — GPT-6.1 Sol (xhigh)",
+            ),
+        ),
+        (
+            "codex:gpt-6-astra (high)",
+            tr(
+                "OpenAI Codex — GPT-6 Astra (high)",
+                "OpenAI Codex — GPT-6 Astra (high)",
+            ),
+        ),
+        (
+            "codex:gpt-6-sol (xhigh)",
+            tr(
+                "OpenAI Codex — GPT-6.0 Sol (xhigh)",
+                "OpenAI Codex — GPT-6.0 Sol (xhigh)",
+            ),
+        ),
+        (
+            "codex:gpt-6-luna (medium)",
+            tr(
+                "OpenAI Codex — GPT-6 Luna (medium)",
+                "OpenAI Codex — GPT-6 Luna (medium)",
+            ),
+        ),
+        (
+            "codex:gpt-6-luna (low)",
+            tr(
+                "OpenAI Codex — GPT-6 Luna (low)",
+                "OpenAI Codex — GPT-6 Luna (low)",
+            ),
+        ),
+        (
+            "claude:claude-opus-5-5-medium",
+            tr(
+                "Claude Code — Claude Opus 5.5 (Medium)",
+                "Claude Code — Claude Opus 5.5 (Medium)",
+            ),
+        ),
+        (
+            "claude:sonnet",
+            tr(
+                "Claude Code — Claude Sonnet",
+                "Claude Code — Claude Sonnet",
+            ),
+        ),
+        (
+            "claude:haiku",
+            tr(
+                "Claude Code — Claude Haiku",
+                "Claude Code — Claude Haiku",
+            ),
+        ),
+    ]
+
+
+def get_fallback_presets() -> List[Tuple[str, str, List[str]]]:
+    """Ready-to-use cross-provider fallback chain presets."""
+    return [
+        (
+            "argon-opus-flash-sol61",
+            tr(
+                "Argon → Opus 5.5 → 3.8 Flash High → Codex Sol 6.1 (xhigh) [Lead / Deep Reasoning]",
+                "Argon → Opus 5.5 → 3.8 Flash High → Codex Sol 6.1 (xhigh) [Điều phối / Suy luận sâu]",
+            ),
+            [
+                "agy:gemini-4-argon-high",
+                "agy:claude-opus-5-5-medium",
+                "agy:gemini-3.8-flash-high",
+                "codex:gpt-6.1-sol (xhigh)",
+            ],
+        ),
+        (
+            "pro31-opus-flash-sol61",
+            tr(
+                "3.1 Pro High → Opus 5.5 → 3.8 Flash High → Codex Sol 6.1 (xhigh) [Reviewer / Security]",
+                "3.1 Pro High → Opus 5.5 → 3.8 Flash High → Codex Sol 6.1 (xhigh) [Kiểm định / Bảo mật]",
+            ),
+            [
+                "agy:gemini-3.1-pro-high",
+                "agy:claude-opus-5-5-medium",
+                "agy:gemini-3.8-flash-high",
+                "codex:gpt-6.1-sol (xhigh)",
+            ],
+        ),
+        (
+            "flash38-pro31-sonnet-sol60",
+            tr(
+                "3.8 Flash High → 3.1 Pro High → Claude Sonnet → Codex Sol 6.0 (xhigh) [Implementer / TDD]",
+                "3.8 Flash High → 3.1 Pro High → Claude Sonnet → Codex Sol 6.0 (xhigh) [Thực thi / TDD]",
+            ),
+            [
+                "agy:gemini-3.8-flash-high",
+                "agy:gemini-3.1-pro-high",
+                "claude:sonnet",
+                "codex:gpt-6-sol (xhigh)",
+            ],
+        ),
+        (
+            "flash38m-flash38h-haiku-luna",
+            tr(
+                "3.8 Flash Medium → 3.8 Flash High → Claude Haiku → Codex Luna (medium) [Searcher / Scout]",
+                "3.8 Flash Medium → 3.8 Flash High → Claude Haiku → Codex Luna (medium) [Trinh sát / Tài liệu]",
+            ),
+            [
+                "agy:gemini-3.8-flash-medium",
+                "agy:gemini-3.8-flash-high",
+                "claude:haiku",
+                "codex:gpt-6-luna (medium)",
+            ],
+        ),
+        (
+            "flash37-flash38m-haiku-lunalow",
+            tr(
+                "3.7 Flash → 3.8 Flash Medium → Claude Haiku → Codex Luna (low) [Committer / Fast]",
+                "3.7 Flash → 3.8 Flash Medium → Claude Haiku → Codex Luna (low) [Git Commit / Nhanh]",
+            ),
+            [
+                "agy:gemini-3.7-flash",
+                "agy:gemini-3.8-flash-medium",
+                "claude:haiku",
+                "codex:gpt-6-luna (low)",
+            ],
+        ),
+    ]
+
+
+def format_fallback_chain(chain: List[str]) -> str:
+    if not chain:
+        return tr("None", "Chưa thiết lập")
+    return " → ".join(chain)
+
+
 READ_WRITE_TOOLS = [
     "run_command",
     "view_file",
@@ -391,6 +573,12 @@ DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
             "dispatching-parallel-agents",
             "swarm",
         ],
+        "fallback_chain": [
+            "agy:gemini-4-argon-high",
+            "agy:claude-opus-5-5-medium",
+            "agy:gemini-3.8-flash-high",
+            "codex:gpt-6.1-sol (xhigh)",
+        ],
     },
     "reviewer": {
         "title": "3.1 Pro High / Sol 6.1: Code Correctness, Security & Test Quality Review",
@@ -420,6 +608,12 @@ DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
             "ponytail-review",
             "ponytail-audit",
             "requesting-code-review",
+        ],
+        "fallback_chain": [
+            "agy:gemini-3.1-pro-high",
+            "agy:claude-opus-5-5-medium",
+            "agy:gemini-3.8-flash-high",
+            "codex:gpt-6.1-sol (xhigh)",
         ],
     },
     "implementer": {
@@ -452,6 +646,12 @@ DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
             "systematic-debugging",
             "verification-before-completion",
         ],
+        "fallback_chain": [
+            "agy:gemini-3.8-flash-high",
+            "agy:gemini-3.1-pro-high",
+            "claude:sonnet",
+            "codex:gpt-6-sol (xhigh)",
+        ],
     },
     "searcher": {
         "title": "Luna / 3.8 Flash Medium: Focused Research & Codebase Scout",
@@ -480,6 +680,12 @@ DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
             "domain-modeling",
             "diagnosing-bugs",
         ],
+        "fallback_chain": [
+            "agy:gemini-3.8-flash-medium",
+            "agy:gemini-3.8-flash-high",
+            "claude:haiku",
+            "codex:gpt-6-luna (medium)",
+        ],
     },
     "committer": {
         "title": "3.7 Flash Low / Luna: Concise Conventional Git Commits",
@@ -506,6 +712,12 @@ DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
         "skills": [
             "finishing-a-development-branch",
             "pr",
+        ],
+        "fallback_chain": [
+            "agy:gemini-3.7-flash",
+            "agy:gemini-3.8-flash-medium",
+            "claude:haiku",
+            "codex:gpt-6-luna (low)",
         ],
     },
 }
@@ -541,6 +753,12 @@ DEFAULT_AGENT_TEMPLATES_VI: Dict[str, Dict] = {
             "dispatching-parallel-agents",
             "swarm",
         ],
+        "fallback_chain": [
+            "agy:gemini-4-argon-high",
+            "agy:claude-opus-5-5-medium",
+            "agy:gemini-3.8-flash-high",
+            "codex:gpt-6.1-sol (xhigh)",
+        ],
     },
     "reviewer": {
         "title": "3.1 Pro High / Sol 6.1: Kiểm định chất lượng code, Bảo mật & Kiểm thử",
@@ -570,6 +788,12 @@ DEFAULT_AGENT_TEMPLATES_VI: Dict[str, Dict] = {
             "ponytail-review",
             "ponytail-audit",
             "requesting-code-review",
+        ],
+        "fallback_chain": [
+            "agy:gemini-3.1-pro-high",
+            "agy:claude-opus-5-5-medium",
+            "agy:gemini-3.8-flash-high",
+            "codex:gpt-6.1-sol (xhigh)",
         ],
     },
     "implementer": {
@@ -602,6 +826,12 @@ DEFAULT_AGENT_TEMPLATES_VI: Dict[str, Dict] = {
             "systematic-debugging",
             "verification-before-completion",
         ],
+        "fallback_chain": [
+            "agy:gemini-3.8-flash-high",
+            "agy:gemini-3.1-pro-high",
+            "claude:sonnet",
+            "codex:gpt-6-sol (xhigh)",
+        ],
     },
     "searcher": {
         "title": "Luna / 3.8 Flash Medium: Trinh sát mã nguồn & Tra cứu tài liệu",
@@ -630,6 +860,12 @@ DEFAULT_AGENT_TEMPLATES_VI: Dict[str, Dict] = {
             "domain-modeling",
             "diagnosing-bugs",
         ],
+        "fallback_chain": [
+            "agy:gemini-3.8-flash-medium",
+            "agy:gemini-3.8-flash-high",
+            "claude:haiku",
+            "codex:gpt-6-luna (medium)",
+        ],
     },
     "committer": {
         "title": "3.7 Flash Low / Luna: Tạo Git Commit chuẩn Conventional Commits",
@@ -656,6 +892,12 @@ DEFAULT_AGENT_TEMPLATES_VI: Dict[str, Dict] = {
         "skills": [
             "finishing-a-development-branch",
             "pr",
+        ],
+        "fallback_chain": [
+            "agy:gemini-3.7-flash",
+            "agy:gemini-3.8-flash-medium",
+            "claude:haiku",
+            "codex:gpt-6-luna (low)",
         ],
     },
 }
@@ -992,6 +1234,99 @@ def select_project_directory(initial_dir: Path, projects_root: Path) -> Path:
     return resolved
 
 
+def ask_fallback_chain(role_id: str, default_chain: List[str]) -> List[str]:
+    """Interactive builder for an agent's ordered cross-provider fallback chain."""
+    default_str = format_fallback_chain(default_chain)
+    presets = get_fallback_presets()
+    mode_opts: List[Tuple[str, str]] = [
+        (
+            "keep",
+            tr(
+                f"Keep current fallback chain: {default_str}",
+                f"Giữ chuỗi fallback hiện tại: {default_str}",
+            ),
+        ),
+    ]
+    for p_key, p_desc, _ in presets:
+        mode_opts.append((f"preset:{p_key}", p_desc))
+    mode_opts.extend(
+        [
+            (
+                "custom-pick",
+                tr(
+                    "Build custom ordered chain step-by-step from Cross-Provider Catalog (agy / codex / claude)",
+                    "Tự chọn thứ tự lùi model từng bước từ danh mục đa Provider (agy / codex / claude)",
+                ),
+            ),
+            (
+                "custom-text",
+                tr(
+                    "Type custom fallback chain manually (comma or '->' separated)",
+                    "Tự nhập chuỗi fallback thủ công (cách nhau bằng dấu phẩy hoặc '->')",
+                ),
+            ),
+        ]
+    )
+
+    choice = ask_choice(
+        tr(
+            f"[{role_id}] Configure Model & Cross-Provider Fallback Chain",
+            f"[{role_id}] Thiết lập chuỗi lùi Model & Provider dự phòng (Fallback Chain)",
+        ),
+        mode_opts,
+        default_index=0,
+    )
+    if choice == "keep":
+        return list(default_chain)
+    if choice.startswith("preset:"):
+        p_id = choice.split(":", 1)[1]
+        for k, _, ch in presets:
+            if k == p_id:
+                return list(ch)
+    if choice == "custom-pick":
+        catalog = get_cross_provider_fallback_catalog()
+        print(
+            f"\n{c('?', BOLD + GREEN)} {BOLD}"
+            + tr(
+                f"[{role_id}] Select fallback order (1st = Primary, 2nd = Fallback #1, 3rd = Fallback #2, ...):",
+                f"[{role_id}] Chọn thứ tự ưu tiên lùi dần (số đầu = Model chính, tiếp theo = Dự phòng 1, 2, ...):",
+            )
+            + f"{RESET}"
+        )
+        for idx, (step_id, desc) in enumerate(catalog, start=1):
+            print(f"  {c(str(idx), BOLD + CYAN)}. {BOLD}{step_id}{RESET} — {desc}")
+        raw_order = ask_text(
+            tr(
+                "Enter ordered numbers separated by commas (e.g. 1,2,4,7)",
+                "Nhập dãy số theo đúng thứ tự lùi dần, cách nhau dấu phẩy (VD: 1,2,4,7)",
+            ),
+            "1,2,4,7",
+        )
+        picked: List[str] = []
+        for part in raw_order.split(","):
+            part = part.strip()
+            if part.isdigit():
+                i = int(part) - 1
+                if 0 <= i < len(catalog):
+                    val = catalog[i][0]
+                    if val not in picked:
+                        picked.append(val)
+            elif part and part not in picked:
+                picked.append(part)
+        return picked if picked else list(default_chain)
+
+    raw_manual = ask_text(
+        tr(
+            f"[{role_id}] Enter fallback chain (e.g. agy:gemini-4-argon-high, agy:claude-opus-5-5-medium, agy:gemini-3.8-flash-high, codex:gpt-6.1-sol (xhigh))",
+            f"[{role_id}] Nhập chuỗi fallback (VD: agy:gemini-4-argon-high, agy:claude-opus-5-5-medium, agy:gemini-3.8-flash-high, codex:gpt-6.1-sol (xhigh))",
+        ),
+        ", ".join(default_chain),
+    )
+    normalized = raw_manual.replace("->", ",").replace("→", ",")
+    parsed = [s.strip() for s in normalized.split(",") if s.strip()]
+    return parsed if parsed else list(default_chain)
+
+
 def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool) -> AgentSpec:
     print(
         c(
@@ -1002,14 +1337,27 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
             BOLD + MAGENTA,
         )
     )
-    if not customize_deeply:
-        print(f"  • {tr('Mission     ', 'Nhiệm vụ     ')}: {template['mission'][:95]}...")
-        print(
-            f"  • Model (Agy)  : {c(template['agy_model'], CYAN)} | Model (Codex): {c(template['codex_model'], CYAN)} ({template['reasoning_effort']}) | Claude: {c(template['claude_model'], CYAN)}"
+    default_chain: List[str] = list(
+        template.get(
+            "fallback_chain",
+            [
+                f"agy:{template['agy_model']}",
+                f"claude:{template['claude_model']}",
+                f"codex:{template['codex_model']} ({template['reasoning_effort']})",
+            ],
         )
-        print(f"  • Skills       : {', '.join(template['skills'])}")
+    )
+    if not customize_deeply:
+        print(f"  • {tr('Mission       ', 'Nhiệm vụ       ')}: {template['mission'][:95]}...")
+        print(
+            f"  • {tr('Primary Models', 'Model chính    ')}: Agy={c(template['agy_model'], CYAN)} | Codex={c(template['codex_model'], CYAN)} ({template['reasoning_effort']}) | Claude={c(template['claude_model'], CYAN)}"
+        )
+        print(
+            f"  • {tr('Fallback Chain', 'Chuỗi Fallback ')}: {c(format_fallback_chain(default_chain), YELLOW)}"
+        )
+        print(f"  • {tr('Skills        ', 'Skills         ')}: {', '.join(template['skills'])}")
         if not ask_yes_no(
-            tr(f"Customize details for agent '{role_id}'?", f"Bạn có muốn chỉnh sửa chi tiết cho agent '{role_id}' không?"),
+            tr(f"Customize details or fallback chain for agent '{role_id}'?", f"Bạn có muốn chỉnh sửa chi tiết hoặc chuỗi fallback cho agent '{role_id}' không?"),
             default=False,
         ):
             return AgentSpec(
@@ -1030,6 +1378,7 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
                 workspace_mode=str(template["workspace_mode"]),
                 agy_tools=list(template["agy_tools"]),
                 skills=list(template["skills"]),
+                fallback_chain=default_chain,
             )
 
     role_label = ask_text(tr(f"[{role_id}] Role title", f"[{role_id}] Tên vai trò (Role)"), template["role"])
@@ -1098,6 +1447,10 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
     if claude_model == "custom":
         claude_model = ask_text(tr(f"[{role_id}] Enter Claude model name", f"[{role_id}] Nhập tên model Claude"), template["claude_model"])
 
+    if default_chain and default_chain[0].startswith("agy:"):
+        default_chain[0] = f"agy:{agy_model}"
+    fallback_chain = ask_fallback_chain(role_id, default_chain)
+
     context_scope = ask_text(
         tr(f"[{role_id}] Context & Scope", f"[{role_id}] Ngữ cảnh & Phạm vi (Context/Scope)"),
         template["context_scope"],
@@ -1142,6 +1495,7 @@ def configure_single_agent(role_id: str, template: Dict, customize_deeply: bool)
         workspace_mode=workspace_mode,
         agy_tools=agy_tools,
         skills=agent_skills,
+        fallback_chain=fallback_chain,
     )
 
 
@@ -1369,6 +1723,12 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
                 "workspace_mode": "share",
                 "agy_tools": list(READ_WRITE_TOOLS),
                 "skills": [],
+                "fallback_chain": [
+                    "agy:gemini-3.8-flash-high",
+                    "agy:gemini-3.1-pro-high",
+                    "claude:sonnet",
+                    "codex:gpt-6-sol (xhigh)",
+                ],
             }
         if custom_id not in selected_roles:
             selected_roles.append(custom_id)
@@ -1377,8 +1737,8 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         (
             "guided",
             tr(
-                "Step through each Agent with detailed prompts (Mission, Model, Provider, Context, Goal)",
-                "Đi qua từng Agent để đặt câu hỏi chi tiết (Nhiệm vụ, Model, Provider, Ngữ cảnh, Mục tiêu)",
+                "Step through each Agent with detailed prompts (Mission, Model, Fallback Chain, Context, Goal)",
+                "Đi qua từng Agent để đặt câu hỏi chi tiết (Nhiệm vụ, Model, Chuỗi Fallback, Ngữ cảnh, Mục tiêu)",
             ),
         ),
         (
@@ -1402,8 +1762,8 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
         if existing_data and "agents" in existing_data:
             for old_ag in existing_data["agents"]:
                 if old_ag.get("id") == role_id:
-                    for k in ("agy_model", "claude_model", "codex_model", "reasoning_effort", "enable_write", "enable_subagents", "enable_mcp", "workspace_mode", "agy_tools", "skills"):
-                        if k in old_ag:
+                    for k in ("agy_model", "claude_model", "codex_model", "reasoning_effort", "enable_write", "enable_subagents", "enable_mcp", "workspace_mode", "agy_tools", "skills", "fallback_chain"):
+                        if k in old_ag and old_ag[k]:
                             tpl[k] = old_ag[k]
                     for text_key in ("title", "role", "mission", "context_scope", "goal_criteria"):
                         val = str(old_ag.get(text_key, ""))
@@ -1556,9 +1916,10 @@ def build_root_agents_md(cfg: TeamConfig, existing_content: Optional[str] = None
         "- Workspace subagents are located in `.agents/agents/{agent_name}/agent.md` (and configured for Codex in `.agents/agents/{agent_name}/agent.toml` via `.codex/config.toml`):"
     ]
     for ag in cfg.agents:
+        chain_note = f", Fallback: `{format_fallback_chain(ag.fallback_chain)}`" if ag.fallback_chain else ""
         subagent_lines.append(
             f"  - `{ag.id}`: `.agents/agents/{ag.id}/agent.md` "
-            f"(Agy: `{ag.agy_model}`, Codex: `{ag.codex_model}` {ag.reasoning_effort}) — {ag.role}"
+            f"(Agy: `{ag.agy_model}`, Codex: `{ag.codex_model}` {ag.reasoning_effort}{chain_note}) — {ag.role}"
         )
 
     extra_bullets = format_extra_rules_bullets(cfg)
@@ -1570,6 +1931,7 @@ def build_root_agents_md(cfg: TeamConfig, existing_content: Optional[str] = None
         f"- **Project Context**: {cfg.project_context}",
         f"- **Primary Goal**: {cfg.project_goal}",
         "- **Line Limit**: Keep `AGENTS.md` strictly under 150 lines; put detailed specs in `.agents/README.md`.",
+        "- **Model & Cross-Provider Fallback**: When a primary model hits quota/rate limits, step down along the agent's `Fallback` chain (or run `agt fallback --step-down <role>`); if Antigravity models are exhausted, switch execution to the configured OpenAI Codex provider.",
         *extra_bullets,
         *subagent_lines,
         f"- **Applied Workspace Skills**: {skills_summary or 'See `.agents/skills.json`'}.",
@@ -1613,8 +1975,9 @@ def build_agents_readme_md(cfg: TeamConfig) -> str:
     """Sinh file .agents/README.md theo đúng chuẩn Orpheus / Act2Morse."""
     rows = []
     for ag in cfg.agents:
+        chain_str = format_fallback_chain(ag.fallback_chain)
         rows.append(
-            f"| `{ag.id}` | `.agents/agents/{ag.id}/agent.md` | `{ag.agy_model}` | `{ag.codex_model}` ({ag.reasoning_effort}) | {ag.role} — {ag.mission} |"
+            f"| `{ag.id}` | `.agents/agents/{ag.id}/agent.md` | `{ag.agy_model}` | `{ag.codex_model}` ({ag.reasoning_effort}) | `{chain_str}` | {ag.role} — {ag.mission} |"
         )
     rows_block = "\n".join(rows)
 
@@ -1631,8 +1994,8 @@ def build_agents_readme_md(cfg: TeamConfig) -> str:
         f"- **Codex** reads `.agents/agents/{{agent_name}}/agent.toml` registered via `../.codex/config.toml`.\n"
         f"- **Claude Code** reads `.claude/agents/{{agent_name}}.md` and `CLAUDE.md`.\n\n"
         f"## Agent Roles & Model Mapping\n\n"
-        f"| Role | Workspace Path | Model (Agy) | Model (Codex) | Purpose |\n"
-        f"| --- | --- | --- | --- | --- |\n"
+        f"| Role | Workspace Path | Model (Agy) | Model (Codex) | Fallback Chain | Purpose |\n"
+        f"| --- | --- | --- | --- | --- | --- |\n"
         f"{rows_block}\n\n"
         f"## Project Context & Goal\n\n"
         f"- **Context**: {cfg.project_context}\n"
@@ -1679,6 +2042,12 @@ def build_single_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
     """
     model_tier = _to_agy_model_tier(ag.agy_model)
     tools_yaml = "\n".join(f"  - {t}" for t in ag.agy_tools)
+    fallback_line = (
+        f"\n- **Fallback Chain**: `{format_fallback_chain(ag.fallback_chain)}` "
+        f"(If the active model hits quota/rate limits, step down in this exact order; if Antigravity quota is exhausted, switch/delegate to the OpenAI Codex provider profile)."
+        if ag.fallback_chain
+        else ""
+    )
     graphify_line = (
         "\n- Follow AGENTS.md. If graphify-out/graph.json exists, run `graphify query` before source searches/reads."
         if "graphify" in cfg.extra_rules
@@ -1708,7 +2077,8 @@ def build_single_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
         f"# Agent System Instructions\n\n"
         f"Project: **{cfg.project_name}** ({cfg.tech_stack})\n"
         f"- **Role**: {ag.role}\n"
-        f"- **Preferred Model**: `{ag.agy_model}` (Tier: `{model_tier}`)\n"
+        f"- **Preferred Model**: `{ag.agy_model}` (Tier: `{model_tier}`)"
+        f"{fallback_line}\n"
         f"- **Mission**: {ag.mission}\n"
         f"- **Context & Scope**: {ag.context_scope}\n"
         f"- **Completion Criteria**: {ag.goal_criteria}"
@@ -1732,8 +2102,14 @@ def build_single_agent_toml(cfg: TeamConfig, ag: AgentSpec) -> str:
     if "graphify" in cfg.extra_rules and ag.enable_write:
         graphify_note += " After modifying code, run graphify update .; expected graph rewrites are not churn."
 
+    fallback_note = (
+        f"Fallback Chain: {format_fallback_chain(ag.fallback_chain)}\n"
+        if ag.fallback_chain
+        else ""
+    )
     instructions = (
         f"Role: {ag.role} for {cfg.project_name}.\n"
+        f"{fallback_note}"
         f"Mission: {ag.mission}\n"
         f"Scope: {ag.context_scope}\n"
         f"Completion Criteria: {ag.goal_criteria}\n"
@@ -1801,7 +2177,8 @@ def build_claude_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
     """Sinh file .claude/agents/<id>.md theo chuẩn Claude Code."""
     tools_str = "Read, Edit, Write, Bash, Grep, Glob" if ag.enable_write else "Read, Grep, Glob, Bash"
     model_line = f"model: {ag.claude_model}\n" if ag.claude_model != "inherit" else ""
-    skills_str = ", ".join(ag.skills) if ag.skills else "Theo ngữ cảnh"
+    skills_str = ", ".join(ag.skills) if ag.skills else "Context-dependent"
+    fallback_str = format_fallback_chain(ag.fallback_chain)
     return (
         f"---\n"
         f"name: {ag.id}\n"
@@ -1811,6 +2188,7 @@ def build_claude_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
         f"---\n\n"
         f"# {ag.id.replace('-', ' ').title()} ({cfg.project_name})\n\n"
         f"- **Mission**: {ag.mission}\n"
+        f"- **Fallback Chain**: `{fallback_str}`\n"
         f"- **Context & Scope**: {ag.context_scope}\n"
         f"- **Goal & Completion Criteria**: {ag.goal_criteria}\n"
         f"- **Preferred Skills**: {skills_str}\n"
@@ -1999,6 +2377,7 @@ def build_preset_config(
                 workspace_mode=str(tpl["workspace_mode"]),
                 agy_tools=list(tpl["agy_tools"]),
                 skills=list(tpl["skills"]),
+                fallback_chain=list(tpl.get("fallback_chain", [])),
             )
         )
 
@@ -2104,9 +2483,14 @@ def cmd_status(target_dir: Path) -> None:
             else:
                 display_role = stored_role
             w = tr("Write", "Ghi/Sửa") if ag.get("enable_write") else tr("Read-Only", "Chỉ đọc")
+            chain = ag.get("fallback_chain") or (
+                active_templates[role_id].get("fallback_chain", []) if role_id in active_templates else []
+            )
+            chain_str = format_fallback_chain(chain)
             print(
                 f"     - [{BOLD}{role_id}{RESET}] {display_role}\n"
-                f"       Agy: {c(ag['agy_model'], CYAN)} | Codex: {c(ag['codex_model'], CYAN)} ({ag.get('reasoning_effort', 'high')}) | Claude: {c(ag['claude_model'], CYAN)} [{w}]"
+                f"       Agy: {c(ag['agy_model'], CYAN)} | Codex: {c(ag['codex_model'], CYAN)} ({ag.get('reasoning_effort', 'high')}) | Claude: {c(ag['claude_model'], CYAN)} [{w}]\n"
+                f"       {tr('Fallback', 'Fallback')}: {c(chain_str, YELLOW)}"
             )
         skills = [s["name"] for s in data.get("selected_skills", [])]
         print(c(tr("\n  🧩 Applied Skills:", "\n  🧩 Skills đã gắn:"), BOLD + CYAN))
@@ -2419,6 +2803,278 @@ def cmd_ps(target_dir: Path) -> None:
     )
 
 
+def _apply_fallback_step_to_agent(ag: AgentSpec, step_str: str) -> str:
+    """
+    Apply a fallback step (e.g. 'agy:claude-opus-5-5-medium', 'agy:gemini-3.8-flash-high',
+    'codex:gpt-6.1-sol (xhigh)', 'claude:sonnet') as the active model for `ag`.
+    Returns a human-readable description of the activated provider/model.
+    """
+    raw = step_str.strip()
+    provider_prefix = "agy"
+    model_part = raw
+    if ":" in raw:
+        provider_prefix, model_part = raw.split(":", 1)
+        provider_prefix = provider_prefix.strip().lower()
+        model_part = model_part.strip()
+
+    effort_match = re.search(r"\((xhigh|high|medium|low)\)", model_part)
+    effort_val = effort_match.group(1) if effort_match else ""
+    clean_model = re.sub(r"\s*\((xhigh|high|medium|low)\)\s*", "", model_part).strip()
+
+    if provider_prefix == "agy":
+        ag.agy_model = clean_model
+        if "opus" in clean_model or "sonnet" in clean_model or "haiku" in clean_model:
+            ag.claude_model = clean_model
+        return f"Antigravity (agy) -> {clean_model} (tier: {_to_agy_model_tier(clean_model)})"
+    if provider_prefix == "codex":
+        ag.codex_model = clean_model
+        if effort_val:
+            ag.reasoning_effort = effort_val
+        return f"OpenAI Codex (codex) -> {clean_model} ({ag.reasoning_effort})"
+    if provider_prefix == "claude":
+        ag.claude_model = clean_model
+        return f"Claude Code (claude) -> {clean_model}"
+    ag.agy_model = clean_model
+    return f"Model -> {clean_model}"
+
+
+def _load_team_config_from_disk(project_path: Path) -> Optional[TeamConfig]:
+    cfg_file = project_path / ".agents" / "team-config.json"
+    if not cfg_file.exists():
+        return None
+    try:
+        raw = json.loads(cfg_file.read_text(encoding="utf-8"))
+        active_templates = get_agent_templates()
+        agents: List[AgentSpec] = []
+        for ag_raw in raw.get("agents", []):
+            role_id = ag_raw.get("id", "")
+            default_chain = (
+                list(active_templates[role_id].get("fallback_chain", []))
+                if role_id in active_templates
+                else [
+                    f"agy:{ag_raw.get('agy_model', 'gemini-3.8-flash-high')}",
+                    f"claude:{ag_raw.get('claude_model', 'sonnet')}",
+                    f"codex:{ag_raw.get('codex_model', 'gpt-6-sol')} ({ag_raw.get('reasoning_effort', 'high')})",
+                ]
+            )
+            if not ag_raw.get("fallback_chain"):
+                ag_raw["fallback_chain"] = default_chain
+            agents.append(AgentSpec(**ag_raw))
+        return TeamConfig(
+            project_name=raw["project_name"],
+            project_path=raw["project_path"],
+            tech_stack=raw["tech_stack"],
+            project_context=raw["project_context"],
+            project_goal=raw["project_goal"],
+            extra_rules=raw.get("extra_rules", []),
+            harnesses=raw.get("harnesses", ["agy", "codex", "claude"]),
+            skill_apply_mode=raw.get("skill_apply_mode", "symlink"),
+            add_commit_restrictions=bool(raw.get("add_commit_restrictions", False)),
+            selected_skill_bundles=raw.get("selected_skill_bundles", []),
+            selected_skills=raw.get("selected_skills", []),
+            agents=agents,
+            updated_at=datetime.now().isoformat(timespec="seconds"),
+        )
+    except Exception:
+        return None
+
+
+def cmd_fallback(
+    target_dir: Path,
+    role_arg: str = "",
+    chain_arg: str = "",
+    step_down_arg: str = "",
+) -> None:
+    """
+    Inspect, customize, or step down along the Model & Cross-Provider Fallback Chain
+    for one or all agents in a project.
+    """
+    project_path = target_dir.resolve()
+    cfg = _load_team_config_from_disk(project_path)
+    if not cfg:
+        print(
+            c(
+                tr(
+                    f"⚠️ No `.agents/team-config.json` found at {project_path}. Run `agt init` first.",
+                    f"⚠️ Chưa có `.agents/team-config.json` tại {project_path}. Hãy chạy `agt init` trước.",
+                ),
+                YELLOW,
+            )
+        )
+        return
+
+    # 1. Non-interactive `--chain` update
+    if chain_arg:
+        normalized = chain_arg.replace("->", ",").replace("→", ",")
+        new_chain = [s.strip() for s in normalized.split(",") if s.strip()]
+        target_roles = [a.id for a in cfg.agents] if role_arg in ("", "all") else [role_arg]
+        updated_any = False
+        for ag in cfg.agents:
+            if ag.id in target_roles and new_chain:
+                ag.fallback_chain = list(new_chain)
+                _apply_fallback_step_to_agent(ag, new_chain[0])
+                updated_any = True
+                print(
+                    c(
+                        tr(
+                            f"✅ Updated fallback chain for [{ag.id}]: {format_fallback_chain(ag.fallback_chain)}",
+                            f"✅ Đã cập nhật chuỗi fallback cho [{ag.id}]: {format_fallback_chain(ag.fallback_chain)}",
+                        ),
+                        GREEN,
+                    )
+                )
+        if updated_any:
+            cfg.updated_at = datetime.now().isoformat(timespec="seconds")
+            write_project_configuration(cfg, dry_run=False)
+        return
+
+    # 2. Non-interactive `--step-down <role|all>` when primary model quota is exhausted
+    if step_down_arg:
+        target_roles = [a.id for a in cfg.agents] if step_down_arg == "all" else [step_down_arg]
+        stepped_any = False
+        for ag in cfg.agents:
+            if ag.id in target_roles and len(ag.fallback_chain) >= 2:
+                exhausted = ag.fallback_chain.pop(0)
+                ag.fallback_chain.append(exhausted)
+                next_step = ag.fallback_chain[0]
+                activated_desc = _apply_fallback_step_to_agent(ag, next_step)
+                stepped_any = True
+                print(
+                    c(
+                        tr(
+                            f"🔄 [{ag.id}] Stepped down from `{exhausted}` -> Activated `{next_step}` ({activated_desc})",
+                            f"🔄 [{ag.id}] Đã lùi từ `{exhausted}` -> Kích hoạt `{next_step}` ({activated_desc})",
+                        ),
+                        BOLD + GREEN,
+                    )
+                )
+                print(
+                    f"   {tr('New chain order', 'Thứ tự chuỗi mới')}: {c(format_fallback_chain(ag.fallback_chain), YELLOW)}"
+                )
+        if stepped_any:
+            cfg.updated_at = datetime.now().isoformat(timespec="seconds")
+            write_project_configuration(cfg, dry_run=False)
+        else:
+            print(
+                c(
+                    tr(
+                        f"⚠️ No matching agent with >=2 fallback steps found for '{step_down_arg}'.",
+                        f"⚠️ Không tìm thấy agent phù hợp có >=2 bước fallback cho '{step_down_arg}'.",
+                    ),
+                    YELLOW,
+                )
+            )
+        return
+
+    # 3. Interactive Fallback Chain Manager
+    print(
+        c(
+            tr(
+                f"\n🔀 Model & Cross-Provider Fallback Manager — {cfg.project_name} ({project_path})",
+                f"\n🔀 Quản lý Chuỗi lùi Model & Đa Provider (Fallback) — {cfg.project_name} ({project_path})",
+            ),
+            BOLD + GREEN,
+        )
+    )
+    for ag in cfg.agents:
+        print(
+            f"  • [{BOLD}{ag.id:<12}{RESET}] "
+            f"Active Agy={c(ag.agy_model, CYAN)} | Codex={c(ag.codex_model, CYAN)} ({ag.reasoning_effort})\n"
+            f"    ↳ {tr('Fallback Chain', 'Chuỗi Fallback')}: {c(format_fallback_chain(ag.fallback_chain), YELLOW)}"
+        )
+
+    action_opts = [
+        (
+            "step-down",
+            tr(
+                "Step down to next fallback model (when current primary model hits quota/rate limit)",
+                "Lùi xuống model dự phòng kế tiếp (khi model hiện tại hết quota / giới hạn)",
+            ),
+        ),
+        (
+            "edit-one",
+            tr(
+                "Configure / customize fallback chain for a specific Agent",
+                "Thiết lập / tùy chỉnh chuỗi fallback cho 1 Agent cụ thể",
+            ),
+        ),
+        (
+            "edit-all",
+            tr(
+                "Apply a fallback chain preset across Agents",
+                "Áp dụng chuỗi fallback cho toàn bộ Agents",
+            ),
+        ),
+        (
+            "exit",
+            tr("Back / Exit", "Quay lại / Thoát"),
+        ),
+    ]
+    act = ask_choice(
+        tr("Select Fallback action", "Chọn thao tác với Chuỗi Fallback"),
+        action_opts,
+        default_index=0,
+    )
+    if act == "exit":
+        return
+
+    role_choices = [(ag.id, f"{ag.role} — {format_fallback_chain(ag.fallback_chain)}") for ag in cfg.agents]
+    if act == "step-down":
+        role_choices_with_all = [
+            ("all", tr("Step down ALL agents to their next fallback model", "Lùi TẤT CẢ agents sang model dự phòng kế tiếp"))
+        ] + role_choices
+        chosen_role = ask_choice(
+            tr("Select Agent whose current model is exhausted", "Chọn Agent đang bị hết quota model hiện tại"),
+            role_choices_with_all,
+            default_index=1 if len(role_choices_with_all) > 1 else 0,
+        )
+        cmd_fallback(project_path, step_down_arg=chosen_role)
+        return
+
+    if act == "edit-one":
+        chosen_role = ask_choice(
+            tr("Select Agent to customize fallback chain", "Chọn Agent muốn chỉnh chuỗi fallback"),
+            role_choices,
+            default_index=0,
+        )
+        for ag in cfg.agents:
+            if ag.id == chosen_role:
+                new_chain = ask_fallback_chain(ag.id, ag.fallback_chain)
+                ag.fallback_chain = new_chain
+                if new_chain:
+                    _apply_fallback_step_to_agent(ag, new_chain[0])
+                print(
+                    c(
+                        tr(
+                            f"\n✅ Saved fallback chain for [{ag.id}]: {format_fallback_chain(ag.fallback_chain)}",
+                            f"\n✅ Đã lưu chuỗi fallback cho [{ag.id}]: {format_fallback_chain(ag.fallback_chain)}",
+                        ),
+                        BOLD + GREEN,
+                    )
+                )
+        cfg.updated_at = datetime.now().isoformat(timespec="seconds")
+        write_project_configuration(cfg, dry_run=False)
+        return
+
+    if act == "edit-all":
+        for ag in cfg.agents:
+            new_chain = ask_fallback_chain(ag.id, ag.fallback_chain)
+            ag.fallback_chain = new_chain
+            if new_chain:
+                _apply_fallback_step_to_agent(ag, new_chain[0])
+        cfg.updated_at = datetime.now().isoformat(timespec="seconds")
+        write_project_configuration(cfg, dry_run=False)
+        print(
+            c(
+                tr(
+                    "\n✅ Updated fallback chains and regenerated workspace agent files!",
+                    "\n✅ Đã cập nhật chuỗi fallback và sinh lại các file cấu hình agent!",
+                ),
+                BOLD + GREEN,
+            )
+        )
+
+
 def print_summary(cfg: TeamConfig, created_files: List[str], dry_run: bool = False) -> None:
     if CURRENT_LANG == "vi":
         prefix = "[DRY-RUN] Dự kiến tạo" if dry_run else "✅ Đã khởi tạo thành công"
@@ -2462,8 +3118,9 @@ def print_cli_help(lang: str = "en") -> None:
             f"{c('COMMANDS:', BOLD + YELLOW)}\n"
             f"  {c('(no command)', BOLD + CYAN)}  Open the interactive CLI dashboard menu (or run wizard)\n"
             f"  {c('init', BOLD + CYAN)}          Run the Multi-Agent & Skills setup wizard for a Project/Repo\n"
+            f"  {c('fallback', BOLD + CYAN)}      Configure or step down along the Model & Provider Fallback Chain\n"
             f"  {c('ps / tasks', BOLD + CYAN)}    Check live running Agent processes, subagents, and tasks\n"
-            f"  {c('status', BOLD + CYAN)}        Inspect active Agent roster, models, and skills in a Project\n"
+            f"  {c('status', BOLD + CYAN)}        Inspect active Agent roster, models, fallback chains, and skills\n"
             f"  {c('list-skills', BOLD + CYAN)}   List all discovered local Skills\n\n"
             f"{c('OPTIONS:', BOLD + YELLOW)}\n"
             f"  {c('-t, --target <path>', CYAN)}     Target project directory (default: current directory)\n"
@@ -2472,11 +3129,16 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('--context <text>', CYAN)}        Project context description (used with --yes)\n"
             f"  {c('--harnesses <list>', CYAN)}      Target harnesses: agy,codex,claude (default: all)\n"
             f"  {c('--skill-mode <mode>', CYAN)}     Skill linking mode: symlink | copy | json-only\n"
+            f"  {c('--step-down <role|all>', CYAN)}  Promote next fallback model when current model hits quota (`agt fallback`)\n"
+            f"  {c('--role <role>', CYAN)}           Target role for `agt fallback --chain`\n"
+            f"  {c('--chain <list>', CYAN)}          Set custom fallback chain (comma or '->' separated)\n"
             f"  {c('--lang <en|vi>', CYAN)}          CLI display language: en (English, default) or vi (Tiếng Việt)\n"
             f"  {c('--dry-run', CYAN)}               Preview generated files without writing to disk\n"
             f"  {c('-h, --help', CYAN)}              Show this help message\n\n"
             f"{c('EXAMPLES:', BOLD + YELLOW)}\n"
             f"  • Launch interactive setup in a project      : {c('cd ~/project-example && agt', GREEN)}\n"
+            f"  • Configure / manage model fallback chains   : {c('agt fallback -t ~/project-example', GREEN)}\n"
+            f"  • Step down to next fallback model on quota  : {c('agt fallback -t ~/project-example --step-down orchestrator', GREEN)}\n"
             f"  • Check running agents & active tasks        : {c('agt ps -t ~/project-example', GREEN)}\n"
             f"  • Quick preset init for a repository         : {c('agt init -t ~/project-example -y', GREEN)}\n"
             f"  • Inspect AI team status                     : {c('agt status -t ~/project-example', GREEN)}\n"
@@ -2488,8 +3150,9 @@ def print_cli_help(lang: str = "en") -> None:
             f"{c('CÁC LỆNH CHÍNH:', BOLD + YELLOW)}\n"
             f"  {c('(không truyền lệnh)', BOLD + CYAN)} Mở Bảng điều khiển tương tác (TUI Menu / Wizard)\n"
             f"  {c('init', BOLD + CYAN)}                Chạy Wizard thiết lập đội ngũ AI & Skills cho Project/Repo\n"
+            f"  {c('fallback', BOLD + CYAN)}            Thiết lập hoặc lùi Model theo Chuỗi Fallback đa Provider\n"
             f"  {c('ps / tasks', BOLD + CYAN)}          Kiểm tra Agents nào đang chạy task nào (tiến trình, subagents, checklist)\n"
-            f"  {c('status', BOLD + CYAN)}              Xem trạng thái đội ngũ Agents, Models & Skills của Project\n"
+            f"  {c('status', BOLD + CYAN)}              Xem trạng thái đội ngũ Agents, Models, Chuỗi Fallback & Skills\n"
             f"  {c('list-skills', BOLD + CYAN)}         Liệt kê toàn bộ 150+ Skills đang có trên máy\n\n"
             f"{c('TÙY CHỌN (OPTIONS):', BOLD + YELLOW)}\n"
             f"  {c('-t, --target <path>', CYAN)}     Đường dẫn tới project/repo cần thiết lập (mặc định: `.`)\n"
@@ -2498,11 +3161,16 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('--context <text>', CYAN)}        Ngữ cảnh kiến trúc của project (dùng kèm `--yes`)\n"
             f"  {c('--harnesses <list>', CYAN)}      Công cụ xuất cấu hình: `agy,codex,claude` (mặc định: cả 3)\n"
             f"  {c('--skill-mode <mode>', CYAN)}     Chế độ gắn skills: `symlink` | `copy` | `json-only`\n"
+            f"  {c('--step-down <role|all>', CYAN)}  Lùi ngay sang model dự phòng kế tiếp khi hết quota (`agt fallback`)\n"
+            f"  {c('--role <role>', CYAN)}           Chọn role cần gán chuỗi fallback (`agt fallback --chain`)\n"
+            f"  {c('--chain <list>', CYAN)}          Chuỗi fallback tùy chỉnh (cách nhau dấu phẩy hoặc `->`)\n"
             f"  {c('--lang <en|vi>', CYAN)}          Ngôn ngữ giao diện CLI: `en` (Tiếng Anh, mặc định) hoặc `vi` (Tiếng Việt)\n"
             f"  {c('--dry-run', CYAN)}               Xem trước danh sách file sẽ sinh ra mà không ghi xuống ổ cứng\n"
             f"  {c('-h, --help', CYAN)}              Hiển thị bảng hướng dẫn này\n\n"
             f"{c('VÍ DỤ:', BOLD + YELLOW)}\n"
             f"  • Thiết lập đội AI cho một project       : {c('cd ~/project-example && agt', GREEN)}\n"
+            f"  • Quản lý / đổi chuỗi lùi Fallback       : {c('agt fallback -t ~/project-example --lang vi', GREEN)}\n"
+            f"  • Lùi model ngay khi Argon hết quota     : {c('agt fallback -t ~/project-example --step-down orchestrator', GREEN)}\n"
             f"  • Kiểm tra agents & tasks đang chạy      : {c('agt ps -t ~/project-example --lang vi', GREEN)}\n"
             f"  • Tạo nhanh đội AI bằng Preset           : {c('agt init -t ~/project-example -y', GREEN)}\n"
             f"  • Kiểm tra trạng thái đội AI             : {c('agt status -t ~/project-example', GREEN)}\n"
@@ -2521,8 +3189,9 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             menu_opts = [
                 ("wizard", "Thiết lập đội ngũ AI & Skills theo từng bước (Interactive Wizard)"),
                 ("preset", "Khởi tạo nhanh đội hình 5 Agents chuẩn cho 1 Project (Quick Preset)"),
+                ("fallback", "Thiết lập / Lùi Model theo Chuỗi Fallback đa Provider (`agt fallback`)"),
                 ("ps", "Kiểm tra Agents nào đang chạy task nào (Live Agent & Task Monitor)"),
-                ("status", "Xem trạng thái đội ngũ AI & Skills của Project"),
+                ("status", "Xem trạng thái đội ngũ AI, Chuỗi Fallback & Skills của Project"),
                 ("list-skills", "Tra cứu danh sách 150+ Skills đang có trên máy"),
                 ("lang", "Switch CLI language to English (Chuyển sang Tiếng Anh)"),
                 ("exit", "Thoát (Exit)"),
@@ -2533,8 +3202,9 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             menu_opts = [
                 ("wizard", "Configure Multi-Agent Team & Skills step-by-step (Interactive Wizard)"),
                 ("preset", "Quick-initialize standard 5-Agent Team (Quick Preset)"),
+                ("fallback", "Configure or Step Down Model & Provider Fallback Chains (`agt fallback`)"),
                 ("ps", "Check live running Agents, subagents & active tasks (`agt ps`)"),
-                ("status", "Inspect active Agent Team & Skills status for a Project"),
+                ("status", "Inspect active Agent Team, Fallback Chains & Skills status"),
                 ("list-skills", "Browse all 150+ discovered local Skills"),
                 ("lang", "Chuyển ngôn ngữ giao diện sang Tiếng Việt (Switch to Vietnamese)"),
                 ("exit", "Exit"),
@@ -2550,6 +3220,10 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             continue
         if action == "list-skills":
             cmd_list_skills()
+            return
+        if action == "fallback":
+            proj = select_project_directory(target_path, projects_root)
+            cmd_fallback(proj)
             return
         if action == "ps":
             proj = select_project_directory(target_path, projects_root)
@@ -2655,6 +3329,13 @@ def main() -> None:
     p_tasks.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_tasks.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
 
+    p_fb = subparsers.add_parser("fallback", add_help=False, help="Configure or step down model fallback chains")
+    p_fb.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
+    p_fb.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
+    p_fb.add_argument("--role", type=str, default="", help="Target role (or 'all') for --chain")
+    p_fb.add_argument("--chain", type=str, default="", help="Custom fallback chain (comma or '->' separated)")
+    p_fb.add_argument("--step-down", type=str, default="", help="Role (or 'all') to step down to next fallback model")
+
     p_menu = subparsers.add_parser("menu", add_help=False, help="Open interactive dashboard menu")
     p_menu.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_menu.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
@@ -2673,6 +3354,15 @@ def main() -> None:
 
     if args.command in ("ps", "tasks"):
         cmd_ps(Path(args.target))
+        return
+
+    if args.command == "fallback":
+        cmd_fallback(
+            Path(args.target),
+            role_arg=getattr(args, "role", ""),
+            chain_arg=getattr(args, "chain", ""),
+            step_down_arg=getattr(args, "step_down", ""),
+        )
         return
 
     target_path = Path(getattr(args, "target", "."))

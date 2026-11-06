@@ -78,6 +78,28 @@ agt --lang vi
 agt --lang en
 ```
 
+### D. Chuỗi lùi Model & Provider dự phòng (Fallback Chain)
+Mỗi agent có một chuỗi fallback theo thứ tự. Ví dụ chuỗi mặc định của `orchestrator`:
+
+`agy:gemini-4-argon-high → agy:claude-opus-5-5-medium → agy:gemini-3.8-flash-high → codex:gpt-6.1-sol (xhigh)`
+
+```bash
+# Trình quản lý tương tác: xem, sửa, áp preset hoặc lùi model
+agt fallback --target ~/project-example --lang vi
+
+# Argon hết quota: chuyển orchestrator sang model kế tiếp (Opus 5.5)
+agt fallback --target ~/project-example --step-down orchestrator
+
+# Lùi tất cả agents xuống một bậc
+agt fallback --target ~/project-example --step-down all
+
+# Đặt chuỗi tùy chỉnh cho một role
+agt fallback --target ~/project-example --role reviewer \
+  --chain "agy:gemini-3.1-pro-high -> agy:claude-opus-5-5-medium -> codex:gpt-6.1-sol (xhigh)"
+```
+
+`--step-down` xoay vòng chuỗi, ghi lại `agent.md` (tier Antigravity), `agent.toml` (model Codex + reasoning effort) và `.claude/agents/*.md`, rồi lưu thứ tự mới vào `.agents/team-config.json`. Chuỗi fallback cũng được ghi vào hướng dẫn của từng agent.
+
 ---
 
 ## 3. Cấu Trúc File Được Sinh Ra Tự Động Cho Mỗi Project

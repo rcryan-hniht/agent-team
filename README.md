@@ -84,6 +84,28 @@ agt status --target ~/project-example
 agt list-skills
 ```
 
+#### D. Model & Cross-Provider Fallback Chains
+Each agent has an ordered fallback chain. For example, the default `orchestrator` chain is:
+
+`agy:gemini-4-argon-high → agy:claude-opus-5-5-medium → agy:gemini-3.8-flash-high → codex:gpt-6.1-sol (xhigh)`
+
+```bash
+# Interactive manager: view, edit, apply presets, or step down
+agt fallback --target ~/project-example
+
+# Argon hit its quota: move orchestrator to the next model (Opus 5.5)
+agt fallback --target ~/project-example --step-down orchestrator
+
+# Step every agent down one level
+agt fallback --target ~/project-example --step-down all
+
+# Set a custom chain for one role
+agt fallback --target ~/project-example --role reviewer \
+  --chain "agy:gemini-3.1-pro-high -> agy:claude-opus-5-5-medium -> codex:gpt-6.1-sol (xhigh)"
+```
+
+`--step-down` rotates the chain, rewrites `agent.md` (Antigravity tier), `agent.toml` (Codex model + reasoning effort), and `.claude/agents/*.md`, and saves the new order to `.agents/team-config.json`. The chain is also written into every agent's instructions.
+
 ---
 
 ## 🏗️ Default Agent Roster & Model Mapping
