@@ -4476,7 +4476,7 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
                 lines.append(f"     • {emoji} {role_lbl} {kind_lbl:<12} : {c(desc, active_accent)}")
     else:
         lines.append(
-            f"  {c(tr('○ Standby: All 7 mascots are idle. No background subagents currently occupying tasks.', '○ Chờ lệnh: Cả 7 linh vật đang nghỉ. Chưa có subagent nào chiếm giữ tác vụ.'), DIM)}"
+            f"  {c(tr('○ Standby: All 8 mascots are idle. No background subagents currently occupying tasks.', '○ Chờ lệnh: Cả 8 linh vật đang nghỉ. Chưa có subagent nào chiếm giữ tác vụ.'), DIM)}"
         )
     lines.append("")
 
@@ -4484,8 +4484,8 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
     lines.append(
         c(
             tr(
-                "  1. Live OS Processes from /proc (`agy`, `codex`, `claude`):",
-                "  1. Tiến trình OS Thời Gian Thực từ /proc (`agy`, `codex`, `claude`):",
+                "  🖥️  OS Processes:",
+                "  🖥️  Tiến trình OS:",
             ),
             BOLD + CYAN,
         )
@@ -4530,8 +4530,8 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
     lines.append(
         c(
             tr(
-                "\n  2. Recent Antigravity Sessions & Active Subagents:",
-                "\n  2. Phiên làm việc Antigravity & Subagents gần nhất:",
+                "\n  💬  Agent Sessions:",
+                "\n  💬  Phiên làm việc:",
             ),
             BOLD + CYAN,
         )
@@ -4589,8 +4589,8 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
     lines.append(
         c(
             tr(
-                "\n  3. Workspace Agents Readiness (`agy` / `codex` / `claude`):",
-                "\n  3. Trạng thái sẵn sàng của Agents trong Project (`agy` / `codex` / `claude`):",
+                "\n  👥  Workspace Agents:",
+                "\n  👥  Trạng thái Agents:",
             ),
             BOLD + CYAN,
         )

@@ -307,5 +307,26 @@ class TestDynamicProviderAccentColors(unittest.TestCase):
         self.assertNotIn("\033[32m", claude_line)
 
 
+class TestPsViewSimplifiedHeadings(unittest.TestCase):
+    def test_ps_view_simplified_headings_and_icons(self):
+        with patch.object(agent_team, "CURRENT_LANG", "en"):
+            view_en = agent_team.render_ps_view(Path("."))
+            self.assertIn("🖥️  OS Processes:", view_en)
+            self.assertIn("💬  Agent Sessions:", view_en)
+            self.assertIn("👥  Workspace Agents:", view_en)
+            self.assertNotIn("1. Live OS Processes", view_en)
+            self.assertNotIn("2. Recent Antigravity Sessions", view_en)
+            self.assertNotIn("3. Workspace Agents Readiness", view_en)
+
+        with patch.object(agent_team, "CURRENT_LANG", "vi"):
+            view_vi = agent_team.render_ps_view(Path("."))
+            self.assertIn("🖥️  Tiến trình OS:", view_vi)
+            self.assertIn("💬  Phiên làm việc:", view_vi)
+            self.assertIn("👥  Trạng thái Agents:", view_vi)
+            self.assertNotIn("1. Tiến trình OS", view_vi)
+            self.assertNotIn("2. Phiên làm việc", view_vi)
+            self.assertNotIn("3. Trạng thái sẵn sàng", view_vi)
+
+
 if __name__ == "__main__":
     unittest.main()
