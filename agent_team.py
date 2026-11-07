@@ -29,7 +29,7 @@ import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
 # ANSI Styling Helpers
@@ -74,6 +74,13 @@ def rgb_fg(color: Tuple[int, int, int]) -> str:
     if not sys.stdout.isatty() or os.environ.get("NO_COLOR"):
         return ""
     return f"\033[38;2;{color[0]};{color[1]};{color[2]}m"
+
+
+def _col(text: str, width: int, color_str: str = "") -> str:
+    raw = ANSI_ESCAPE_RE.sub("", text)
+    pad = max(0, width - len(raw))
+    colored = c(text, color_str) if color_str else text
+    return colored + (" " * pad)
 
 
 # ---------------------------------------------------------------------------
@@ -312,6 +319,174 @@ def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Opt
 
     lines.append(m + DIM + "─" * total_w + RESET)
     lines.append("")
+    return "\n".join(lines)
+
+
+# Mascot Emojis for status and ps monitor
+MASCOT_EMOJIS = {
+    "lead-architect": "🦉",
+    "lead-critic": "🐱",
+    "orchestrator": "🐙",
+    "reviewer": "🐸",
+    "implementer": "🐰",
+    "searcher": "🦇",
+    "committer": "🐧",
+}
+
+ROLE_ALIASES = {
+    "architect": "lead-architect",
+    "lead-architect": "lead-architect",
+    "arch": "lead-architect",
+    "owl": "lead-architect",
+    "critic": "lead-critic",
+    "lead-critic": "lead-critic",
+    "cat": "lead-critic",
+    "orchestrator": "orchestrator",
+    "orch": "orchestrator",
+    "octopus": "orchestrator",
+    "reviewer": "reviewer",
+    "rev": "reviewer",
+    "frog": "reviewer",
+    "implementer": "implementer",
+    "imp": "implementer",
+    "rabbit": "implementer",
+    "searcher": "searcher",
+    "search": "searcher",
+    "bat": "searcher",
+    "committer": "committer",
+    "commit": "committer",
+    "penguin": "committer",
+}
+
+
+def render_7col_agent_ps_grid(
+    active_roles: Optional[Dict[str, str]] = None,
+    term_w: Optional[int] = None,
+) -> str:
+    """
+    Render 7 columns of mascot pixel art with dynamic glowing effect for active roles.
+    - Active roles: Overhead '⚡ ACTIVE ⚡' crown, radiant boosted RGB colors, bold role tag, '⚡ BUSY' badge.
+    - Idle roles: Dimmed palette, dim role tag, '○ idle' badge.
+    """
+    if active_roles is None:
+        active_roles = {}
+    normalized_active: Dict[str, str] = {}
+    for k, v in active_roles.items():
+        clean_k = k.strip().lower()
+        canonical = ROLE_ALIASES.get(clean_k, clean_k)
+        normalized_active[canonical] = v
+
+    if term_w is None:
+        term_w = shutil.get_terminal_size((115, 24)).columns
+    num_cols = len(PIXEL_ART_ANIMALS)
+    hdr_w = 4
+    avail_w = term_w - hdr_w
+    cell_w = max(13, min(18, avail_w // num_cols))
+    total_w = hdr_w + cell_w * num_cols
+    margin = max(0, (term_w - total_w) // 2)
+    m = " " * margin
+
+    lines = []
+    lines.append("")
+
+    # 0. Crown / Aura row above sprites
+    crown_row = m + " " * hdr_w
+    for k in range(num_cols):
+        role_id = PIXEL_ART_ANIMALS[k][0]
+        is_active = role_id in normalized_active
+        if is_active:
+            glow_tag = f"{BOLD}{YELLOW}⚡ ACTIVE ⚡{RESET}" if sys.stdout.isatty() else "⚡ ACTIVE ⚡"
+            tag_len = 10
+            pad = max(0, cell_w - tag_len)
+            crown_row += " " * (pad // 2) + glow_tag + " " * (pad - pad // 2)
+        else:
+            crown_row += " " * cell_w
+    lines.append(crown_row)
+
+    # 6 rows of sprite
+    for r in range(6):
+        row = m + " " * hdr_w
+        for k in range(num_cols):
+            role_id = PIXEL_ART_ANIMALS[k][0]
+            color = PIXEL_ART_ANIMALS[k][1]
+            grid = PIXEL_ART_ANIMALS[k][4]
+            is_active = role_id in normalized_active
+            if is_active:
+                boost_c = (
+                    min(255, int(color[0] * 1.35 + 45)),
+                    min(255, int(color[1] * 1.35 + 45)),
+                    min(255, int(color[2] * 1.35 + 45)),
+                )
+                if sys.stdout.isatty():
+                    s = "".join((f"{BOLD}{rgb_fg(boost_c)}██{RESET}") if ch == "#" else "  " for ch in grid[r])
+                else:
+                    s = "".join("██" if ch == "#" else "  " for ch in grid[r])
+            else:
+                dim_c = (
+                    max(20, int(color[0] * 0.42)),
+                    max(20, int(color[1] * 0.42)),
+                    max(20, int(color[2] * 0.42)),
+                )
+                if sys.stdout.isatty():
+                    s = "".join((f"{DIM}{rgb_fg(dim_c)}██{RESET}") if ch == "#" else "  " for ch in grid[r])
+                else:
+                    s = "".join("░░" if ch == "#" else "  " for ch in grid[r])
+            pad = max(0, cell_w - 10)
+            row += " " * (pad // 2) + s + " " * (pad - pad // 2)
+        lines.append(row)
+
+    # Animal kind
+    row = m + " " * hdr_w
+    for k in range(num_cols):
+        role_id = PIXEL_ART_ANIMALS[k][0]
+        kind = PIXEL_ART_ANIMALS[k][2]
+        color = PIXEL_ART_ANIMALS[k][1]
+        is_active = role_id in normalized_active
+        pad = max(0, cell_w - len(kind))
+        if is_active:
+            boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
+            colored_kind = f"{BOLD}{rgb_fg(boost_c)}{kind}{RESET}" if sys.stdout.isatty() else kind
+        else:
+            colored_kind = f"{DIM}{kind}{RESET}" if sys.stdout.isatty() else kind
+        row += " " * (pad // 2) + colored_kind + " " * (pad - pad // 2)
+    lines.append(row)
+
+    # Roles
+    roles_mid = ["[architect]", "[critic]", "[orchestrator]", "[reviewer]", "[implementer]", "[searcher]", "[committer]"]
+    roles_short = ["[arch]", "[critic]", "[orch]", "[reviewer]", "[imp]", "[search]", "[commit]"]
+    row = m + " " * hdr_w
+    for k in range(num_cols):
+        role_id = PIXEL_ART_ANIMALS[k][0]
+        color = PIXEL_ART_ANIMALS[k][1]
+        is_active = role_id in normalized_active
+        tag = roles_mid[k] if cell_w >= 14 else roles_short[k]
+        pad = max(0, cell_w - len(tag))
+        if is_active:
+            boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
+            colored_tag = f"{BOLD}{rgb_fg(boost_c)}{tag}{RESET}" if sys.stdout.isatty() else tag
+        else:
+            colored_tag = f"{DIM}{tag}{RESET}" if sys.stdout.isatty() else tag
+        row += " " * (pad // 2) + colored_tag + " " * (pad - pad // 2)
+    lines.append(row)
+
+    # State row (⚡ BUSY vs ○ idle)
+    row = m + " " * hdr_w
+    for k in range(num_cols):
+        role_id = PIXEL_ART_ANIMALS[k][0]
+        is_active = role_id in normalized_active
+        if is_active:
+            st = "⚡ BUSY"
+            vis_len = 6
+            colored_st = f"{BOLD}{YELLOW}{st}{RESET}" if sys.stdout.isatty() else st
+        else:
+            st = "○ idle"
+            vis_len = 6
+            colored_st = f"{DIM}{st}{RESET}" if sys.stdout.isatty() else st
+        pad = max(0, cell_w - vis_len)
+        row += " " * (pad // 2) + colored_st + " " * (pad - pad // 2)
+    lines.append(row)
+
+    lines.append(m + DIM + "─" * total_w + RESET)
     return "\n".join(lines)
 
 
@@ -3175,28 +3350,351 @@ def parse_yaml_frontmatter(md_path: Path) -> Dict[str, str]:
     return result
 
 
-def cmd_ps(target_dir: Path) -> None:
+def get_live_os_procs(project_path: Path) -> List[Dict[str, Any]]:
+    """Scan /proc to find active agy, codex, claude, or python agent CLI processes."""
+    proc_root = Path("/proc")
+    running_procs: List[Dict[str, Any]] = []
+    now_ts = datetime.now().timestamp()
+    resolved_proj = project_path.resolve()
+
+    if not proc_root.is_dir():
+        return running_procs
+
+    my_pid = str(os.getpid())
+
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit() or entry.name == my_pid:
+            continue
+        try:
+            comm = (entry / "comm").read_text(encoding="utf-8", errors="ignore").strip()
+            cmdline_bytes = (entry / "cmdline").read_bytes()
+            cmdline_str = cmdline_bytes.replace(b"\x00", b" ").decode("utf-8", errors="ignore").strip()
+
+            is_matched = comm in ("agy", "codex", "claude", "gemini")
+            if not is_matched and ("agent_team.py" in cmdline_str or "agent_team" in comm):
+                is_matched = True
+
+            if not is_matched:
+                continue
+
+            status_text = (entry / "status").read_text(encoding="utf-8", errors="ignore")
+            vmrss = "-"
+            threads = "-"
+            state = "-"
+            for line in status_text.splitlines():
+                if line.startswith("VmRSS:"):
+                    kb = int(line.split()[1])
+                    vmrss = f"{kb / 1024:.1f} MB" if kb >= 1024 else f"{kb} KB"
+                elif line.startswith("Threads:"):
+                    threads = line.split()[1]
+                elif line.startswith("State:"):
+                    state = line.split(":", 1)[1].strip()
+
+            cwd_link = os.readlink(str(entry / "cwd"))
+            stat_mtime = (entry / "stat").stat().st_mtime
+            elapsed_sec = max(0, int(now_ts - stat_mtime))
+            mins, secs = divmod(elapsed_sec, 60)
+            hrs, mins = divmod(mins, 60)
+            elapsed_str = f"{hrs:02d}:{mins:02d}:{secs:02d}" if hrs else f"{mins:02d}:{secs:02d}"
+
+            in_proj = False
+            try:
+                in_proj = Path(cwd_link).resolve() == resolved_proj
+            except Exception:
+                pass
+
+            running_procs.append(
+                {
+                    "pid": entry.name,
+                    "comm": comm,
+                    "cwd": cwd_link,
+                    "cmdline": cmdline_str or comm,
+                    "elapsed": elapsed_str,
+                    "vmrss": vmrss,
+                    "threads": threads,
+                    "state": state,
+                    "in_project": in_proj,
+                }
+            )
+        except Exception:
+            continue
+
+    # Sort so processes belonging to THIS PROJECT appear first, then by PID integer
+    running_procs.sort(key=lambda p: (not p["in_project"], int(p["pid"])))
+    return running_procs
+
+
+def detect_live_agent_occupancy(
+    project_path: Path,
+    manual_active: str = "",
+) -> Tuple[Dict[str, str], List[Dict[str, Any]]]:
     """
-    Inspect live running Agent CLI processes (agy / codex / claude),
-    active Antigravity sessions/subagents/tasks, and workspace agent readiness.
+    Detect currently active tasks and which role is occupying which task.
+    Inspects ~/.gemini/antigravity-cli/brain/ for recent sessions, tool calls, and subagent invocations.
+    Allows manual override/simulation via manual_active.
+    """
+    active_roles: Dict[str, str] = {}
+    recent_sessions: List[Dict[str, Any]] = []
+    now_ts = datetime.now().timestamp()
+
+    # 1. Apply manual active roles if supplied
+    if manual_active:
+        parts = [p.strip().lower() for p in manual_active.replace(";", ",").split(",") if p.strip()]
+        for p in parts:
+            canonical = ROLE_ALIASES.get(p, p)
+            active_roles[canonical] = tr(
+                "Active task (specified via --active)",
+                "Tác vụ đang chiếm giữ (chỉ định qua --active)",
+            )
+
+    # 2. Inspect Antigravity brain sessions
+    brain_root = Path.home() / ".gemini" / "antigravity-cli" / "brain"
+    if brain_root.is_dir():
+        candidates: List[Tuple[float, Path]] = []
+        for conv_dir in brain_root.iterdir():
+            if not conv_dir.is_dir():
+                continue
+            tr_path = conv_dir / ".system_generated" / "logs" / "transcript.jsonl"
+            if tr_path.exists():
+                try:
+                    candidates.append((tr_path.stat().st_mtime, conv_dir))
+                except Exception:
+                    pass
+        candidates.sort(key=lambda x: x[0], reverse=True)
+
+        for mtime, conv_dir in candidates[:5]:
+            age_sec = max(0, int(now_ts - mtime))
+            tr_path = conv_dir / ".system_generated" / "logs" / "transcript.jsonl"
+            last_tool = "-"
+            subagents_invoked: List[Dict[str, str]] = []
+            lines: List[str] = []
+            try:
+                lines = tr_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+                for ln in lines[-60:]:
+                    try:
+                        obj = json.loads(ln)
+                    except Exception:
+                        continue
+                    for tc in obj.get("tool_calls", []) or []:
+                        tname = tc.get("name", "")
+                        if tname:
+                            last_tool = tname
+                        args_obj = tc.get("arguments") or tc.get("args") or {}
+                        if isinstance(args_obj, str):
+                            try:
+                                args_obj = json.loads(args_obj)
+                            except Exception:
+                                args_obj = {}
+                        if not isinstance(args_obj, dict):
+                            args_obj = {}
+
+                        if tname == "invoke_subagent":
+                            tn = str(args_obj.get("TypeName", "subagent")).lower()
+                            r = str(args_obj.get("Role", ""))
+                            p = str(args_obj.get("Prompt", ""))[:70].replace("\n", " ")
+                            subagents_invoked.append({"type": tn, "role": r, "prompt": p})
+                            for kr in ROLE_ALIASES:
+                                if kr in tn or kr in r.lower():
+                                    canonical = ROLE_ALIASES[kr]
+                                    active_roles[canonical] = f"{r}: \"{p}\""
+                        elif age_sec < 180 and not manual_active:
+                            # Heuristic based on active recent session tools (< 3 minutes)
+                            if tname in ("write_file", "edit_file"):
+                                active_roles.setdefault("implementer", tr(f"Editing code via {tname}", f"Đang sửa mã qua {tname}"))
+                            elif tname in ("read_file", "search_web", "list_resources"):
+                                active_roles.setdefault("searcher", tr(f"Researching codebase via {tname}", f"Đang đọc mã/tài liệu qua {tname}"))
+                            elif tname == "run_command":
+                                cmd_str = str(args_obj.get("CommandLine", ""))
+                                if cmd_str.strip().startswith("git ") or " git " in cmd_str:
+                                    active_roles.setdefault("committer", tr("Executing git command", "Đang chạy lệnh git"))
+                                elif any(k in cmd_str for k in ("pytest", "python -m unittest", "cargo test", "npm test")):
+                                    active_roles.setdefault("implementer", tr("Running tests/verification", "Đang chạy test kiểm định"))
+                                else:
+                                    active_roles.setdefault("orchestrator", tr("Executing system command", "Đang điều phối lệnh hệ thống"))
+                            elif tname == "ask_question":
+                                active_roles.setdefault("lead-architect", tr("Clarifying architecture with user", "Đang làm rõ kiến trúc với người dùng"))
+            except Exception:
+                pass
+
+            task_items: Dict[str, Any] = {"running": [], "pending": [], "done": []}
+            task_md = conv_dir / "task.md"
+            if task_md.exists():
+                try:
+                    t_lines = task_md.read_text(encoding="utf-8", errors="ignore").splitlines()
+                    task_items["running"] = [l.strip() for l in t_lines if "[/]" in l]
+                    task_items["pending"] = [l.strip() for l in t_lines if "[ ]" in l]
+                    task_items["done"] = [l.strip() for l in t_lines if "[x]" in l or "[X]" in l]
+                except Exception:
+                    pass
+
+            recent_sessions.append(
+                {
+                    "id": conv_dir.name,
+                    "age_sec": age_sec,
+                    "steps": len(lines),
+                    "last_tool": last_tool,
+                    "subagents": subagents_invoked,
+                    "tasks": task_items,
+                }
+            )
+
+    return active_roles, recent_sessions
+
+
+def cmd_ps(target_dir: Path, active_arg: str = "") -> None:
+    """
+    Redesigned Live Multi-Agent & OS Process Monitor:
+    1. 7-Mascot pixel art grid with glowing radiant effect for active roles.
+    2. Active Task Occupancy Breakdown.
+    3. Live OS Processes from /proc (agy / codex / claude / python agents).
+    4. Active Sessions, Background Subagents & task.md checklist.
+    5. Workspace Agent Definitions Readiness.
     """
     project_path = target_dir.resolve()
     print(
         c(
             tr(
-                f"\n🛰️  Live Agent & Task Monitor — {project_path.name} ({project_path})",
-                f"\n🛰️  Giám sát Agents & Tác vụ đang chạy — {project_path.name} ({project_path})",
+                f"\n🛰️  Live Multi-Agent & OS Process Monitor — {project_path.name} ({project_path})",
+                f"\n🛰️  Giám Sát Tiến Trình OS & Đội Ngũ Multi-Agent — {project_path.name} ({project_path})",
             ),
             BOLD + GREEN,
         )
     )
 
-    # 1. Workspace Agent Readiness (.agents/agents/*/agent.md)
+    # Detect live occupancy and sessions
+    active_roles, recent_sessions = detect_live_agent_occupancy(project_path, manual_active=active_arg)
+
+    # 1. 7-Column Mascot Pixel Art with Glow
+    grid_art = render_7col_agent_ps_grid(active_roles)
+    print(grid_art)
+
+    # Active Task Occupancy Breakdown
+    if active_roles:
+        print(
+            c(
+                tr(
+                    f"  ⚡ Active Task Occupancy ({len(active_roles)} role(s) occupying tasks):",
+                    f"  ⚡ Tác Vụ Đang Chiếm Giữ ({len(active_roles)} vai trò đang hoạt động):",
+                ),
+                BOLD + YELLOW,
+            )
+        )
+        for r_id in ["lead-architect", "lead-critic", "orchestrator", "reviewer", "implementer", "searcher", "committer"]:
+            if r_id in active_roles:
+                emoji = MASCOT_EMOJIS.get(r_id, "🤖")
+                desc = active_roles[r_id]
+                color = ROLE_COLORS.get(r_id, (255, 255, 255))
+                boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
+                role_lbl = f"{BOLD}{rgb_fg(boost_c)}[{r_id}]{RESET}"
+                kind_lbl = f"({ROLE_ANIMALS.get(r_id, 'mascot')})"
+                print(f"     • {emoji} {role_lbl} {kind_lbl:<12} : {c(desc, YELLOW)}")
+    else:
+        print(
+            f"  {c(tr('○ Standby: All 7 mascots are idle. No background subagents currently occupying tasks.', '○ Chờ lệnh: Cả 7 linh vật đang nghỉ. Chưa có subagent nào chiếm giữ tác vụ.'), DIM)}"
+        )
+    print("")
+
+    # 2. Live OS Processes from /proc
     print(
         c(
             tr(
-                "\n  1. Workspace Agents Readiness (`agy` / `codex` / `claude`):",
-                "\n  1. Trạng thái sẵn sàng của Agents trong Project (`agy` / `codex` / `claude`):",
+                "  1. Live OS Processes from /proc (`agy`, `codex`, `claude`):",
+                "  1. Tiến trình OS Thời Gian Thực từ /proc (`agy`, `codex`, `claude`):",
+            ),
+            BOLD + CYAN,
+        )
+    )
+    running_procs = get_live_os_procs(project_path)
+    if running_procs:
+        # Table Header
+        hdr_line = (
+            _col("PID", 8, BOLD)
+            + _col("COMM", 10, BOLD)
+            + _col("STATE", 14, BOLD)
+            + _col("RAM (RSS)", 12, BOLD)
+            + _col("THREADS", 9, BOLD)
+            + _col("UPTIME", 10, BOLD)
+            + _col("CWD / PROJECT", 30, BOLD)
+        )
+        print(f"     {hdr_line}")
+        print(f"     {DIM}{'─' * 8}{'─' * 10}{'─' * 14}{'─' * 12}{'─' * 9}{'─' * 10}{'─' * 35}{RESET}")
+        for p in running_procs:
+            proj_tag = (
+                c(tr(" [THIS PROJECT]", " [PROJECT NÀY]"), BOLD + GREEN)
+                if p["in_project"]
+                else ""
+            )
+            comm_color = BOLD + MAGENTA if p["comm"] in ("agy", "codex", "claude") else BOLD + CYAN
+            row_str = (
+                _col(p["pid"], 8)
+                + _col(p["comm"], 10, comm_color)
+                + _col(p["state"], 14)
+                + _col(p["vmrss"], 12, YELLOW)
+                + _col(p["threads"], 9)
+                + _col(p["elapsed"], 10)
+                + _col(p["cwd"] + proj_tag, 35, CYAN if not p["in_project"] else "")
+            )
+            print(f"     {row_str}")
+    else:
+        print(
+            f"     {c(tr('No active agy / codex / claude processes detected in /proc.', 'Không phát hiện tiến trình agy / codex / claude nào trong /proc.'), DIM)}"
+        )
+
+    # 3. Active Antigravity Sessions, Subagents & Checklist Tasks
+    print(
+        c(
+            tr(
+                "\n  2. Recent Antigravity Sessions & Active Subagents:",
+                "\n  2. Phiên làm việc Antigravity & Subagents gần nhất:",
+            ),
+            BOLD + CYAN,
+        )
+    )
+    if recent_sessions:
+        for s in recent_sessions[:3]:
+            age_sec = s["age_sec"]
+            if age_sec < 120:
+                state_str = c(tr("● ACTIVE NOW", "● ĐANG HOẠT ĐỘNG"), BOLD + GREEN)
+            elif age_sec < 3600:
+                state_str = c(tr(f"◐ Idle ({age_sec // 60}m ago)", f"◐ Nghỉ ({age_sec // 60} phút trước)"), YELLOW)
+            else:
+                state_str = c(tr(f"○ Inactive ({age_sec // 3600}h ago)", f"○ Cũ ({age_sec // 3600} giờ trước)"), DIM)
+
+            print(
+                f"     • {BOLD}Session {s['id'][:8]}…{RESET} [{state_str}] "
+                f"— {tr('steps', 'bước')}: {s['steps']} | {tr('last tool', 'tool gần nhất')}: {c(s['last_tool'], CYAN)}"
+            )
+            if s["subagents"]:
+                for sa in s["subagents"][-3:]:
+                    print(
+                        f"       ↳ 🤖 {c(sa['type'], BOLD + MAGENTA)} ({sa['role']}): \"{sa['prompt']}…\""
+                    )
+            else:
+                print(
+                    f"       ↳ {c(tr('Main agent executing directly (no subagents spawned in recent steps).', 'Main agent đang xử lý trực tiếp (chưa gọi subagent ở các bước gần đây).'), DIM)}"
+                )
+
+            t = s["tasks"]
+            if t["running"] or t["pending"] or t["done"]:
+                print(
+                    f"       ↳ 📋 {tr('Checklist', 'Tiến độ task.md')}: "
+                    f"{c(str(len(t['running'])) + tr(' running', ' đang chạy'), YELLOW)} | "
+                    f"{c(str(len(t['pending'])) + tr(' pending', ' chờ'), CYAN)} | "
+                    f"{c(str(len(t['done'])) + tr(' done', ' xong'), GREEN)}"
+                )
+                for ip in t["running"][:3]:
+                    print(f"          ⚡ {c(ip, BOLD + YELLOW)}")
+    else:
+        print(
+            f"     {c(tr('No Antigravity session transcripts found.', 'Không tìm thấy lịch sử phiên Antigravity nào.'), DIM)}"
+        )
+
+    # 4. Workspace Agent Readiness (.agents/agents/*/agent.md)
+    print(
+        c(
+            tr(
+                "\n  3. Workspace Agents Readiness (`agy` / `codex` / `claude`):",
+                "\n  3. Trạng thái sẵn sàng của Agents trong Project (`agy` / `codex` / `claude`):",
             ),
             BOLD + CYAN,
         )
@@ -3232,8 +3730,9 @@ def cmd_ps(target_dir: Path) -> None:
                 )
             )
             codex_badge = c("codex ✔", CYAN) if toml_path.exists() else c("codex -", DIM)
+            emoji = MASCOT_EMOJIS.get(role_dir.name, "•")
             print(
-                f"     • [{BOLD}{role_dir.name:<12}{RESET}] "
+                f"     {emoji} [{BOLD}{role_dir.name:<12}{RESET}] "
                 f"tier={c(model_val, YELLOW)} | main={main_ag or 'false'} | sub={sub_ag or 'false'} "
                 f"| {codex_badge} -> {status_badge}"
             )
@@ -3246,167 +3745,7 @@ def cmd_ps(target_dir: Path) -> None:
             f"     {c(tr('No .agents/agents/ directory found in this project.', 'Chưa có thư mục .agents/agents/ tại project này.'), YELLOW)}"
         )
 
-    # 2. Running OS Processes for agy / codex / claude
-    print(
-        c(
-            tr(
-                "\n  2. Running Agent CLI Processes (`agy`, `codex`, `claude`):",
-                "\n  2. Tiến trình Agent CLI đang chạy (`agy`, `codex`, `claude`):",
-            ),
-            BOLD + CYAN,
-        )
-    )
-    proc_root = Path("/proc")
-    running_procs: List[Dict[str, str]] = []
-    now_ts = datetime.now().timestamp()
-    if proc_root.is_dir():
-        for entry in proc_root.iterdir():
-            if not entry.name.isdigit():
-                continue
-            try:
-                comm = (entry / "comm").read_text(encoding="utf-8", errors="ignore").strip()
-                if comm not in ("agy", "codex", "claude"):
-                    continue
-                cmdline_raw = (entry / "cmdline").read_bytes().replace(b"\x00", b" ").decode("utf-8", errors="ignore").strip()
-                cwd_link = os.readlink(str(entry / "cwd"))
-                stat_mtime = (entry / "stat").stat().st_mtime
-                elapsed_sec = max(0, int(now_ts - stat_mtime))
-                mins, secs = divmod(elapsed_sec, 60)
-                hrs, mins = divmod(mins, 60)
-                elapsed_str = f"{hrs:02d}:{mins:02d}:{secs:02d}" if hrs else f"{mins:02d}:{secs:02d}"
-                running_procs.append(
-                    {
-                        "pid": entry.name,
-                        "comm": comm,
-                        "cwd": cwd_link,
-                        "cmdline": cmdline_raw or comm,
-                        "elapsed": elapsed_str,
-                    }
-                )
-            except Exception:
-                continue
-
-    if running_procs:
-        for p in running_procs:
-            in_proj = Path(p["cwd"]).resolve() == project_path
-            proj_tag = (
-                c(tr(" [THIS PROJECT]", " [PROJECT NÀY]"), BOLD + GREEN)
-                if in_proj
-                else ""
-            )
-            print(
-                f"     • PID {BOLD}{p['pid']}{RESET} ({c(p['comm'], BOLD + MAGENTA)}) "
-                f"— {tr('up', 'chạy')} {p['elapsed']} — cwd: {c(p['cwd'], CYAN)}{proj_tag}"
-            )
-    else:
-        print(
-            f"     {c(tr('No active agy / codex / claude processes detected.', 'Không có tiến trình agy / codex / claude nào đang chạy.'), DIM)}"
-        )
-
-    # 3. Active Antigravity Sessions, Subagents & Checklist Tasks
-    print(
-        c(
-            tr(
-                "\n  3. Recent Antigravity Sessions, Subagents & Tasks:",
-                "\n  3. Phiên làm việc Antigravity, Subagents & Tasks gần nhất:",
-            ),
-            BOLD + CYAN,
-        )
-    )
-    brain_root = Path.home() / ".gemini" / "antigravity-cli" / "brain"
-    sessions_found = 0
-    if brain_root.is_dir():
-        candidates: List[Tuple[float, Path]] = []
-        for conv_dir in brain_root.iterdir():
-            if not conv_dir.is_dir():
-                continue
-            tr_path = conv_dir / ".system_generated" / "logs" / "transcript.jsonl"
-            if tr_path.exists():
-                try:
-                    candidates.append((tr_path.stat().st_mtime, conv_dir))
-                except Exception:
-                    pass
-        candidates.sort(key=lambda x: x[0], reverse=True)
-
-        for mtime, conv_dir in candidates[:3]:
-            sessions_found += 1
-            tr_path = conv_dir / ".system_generated" / "logs" / "transcript.jsonl"
-            age_sec = max(0, int(now_ts - mtime))
-            if age_sec < 120:
-                state_str = c(tr("● ACTIVE NOW", "● ĐANG HOẠT ĐỘNG"), BOLD + GREEN)
-            elif age_sec < 3600:
-                state_str = c(tr(f"◐ Idle ({age_sec // 60}m ago)", f"◐ Nghỉ ({age_sec // 60} phút trước)"), YELLOW)
-            else:
-                state_str = c(tr(f"○ Inactive ({age_sec // 3600}h ago)", f"○ Cũ ({age_sec // 3600} giờ trước)"), DIM)
-
-            last_tool = "-"
-            subagents_invoked: List[Dict[str, str]] = []
-            try:
-                lines = tr_path.read_text(encoding="utf-8", errors="ignore").splitlines()
-                for ln in lines[-80:]:
-                    try:
-                        obj = json.loads(ln)
-                    except Exception:
-                        continue
-                    for tc in obj.get("tool_calls", []) or []:
-                        tname = tc.get("name", "")
-                        if tname:
-                            last_tool = tname
-                        if tname == "invoke_subagent":
-                            args_obj = tc.get("arguments") or tc.get("args") or {}
-                            if isinstance(args_obj, str):
-                                try:
-                                    args_obj = json.loads(args_obj)
-                                except Exception:
-                                    args_obj = {}
-                            if isinstance(args_obj, dict):
-                                subagents_invoked.append(
-                                    {
-                                        "type": str(args_obj.get("TypeName", "subagent")),
-                                        "role": str(args_obj.get("Role", "")),
-                                        "prompt": str(args_obj.get("Prompt", ""))[:70].replace("\n", " "),
-                                    }
-                                )
-            except Exception:
-                lines = []
-
-            print(
-                f"     • {BOLD}Session {conv_dir.name[:8]}…{RESET} [{state_str}] "
-                f"— {tr('steps', 'bước')}: {len(lines)} | {tr('last tool', 'tool gần nhất')}: {c(last_tool, CYAN)}"
-            )
-            if subagents_invoked:
-                for sa in subagents_invoked[-4:]:
-                    print(
-                        f"       ↳ 🤖 {c(sa['type'], BOLD + MAGENTA)} ({sa['role']}): \"{sa['prompt']}…\""
-                    )
-            else:
-                print(
-                    f"       ↳ {c(tr('Main agent handling tasks directly (no subagents spawned in recent steps).', 'Main agent đang xử lý trực tiếp (chưa gọi subagent ở các bước gần đây).'), DIM)}"
-                )
-
-            task_md = conv_dir / "task.md"
-            if task_md.exists():
-                try:
-                    t_lines = task_md.read_text(encoding="utf-8", errors="ignore").splitlines()
-                    in_prog = [l.strip() for l in t_lines if "[/]" in l]
-                    pending = [l.strip() for l in t_lines if "[ ]" in l]
-                    done = [l.strip() for l in t_lines if "[x]" in l or "[X]" in l]
-                    print(
-                        f"       ↳ 📋 {tr('Checklist', 'Tiến độ task.md')}: "
-                        f"{c(str(len(in_prog)) + tr(' running', ' đang chạy'), YELLOW)} | "
-                        f"{c(str(len(pending)) + tr(' pending', ' chờ'), CYAN)} | "
-                        f"{c(str(len(done)) + tr(' done', ' xong'), GREEN)}"
-                    )
-                    for ip in in_prog[:3]:
-                        print(f"          ⚡ {c(ip, BOLD + YELLOW)}")
-                except Exception:
-                    pass
-
-    if sessions_found == 0:
-        print(
-            f"     {c(tr('No Antigravity session transcripts found.', 'Không tìm thấy lịch sử phiên Antigravity nào.'), DIM)}"
-        )
-
+    # 5. Tips inside coding tool
     print(
         c(
             tr(
@@ -3419,9 +3758,9 @@ def cmd_ps(target_dir: Path) -> None:
     print(
         tr(
             f"     • Inside {BOLD}agy{RESET}  : Type {c('/agents', GREEN)} to switch/view workspace agents (or press {c('k', YELLOW)} to kill a running subagent), and {c('/tasks', GREEN)} for background tasks.\n"
-            f"     • Inside {BOLD}shell{RESET}: Run {c('agt ps', GREEN)} (or {c('agt tasks', GREEN)}) anytime to inspect live processes, subagents, and checklists.",
+            f"     • Inside {BOLD}shell{RESET}: Run {c('agt ps', GREEN)} (or {c('agt ps -a <role>', GREEN)} to test glowing mascots) anytime to inspect live processes and tasks.",
             f"     • Trong {BOLD}agy{RESET}     : Gõ {c('/agents', GREEN)} để xem/chuyển đổi agents (nhấn {c('k', YELLOW)} để dừng subagent đang chạy), và {c('/tasks', GREEN)} để xem tác vụ nền.\n"
-            f"     • Ngoài {BOLD}terminal{RESET}: Gõ {c('agt ps', GREEN)} (hoặc {c('agt tasks', GREEN)}) bất cứ lúc nào để kiểm tra tiến trình, subagents và checklist.",
+            f"     • Ngoài {BOLD}terminal{RESET}: Gõ {c('agt ps', GREEN)} (hoặc {c('agt ps -a <role>', GREEN)} để thử mascot phát sáng) bất cứ lúc nào để kiểm tra tiến trình và tác vụ.",
         )
     )
 
@@ -4046,6 +4385,7 @@ def main() -> None:
     parser.add_argument("--lang", type=str, default="en", choices=["en", "vi"], help="CLI language (en/vi)")
     parser.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
     parser.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode with standard preset")
+    parser.add_argument("--active", "-a", type=str, default="", help="Active role(s) to simulate/highlight in ps monitor (comma-separated)")
     parser.add_argument("--clean", action="store_true", help="Remove all AI agent configurations in target repo")
     parser.add_argument("--dry-run", action="store_true", help="Preview generated files without writing")
     subparsers = parser.add_subparsers(dest="command")
@@ -4087,10 +4427,12 @@ def main() -> None:
     p_ps = subparsers.add_parser("ps", add_help=False, help="Check live running Agent processes, subagents, and tasks")
     p_ps.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_ps.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
+    p_ps.add_argument("--active", "-a", type=str, default=argparse.SUPPRESS, help="Active role(s) to highlight (comma-separated)")
 
     p_tasks = subparsers.add_parser("tasks", add_help=False, help="Alias for `ps` — check live running Agents and tasks")
     p_tasks.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_tasks.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
+    p_tasks.add_argument("--active", "-a", type=str, default=argparse.SUPPRESS, help="Active role(s) to highlight (comma-separated)")
 
     p_clean = subparsers.add_parser("clean", add_help=False, help="Remove all AI agent configurations in target repo")
     p_clean.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
@@ -4122,7 +4464,8 @@ def main() -> None:
         return
 
     if args.command in ("ps", "tasks"):
-        cmd_ps(Path(args.target))
+        active_arg = getattr(args, "active", "")
+        cmd_ps(Path(args.target), active_arg=active_arg)
         return
 
     if args.command == "clean" or getattr(args, "clean", False):
