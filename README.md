@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/banner.svg" alt="agt (agent-team) — Multi-Agent Team & Skills CLI Generator Banner" width="100%" />
+  <img src="./assets/demo.gif" alt="agt (agent-team) — 30s Ghostty Terminal CLI Demo" width="100%" />
   <br />
   <br />
   <p>
