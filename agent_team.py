@@ -31,7 +31,7 @@ import unicodedata
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # ---------------------------------------------------------------------------
 # ANSI Styling Helpers
@@ -362,35 +362,48 @@ def format_active_role_desc(r_id: str, info: Any, lang: str = "en") -> str:
     return f"{role_desc} — {task_desc}"
 
 
-def detect_active_provider(project_path: Optional[Path] = None) -> str:
-    """
-    Xác định chính xác active provider ('agy' | 'codex' | 'claude').
-    Tier 0: Biến môi trường chỉ định tường minh (AGT_PROVIDER / AGT_ACTIVE_PROVIDER)
-    Tier 1: Biến môi trường Subshell hiện tại (ANTIGRAVITY_*, CODEX_*, CLAUDE_*)
-    Tier 2: Cây tiến trình cha qua /proc/{pid}/status PPid
-    Tier 3: Tiến trình OS đang chạy khớp cwd với project_path
-    Tier 4: Cấu hình repo (.agents/team-config.json harnesses)
-    Tier 5: Fallback an toàn tuyệt đối ('agy')
-    """
-    # Tier 0: Direct Environment Override (Phục vụ TDD & User override)
+def _classify_proc_provider(comm: str, cmdline: str = "") -> Optional[str]:
+    if "app-server" in cmdline or "--managed-daemon" in cmdline:
+        return None
+    return {
+        "agy": "agy",
+        "gemini": "agy",
+        "antigravity": "agy",
+        "codex": "codex",
+        "codex-cli": "codex",
+        "claude": "claude",
+        "claude-code": "claude",
+    }.get(comm.lower())
+
+
+def detect_active_providers(project_path: Optional[Path] = None) -> Set[str]:
+    """Return active providers, scoped to project_path when it is supplied."""
+    providers = {"agy", "codex", "claude"}
     override = os.environ.get("AGT_PROVIDER") or os.environ.get("AGT_ACTIVE_PROVIDER")
     if override:
-        clean = override.strip().lower()
-        if clean in ("agy", "codex", "claude"):
-            return clean
+        selected = {p.strip().lower() for p in override.split(",")} & providers
+        if selected:
+            return selected
 
-    # Tier 1: Current Subshell Environment
+    env_providers = set()
     if any(k in os.environ for k in ("ANTIGRAVITY_AGENT", "ANTIGRAVITY_CONVERSATION_ID", "ANTIGRAVITY_LS_ADDRESS", "ANTIGRAVITY_APP_DATA_DIR")):
-        return "agy"
+        env_providers.add("agy")
     if any(k in os.environ for k in ("CODEX_ENV", "CODEX_SESSION", "CODEX_SHELL")):
-        return "codex"
+        env_providers.add("codex")
     if any(k in os.environ for k in ("CLAUDE_CODE_ENTRYPOINT", "CLAUDE_AGENT", "CLAUDE_SHELL")):
-        return "claude"
+        env_providers.add("claude")
 
-    # Tier 2: Parent Process Tree Inspection
+    if project_path is None and env_providers:
+        return env_providers
+
+    active = set()
     try:
+        resolved_proj = project_path.resolve() if project_path is not None else None
+        if resolved_proj is not None and Path.cwd().resolve() == resolved_proj:
+            active.update(env_providers)
+
         cur_pid = os.getpid()
-        for _ in range(6):  # Duyệt tối đa 6 cấp cha
+        for _ in range(6):
             status_file = Path(f"/proc/{cur_pid}/status")
             if not status_file.exists():
                 break
@@ -401,49 +414,50 @@ def detect_active_provider(project_path: Optional[Path] = None) -> str:
                     break
             if not ppid or ppid <= 1:
                 break
-            comm_file = Path(f"/proc/{ppid}/comm")
-            if comm_file.exists():
-                comm = comm_file.read_text(encoding="utf-8", errors="ignore").strip().lower()
-                if comm in ("agy", "gemini", "antigravity"):
-                    return "agy"
-                if comm in ("codex", "codex-cli"):
-                    return "codex"
-                if comm in ("claude", "claude-code"):
-                    return "claude"
+
+            proc_path = Path(f"/proc/{ppid}")
+            if resolved_proj is None or (proc_path / "cwd").resolve() == resolved_proj:
+                comm_file = proc_path / "comm"
+                cmdline_file = proc_path / "cmdline"
+                comm = comm_file.read_text(encoding="utf-8", errors="ignore").strip() if comm_file.exists() else ""
+                cmdline = cmdline_file.read_bytes().replace(b"\x00", b" ").decode("utf-8", errors="ignore") if cmdline_file.exists() else ""
+                provider = _classify_proc_provider(comm, cmdline)
+                if provider:
+                    active.add(provider)
             cur_pid = ppid
-    except (FileNotFoundError, PermissionError, ProcessLookupError, Exception):
+    except Exception:
         pass
 
-    # Tier 3: Live OS Procs matching project
-    if project_path:
-        try:
-            procs = get_live_os_procs(project_path)
-            for p in procs:
-                if p.get("in_project"):
-                    c_name = p.get("comm", "").lower()
-                    if c_name in ("agy", "gemini", "antigravity"):
-                        return "agy"
-                    if c_name in ("codex", "codex-cli"):
-                        return "codex"
-                    if c_name in ("claude", "claude-code"):
-                        return "claude"
-        except Exception:
-            pass
+    if project_path is None:
+        return active or {"agy"}
 
-    # Tier 4: Config fallback
-    if project_path:
+    try:
+        for proc in get_live_os_procs(project_path.resolve()):
+            if proc.get("in_project"):
+                provider = _classify_proc_provider(proc.get("comm", ""), proc.get("cmdline", ""))
+                if provider:
+                    active.add(provider)
+    except Exception:
+        pass
+
+    if active:
+        return active
+
+    try:
         cfg = project_path / ".agents" / "team-config.json"
         if cfg.exists():
-            try:
-                data = json.loads(cfg.read_text(encoding="utf-8"))
-                harnesses = data.get("harnesses", [])
-                if harnesses and harnesses[0] in ("agy", "codex", "claude"):
-                    return harnesses[0]
-            except Exception:
-                pass
+            data = json.loads(cfg.read_text(encoding="utf-8"))
+            harnesses = data.get("harnesses", [])
+            if harnesses and harnesses[0] in providers:
+                return {harnesses[0]}
+    except Exception:
+        pass
+    return {"agy"}
 
-    # Tier 5: Default
-    return "agy"
+
+def detect_active_provider(project_path: Optional[Path] = None) -> str:
+    active = detect_active_providers(project_path)
+    return next((p for p in ("agy", "codex", "claude") if p in active), "")
 
 
 MASCOT_LABELS_EN = {
@@ -550,15 +564,15 @@ def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Opt
     lines.append(m + DIM + "─" * total_w + RESET)
 
     # 4 rows: agy, codex, claude, fallback with dynamic active provider accent
-    active_p = detect_active_provider(project_path)
-    agy_c = YELLOW if active_p == "agy" else CYAN
-    codex_c = YELLOW if active_p == "codex" else CYAN
-    claude_c = YELLOW if active_p == "claude" else CYAN
+    active_ps = detect_active_providers(project_path)
+    agy_c = YELLOW if "agy" in active_ps else CYAN
+    codex_c = YELLOW if "codex" in active_ps else CYAN
+    claude_c = YELLOW if "claude" in active_ps else CYAN
 
     row_defs = [
-        ("agy:", agy_c, agy_specs, active_p == "agy"),
-        ("codex:", codex_c, codex_specs, active_p == "codex"),
-        ("claude:", claude_c, claude_specs, active_p == "claude"),
+        ("agy:", agy_c, agy_specs, "agy" in active_ps),
+        ("codex:", codex_c, codex_specs, "codex" in active_ps),
+        ("claude:", claude_c, claude_specs, "claude" in active_ps),
         ("fallback:", DIM, fb_specs, False),
     ]
     for lbl, col_c, vals, is_active_row in row_defs:
@@ -3675,7 +3689,7 @@ def cmd_status(target_dir: Path) -> None:
             agents_data = data.get("agents", [])
         except Exception:
             pass
-    print(render_7col_agent_grid(agents_data=agents_data))
+    print(render_7col_agent_grid(agents_data=agents_data, project_path=project_path))
 
     # 2. Status ở dưới
     if cfg_file.exists():

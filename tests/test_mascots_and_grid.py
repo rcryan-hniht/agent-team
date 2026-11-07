@@ -91,6 +91,117 @@ class TestDetectActiveProvider(unittest.TestCase):
             self.assertEqual(agent_team.detect_active_provider(), "claude")
 
 
+class TestDetectActiveProviders(unittest.TestCase):
+    def test_override_can_select_multiple_providers(self):
+        with patch.dict(os.environ, {"AGT_PROVIDER": "agy,codex"}, clear=True):
+            self.assertEqual(agent_team.detect_active_providers(), {"agy", "codex"})
+
+    def test_project_scan_unions_only_live_in_project_providers(self):
+        procs = [
+            {"comm": "agy", "cmdline": "agy", "in_project": True},
+            {"comm": "codex", "cmdline": "codex", "in_project": True},
+            {"comm": "codex", "cmdline": "codex app-server --managed-daemon", "in_project": True},
+            {"comm": "claude", "cmdline": "claude", "in_project": False},
+            {"comm": "python", "cmdline": "agent_team.py", "in_project": True},
+        ]
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch.object(agent_team.Path, "cwd", return_value=Path("/repo/a")),
+            patch.object(agent_team.Path, "exists", return_value=False),
+            patch.object(agent_team, "get_live_os_procs", return_value=procs),
+        ):
+            self.assertEqual(agent_team.detect_active_providers(Path("/repo/b")), {"agy", "codex"})
+
+    def test_subshell_environment_counts_when_cwd_matches_target(self):
+        with (
+            patch.dict(os.environ, {"ANTIGRAVITY_AGENT": "1", "CODEX_ENV": "1"}, clear=True),
+            patch.object(agent_team.Path, "cwd", return_value=Path("/repo/b")),
+            patch.object(agent_team.Path, "exists", return_value=False),
+            patch.object(agent_team, "get_live_os_procs", return_value=[]),
+        ):
+            self.assertEqual(agent_team.detect_active_providers(Path("/repo/b")), {"agy", "codex"})
+
+    def test_other_repo_environment_and_parent_do_not_leak(self):
+        statuses = {
+            "/proc/100/status": "Name:\tpython\nPPid:\t101\n",
+            "/proc/101/status": "Name:\tagy\nPPid:\t1\n",
+        }
+
+        def exists(path):
+            return str(path) in {"/proc/100/status", "/proc/101/status"}
+
+        def read_text(path, **kwargs):
+            return statuses[str(path)]
+
+        def resolve(path, *args, **kwargs):
+            if str(path) == "/proc/101/cwd":
+                return Path("/repo/a")
+            return path
+
+        with (
+            patch.dict(os.environ, {"ANTIGRAVITY_AGENT": "1"}, clear=True),
+            patch.object(agent_team.Path, "cwd", return_value=Path("/repo/a")),
+            patch.object(agent_team.Path, "exists", autospec=True, side_effect=exists),
+            patch.object(agent_team.Path, "read_text", autospec=True, side_effect=read_text),
+            patch.object(agent_team.Path, "resolve", autospec=True, side_effect=resolve),
+            patch.object(agent_team.os, "getpid", return_value=100),
+            patch.object(
+                agent_team,
+                "get_live_os_procs",
+                return_value=[{"comm": "codex", "cmdline": "codex", "in_project": True}],
+            ),
+        ):
+            self.assertEqual(agent_team.detect_active_providers(Path("/repo/b")), {"codex"})
+
+    def test_matching_parent_process_is_counted(self):
+        statuses = {
+            "/proc/100/status": "Name:\tpython\nPPid:\t101\n",
+            "/proc/101/status": "Name:\tcodex\nPPid:\t1\n",
+            "/proc/101/comm": "codex\n",
+        }
+
+        def exists(path):
+            return str(path) in {
+                "/proc/100/status",
+                "/proc/101/status",
+                "/proc/101/comm",
+                "/proc/101/cmdline",
+            }
+
+        def read_text(path, **kwargs):
+            return statuses[str(path)]
+
+        def read_bytes(path):
+            return b"codex\x00"
+
+        def resolve(path, *args, **kwargs):
+            if str(path) == "/proc/101/cwd":
+                return Path("/repo/b")
+            return path
+
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch.object(agent_team.Path, "cwd", return_value=Path("/repo/a")),
+            patch.object(agent_team.Path, "exists", autospec=True, side_effect=exists),
+            patch.object(agent_team.Path, "read_text", autospec=True, side_effect=read_text),
+            patch.object(agent_team.Path, "read_bytes", autospec=True, side_effect=read_bytes),
+            patch.object(agent_team.Path, "resolve", autospec=True, side_effect=resolve),
+            patch.object(agent_team.os, "getpid", return_value=100),
+            patch.object(agent_team, "get_live_os_procs", return_value=[]),
+        ):
+            self.assertEqual(agent_team.detect_active_providers(Path("/repo/b")), {"codex"})
+
+    def test_cmd_status_passes_resolved_project_to_grid(self):
+        target = Path("/repo/a/../b")
+        with (
+            patch.object(agent_team.Path, "exists", return_value=False),
+            patch.object(agent_team, "render_7col_agent_grid", return_value="grid") as render_grid,
+        ):
+            agent_team.cmd_status(target)
+
+        render_grid.assert_called_once_with(agents_data=None, project_path=target.resolve())
+
+
 class TestGridGeometryAndTwoLineMascots(unittest.TestCase):
     def test_render_grid_various_terminal_widths(self):
         for tw in (95, 115, 120, 157, 180):
@@ -180,6 +291,20 @@ class TestDynamicProviderAccentColors(unittest.TestCase):
             self.assertIn("\033[1m\033[33mclaude:", claude_line, "claude: header label must be colored YELLOW")
             self.assertNotIn("\033[33m", agy_line, "agy: line must NOT contain YELLOW when claude is active")
             self.assertNotIn("\033[33m", codex_line, "codex: line must NOT contain YELLOW when claude is active")
+
+    @patch("sys.stdout.isatty", return_value=True)
+    def test_multiple_providers_share_active_accent(self, _mock_isatty):
+        with patch.dict(os.environ, {"AGT_PROVIDER": "agy,codex"}, clear=True):
+            grid = agent_team.render_7col_agent_grid(term_w=157)
+        lines = grid.splitlines()
+        agy_line = next(l for l in lines if "agy:" in l)
+        codex_line = next(l for l in lines if "codex:" in l)
+        claude_line = next(l for l in lines if "claude:" in l)
+
+        self.assertIn("\033[33m", agy_line)
+        self.assertIn("\033[33m", codex_line)
+        self.assertNotIn("\033[33m", claude_line)
+        self.assertNotIn("\033[32m", claude_line)
 
 
 if __name__ == "__main__":
