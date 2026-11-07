@@ -94,22 +94,22 @@ def _col(text: str, width: int, color_str: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-# 7-Role Chunky Pixel-Art Animals & Specifications
+# 8-Role Chunky Pixel-Art Animals & Specifications
 # Palettes: Nord, Rosé Pine, Blackmetal, Sequoia Monochrome (Cool Tones)
 # ---------------------------------------------------------------------------
 PIXEL_ART_ANIMALS = [
     (
         "lead-architect",
         (136, 192, 208),  # Nord 8 (Frost Ice Blue)
-        "owl",
+        "whale",
         "Lead Solution Architect & Planner",
         [
-            "#...#",
+            ".#.#.",
+            "..#..",
+            ".###.",
             "#####",
             "#.#.#",
-            "#####",
-            ".###.",
-            ".#.#.",
+            "#...#",
         ],
         "gemini-4-argon-high",
         "gpt-6-astra (high)",
@@ -171,17 +171,35 @@ PIXEL_ART_ANIMALS = [
         "agy:gemini-3.1-pro-high → agy:claude-opus-5-5-medium → agy:gemini-3.8-flash-high → codex:gpt-6.1-sol (xhigh)",
     ),
     (
+        "designer",
+        (246, 193, 119),  # Rosé Pine Gold (Warm Accent)
+        "southern rockhopper penguin",
+        "UI/UX & Anti-Slop Visual Designer",
+        [
+            "#...#",
+            ".###.",
+            "##.##",
+            ".###.",
+            "#####",
+            ".#.#.",
+        ],
+        "gemini-3.8-flash-high",
+        "gpt-6-sol (xhigh)",
+        "sonnet [Write]",
+        "agy:gemini-3.8-flash-high → agy:gemini-3.1-pro-high → claude:sonnet → codex:gpt-6-sol (xhigh)",
+    ),
+    (
         "implementer",
         (129, 161, 193),  # Nord 9 (Glacier Arctic Blue)
-        "hawk",
+        "hammerhead shark",
         "Senior Feature & TDD Implementer",
         [
+            "#####",
+            "#...#",
             ".###.",
             "#####",
-            "#.#.#",
-            "#####",
-            ".###.",
-            ".#.#.",
+            "..#..",
+            "#...#",
         ],
         "gemini-3.8-flash-high",
         "gpt-6-sol (xhigh)",
@@ -229,11 +247,12 @@ PIXEL_ART_ANIMALS = [
 ROLE_COLORS = {r[0]: r[1] for r in PIXEL_ART_ANIMALS}
 ROLE_ANIMALS = {r[0]: r[2] for r in PIXEL_ART_ANIMALS}
 ROLE_ANIMALS_VI = {
-    "lead-architect": "cú",
-    "lead-critic": "cá voi",
+    "lead-architect": "cá voi",
+    "lead-critic": "cá voi sát thủ",
     "orchestrator": "bạch tuộc",
     "reviewer": "cá mập",
-    "implementer": "chim ưng",
+    "designer": "chim cánh cụt rockhopper phương nam",
+    "implementer": "cá mập đầu búa",
     "searcher": "cá kiếm",
     "committer": "sao biển",
 }
@@ -243,6 +262,7 @@ ROLE_DESCRIPTIONS_EN = {
     "lead-critic": "Lead Technical Critic & Challenger",
     "orchestrator": "Execution Orchestration & Worker Dispatcher",
     "reviewer": "Independent Code Quality & Security Reviewer",
+    "designer": "UI/UX & Anti-Slop Visual Designer",
     "implementer": "Senior Feature & TDD Implementer",
     "searcher": "Primary Documentation & Codebase Scout",
     "committer": "Conventional Git Committer",
@@ -253,6 +273,7 @@ ROLE_DESCRIPTIONS_VI = {
     "lead-critic": "Phản biện trưởng & Thẩm định rủi ro kỹ thuật",
     "orchestrator": "Tổng điều phối viên thực thi",
     "reviewer": "Kiểm định viên chất lượng & Bảo mật độc lập",
+    "designer": "Kỹ sư thiết kế UI/UX & Bản sắc thị giác Anti-Slop",
     "implementer": "Kỹ sư thực thi tính năng & TDD",
     "searcher": "Trinh sát mã nguồn & Tra cứu tài liệu",
     "committer": "Chuyên viên đóng gói Git Commit",
@@ -263,6 +284,7 @@ ROLE_TASK_DEFAULT_EN = {
     "lead-critic": "Reviewing technical risks & stress-testing design",
     "orchestrator": "Orchestrating subagents & execution pipeline",
     "reviewer": "Reviewing code correctness & security standards",
+    "designer": "Designing anti-slop UI tokens & styling components",
     "implementer": "Implementing minimal code & unit tests (TDD)",
     "searcher": "Scouting codebase & researching documentation",
     "committer": "Packaging conventional git commits",
@@ -273,6 +295,7 @@ ROLE_TASK_DEFAULT_VI = {
     "lead-critic": "Đang phản biện rủi ro kỹ thuật & stress-test thiết kế",
     "orchestrator": "Đang điều phối các subagent & kế hoạch thực thi",
     "reviewer": "Đang kiểm định chất lượng code & bảo mật",
+    "designer": "Đang thiết kế token giao diện & tạo mẫu UI anti-slop",
     "implementer": "Đang viết code & kiểm thử đơn vị (TDD)",
     "searcher": "Đang trinh sát mã nguồn & tra cứu tài liệu",
     "committer": "Đang đóng gói git commit chuẩn Conventional Commits",
@@ -339,38 +362,145 @@ def format_active_role_desc(r_id: str, info: Any, lang: str = "en") -> str:
     return f"{role_desc} — {task_desc}"
 
 
-def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Optional[int] = None) -> str:
-    """Render 7 columns (art, animal name, roles, model, reasoning effects) with 4 rows (agy, codex, claude, fallback)."""
+def detect_active_provider(project_path: Optional[Path] = None) -> str:
+    """
+    Xác định chính xác active provider ('agy' | 'codex' | 'claude').
+    Tier 0: Biến môi trường chỉ định tường minh (AGT_PROVIDER / AGT_ACTIVE_PROVIDER)
+    Tier 1: Biến môi trường Subshell hiện tại (ANTIGRAVITY_*, CODEX_*, CLAUDE_*)
+    Tier 2: Cây tiến trình cha qua /proc/{pid}/status PPid
+    Tier 3: Tiến trình OS đang chạy khớp cwd với project_path
+    Tier 4: Cấu hình repo (.agents/team-config.json harnesses)
+    Tier 5: Fallback an toàn tuyệt đối ('agy')
+    """
+    # Tier 0: Direct Environment Override (Phục vụ TDD & User override)
+    override = os.environ.get("AGT_PROVIDER") or os.environ.get("AGT_ACTIVE_PROVIDER")
+    if override:
+        clean = override.strip().lower()
+        if clean in ("agy", "codex", "claude"):
+            return clean
+
+    # Tier 1: Current Subshell Environment
+    if any(k in os.environ for k in ("ANTIGRAVITY_AGENT", "ANTIGRAVITY_CONVERSATION_ID", "ANTIGRAVITY_LS_ADDRESS", "ANTIGRAVITY_APP_DATA_DIR")):
+        return "agy"
+    if any(k in os.environ for k in ("CODEX_ENV", "CODEX_SESSION", "CODEX_SHELL")):
+        return "codex"
+    if any(k in os.environ for k in ("CLAUDE_CODE_ENTRYPOINT", "CLAUDE_AGENT", "CLAUDE_SHELL")):
+        return "claude"
+
+    # Tier 2: Parent Process Tree Inspection
+    try:
+        cur_pid = os.getpid()
+        for _ in range(6):  # Duyệt tối đa 6 cấp cha
+            status_file = Path(f"/proc/{cur_pid}/status")
+            if not status_file.exists():
+                break
+            ppid = None
+            for line in status_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+                if line.startswith("PPid:"):
+                    ppid = int(line.split()[1])
+                    break
+            if not ppid or ppid <= 1:
+                break
+            comm_file = Path(f"/proc/{ppid}/comm")
+            if comm_file.exists():
+                comm = comm_file.read_text(encoding="utf-8", errors="ignore").strip().lower()
+                if comm in ("agy", "gemini", "antigravity"):
+                    return "agy"
+                if comm in ("codex", "codex-cli"):
+                    return "codex"
+                if comm in ("claude", "claude-code"):
+                    return "claude"
+            cur_pid = ppid
+    except (FileNotFoundError, PermissionError, ProcessLookupError, Exception):
+        pass
+
+    # Tier 3: Live OS Procs matching project
+    if project_path:
+        try:
+            procs = get_live_os_procs(project_path)
+            for p in procs:
+                if p.get("in_project"):
+                    c_name = p.get("comm", "").lower()
+                    if c_name in ("agy", "gemini", "antigravity"):
+                        return "agy"
+                    if c_name in ("codex", "codex-cli"):
+                        return "codex"
+                    if c_name in ("claude", "claude-code"):
+                        return "claude"
+        except Exception:
+            pass
+
+    # Tier 4: Config fallback
+    if project_path:
+        cfg = project_path / ".agents" / "team-config.json"
+        if cfg.exists():
+            try:
+                data = json.loads(cfg.read_text(encoding="utf-8"))
+                harnesses = data.get("harnesses", [])
+                if harnesses and harnesses[0] in ("agy", "codex", "claude"):
+                    return harnesses[0]
+            except Exception:
+                pass
+
+    # Tier 5: Default
+    return "agy"
+
+
+MASCOT_LABELS_EN = {
+    "lead-architect": ("whale", ""),
+    "lead-critic": ("orca", ""),
+    "orchestrator": ("octopus", ""),
+    "reviewer": ("shark", ""),
+    "designer": ("rockhopper", "penguin"),
+    "implementer": ("hammerhead", "shark"),
+    "searcher": ("swordfish", ""),
+    "committer": ("starfish", ""),
+}
+
+MASCOT_LABELS_VI = {
+    "lead-architect": ("cá voi", ""),
+    "lead-critic": ("cá voi", "sát thủ"),
+    "orchestrator": ("bạch tuộc", ""),
+    "reviewer": ("cá mập", ""),
+    "designer": ("cánh cụt", "rockhopper"),
+    "implementer": ("cá mập", "đầu búa"),
+    "searcher": ("cá kiếm", ""),
+    "committer": ("sao biển", ""),
+}
+
+
+def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Optional[int] = None, project_path: Optional[Path] = None) -> str:
+    """Render 8 columns (art, animal name, roles, model, reasoning effects) with 4 rows (agy, codex, claude, fallback)."""
     if term_w is None:
         term_w = shutil.get_terminal_size((115, 24)).columns
     num_cols = len(PIXEL_ART_ANIMALS)
     hdr_w = 10
     avail_w = term_w - hdr_w
-    cell_w = max(13, min(18, avail_w // num_cols))
+    cell_w = max(11, min(18, avail_w // num_cols))
     total_w = hdr_w + cell_w * num_cols
     margin = max(0, (term_w - total_w) // 2)
     m = " " * margin
 
     if cell_w >= 18:
-        agy_specs = ["argon (high)", "pro-3.1 (high)", "argon (high)", "pro-3.1 (high)", "flash-3.8 (high)", "flash-3.8 (med)", "flash-3.7 (low)"]
-        codex_specs = ["astra (high)", "sol-6.1 (xhigh)", "astra (high)", "sol-6.1 (xhigh)", "sol-6 (xhigh)", "luna (medium)", "luna (low)"]
-        claude_specs = ["opus-5.5 [RO]", "opus-5.5 [RO]", "opus-5.5 [RO]", "sonnet [RO]", "sonnet [Write]", "haiku [RO]", "haiku [RO]"]
-        fb_specs = ["→opus→flash→astra", "→opus→flash→sol", "→opus→flash→sol", "→opus→flash→sol", "→pro→sonnet→sol", "→flash→haiku→luna", "→fl-m→haiku→luna"]
+        agy_specs = ["argon (high)", "pro-3.1 (high)", "argon (high)", "pro-3.1 (high)", "flash-3.8 (high)", "flash-3.8 (high)", "flash-3.8 (med)", "flash-3.7 (low)"]
+        codex_specs = ["astra (high)", "sol-6.1 (xhigh)", "astra (high)", "sol-6.1 (xhigh)", "sol-6 (xhigh)", "sol-6 (xhigh)", "luna (medium)", "luna (low)"]
+        claude_specs = ["opus-5.5 [RO]", "opus-5.5 [RO]", "opus-5.5 [RO]", "sonnet [RO]", "sonnet [Write]", "sonnet [Write]", "haiku [RO]", "haiku [RO]"]
+        fb_specs = ["→opus→flash→astra", "→opus→flash→sol", "→opus→flash→sol", "→opus→flash→sol", "→pro→sonnet→sol", "→pro→sonnet→sol", "→flash→haiku→luna", "→fl-m→haiku→luna"]
     elif cell_w >= 15:
-        agy_specs = ["argon (high)", "pro-3.1 (h)", "argon (high)", "pro-3.1 (h)", "flash-3.8 (h)", "flash-3.8 (m)", "flash-3.7 (l)"]
-        codex_specs = ["astra (high)", "sol-6.1 (xh)", "astra (high)", "sol-6.1 (xh)", "sol-6 (xh)", "luna (med)", "luna (low)"]
-        claude_specs = ["opus-5.5 [RO]", "opus-5.5 [RO]", "opus-5.5 [RO]", "sonnet [RO]", "sonnet [W]", "haiku [RO]", "haiku [RO]"]
-        fb_specs = ["→opus→astra", "→opus→sol", "→opus→sol", "→opus→sol", "→pro→sonnet", "→haiku→luna", "→haiku→luna"]
+        agy_specs = ["argon (high)", "pro-3.1 (h)", "argon (high)", "pro-3.1 (h)", "flash-3.8 (h)", "flash-3.8 (h)", "flash-3.8 (m)", "flash-3.7 (l)"]
+        codex_specs = ["astra (high)", "sol-6.1 (xh)", "astra (high)", "sol-6.1 (xh)", "sol-6 (xh)", "sol-6 (xh)", "luna (med)", "luna (low)"]
+        claude_specs = ["opus-5.5 [RO]", "opus-5.5 [RO]", "opus-5.5 [RO]", "sonnet [RO]", "sonnet [W]", "sonnet [W]", "haiku [RO]", "haiku [RO]"]
+        fb_specs = ["→opus→astra", "→opus→sol", "→opus→sol", "→opus→sol", "→pro→sonnet", "→pro→sonnet", "→haiku→luna", "→haiku→luna"]
     elif cell_w >= 13:
-        agy_specs = ["argon (h)", "pro-3.1(h)", "argon (h)", "pro-3.1(h)", "fl-3.8 (h)", "fl-3.8 (m)", "fl-3.7 (l)"]
-        codex_specs = ["astra (h)", "sol-6.1(xh)", "astra (h)", "sol-6.1(xh)", "sol-6 (xh)", "luna (med)", "luna (low)"]
-        claude_specs = ["opus-5.5[RO]", "opus-5.5[RO]", "opus-5.5[RO]", "sonnet[RO]", "sonnet [W]", "haiku [RO]", "haiku [RO]"]
-        fb_specs = ["→opus→astra", "→opus→sol", "→opus→sol", "→opus→sol", "→pro→sol", "→haiku→luna", "→haiku→luna"]
+        agy_specs = ["argon (h)", "pro-3.1(h)", "argon (h)", "pro-3.1(h)", "fl-3.8 (h)", "fl-3.8 (h)", "fl-3.8 (m)", "fl-3.7 (l)"]
+        codex_specs = ["astra (h)", "sol-6.1(xh)", "astra (h)", "sol-6.1(xh)", "sol-6 (xh)", "sol-6 (xh)", "luna (med)", "luna (low)"]
+        claude_specs = ["opus-5.5[RO]", "opus-5.5[RO]", "opus-5.5[RO]", "sonnet[RO]", "sonnet [W]", "sonnet [W]", "haiku [RO]", "haiku [RO]"]
+        fb_specs = ["→opus→astra", "→opus→sol", "→opus→sol", "→opus→sol", "→pro→sol", "→pro→sol", "→haiku→luna", "→haiku→luna"]
     else:
-        agy_specs = ["argon(h)", "pro(h)", "argon(h)", "pro(h)", "fl-3.8(h)", "fl-3.8(m)", "fl-3.7(l)"]
-        codex_specs = ["astra(h)", "sol(xh)", "astra(h)", "sol(xh)", "sol(xh)", "luna(m)", "luna(l)"]
-        claude_specs = ["opus[RO]", "opus[RO]", "opus[RO]", "son[RO]", "son[W]", "haiku[RO]", "haiku[RO]"]
-        fb_specs = ["→opus→ast", "→opus→sol", "→opus→sol", "→opus→sol", "→pro→sol", "→hai→lu", "→hai→lu"]
+        agy_specs = ["argon(h)", "pro(h)", "argon(h)", "pro(h)", "fl-3.8(h)", "fl-3.8(h)", "fl-3.8(m)", "fl-3.7(l)"]
+        codex_specs = ["astra(h)", "sol(xh)", "astra(h)", "sol(xh)", "sol(xh)", "sol(xh)", "luna(m)", "luna(l)"]
+        claude_specs = ["opus[RO]", "opus[RO]", "opus[RO]", "son[RO]", "son[W]", "son[W]", "haiku[RO]", "haiku[RO]"]
+        fb_specs = ["→opus→ast", "→opus→sol", "→opus→sol", "→opus→sol", "→pro→sol", "→pro→sol", "→hai→lu", "→hai→lu"]
 
     lines = []
     lines.append("")
@@ -385,24 +515,33 @@ def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Opt
             row += " " * (pad // 2) + s + " " * (pad - pad // 2)
         lines.append(row)
 
-    # Animal kind
-    row = m + " " * hdr_w
-    for k in range(num_cols):
-        kind = PIXEL_ART_ANIMALS[k][2]
-        color = PIXEL_ART_ANIMALS[k][1]
-        pad = max(0, cell_w - len(kind))
-        colored_kind = f"{rgb_fg(color)}{BOLD}{kind}{RESET}" if sys.stdout.isatty() else kind
-        row += " " * (pad // 2) + colored_kind + " " * (pad - pad // 2)
-    lines.append(row)
+    # Mascot Name 2 Lines
+    mascot_labels = MASCOT_LABELS_VI if CURRENT_LANG == "vi" else MASCOT_LABELS_EN
+    for line_idx in (0, 1):
+        row = m + " " * hdr_w
+        for k in range(num_cols):
+            role_id = PIXEL_ART_ANIMALS[k][0]
+            color = PIXEL_ART_ANIMALS[k][1]
+            w = mascot_labels.get(role_id, ("", ""))[line_idx]
+            vis_w_len = _visible_len(w)
+            pad = max(0, cell_w - vis_w_len)
+            colored_w = f"{rgb_fg(color)}{BOLD}{w}{RESET}" if sys.stdout.isatty() else w
+            row += " " * (pad // 2) + colored_w + " " * (pad - pad // 2)
+        lines.append(row)
 
     # Roles
     row = m + " " * hdr_w
-    roles_mid = ["[architect]", "[critic]", "[orchestrator]", "[reviewer]", "[implementer]", "[searcher]", "[committer]"]
-    roles_short = ["[arch]", "[critic]", "[orch]", "[reviewer]", "[imp]", "[search]", "[commit]"]
+    if CURRENT_LANG == "vi":
+        roles_mid = ["[kiến trúc]", "[phản biện]", "[điều phối]", "[kiểm định]", "[thiết kế]", "[thực thi]", "[trinh sát]", "[đóng gói]"]
+        roles_short = ["[k.trúc]", "[p.biện]", "[đ.phối]", "[k.định]", "[t.kế]", "[t.thi]", "[t.sát]", "[đ.gói]"]
+    else:
+        roles_mid = ["[architect]", "[critic]", "[orchestrator]", "[reviewer]", "[designer]", "[implementer]", "[searcher]", "[committer]"]
+        roles_short = ["[arch]", "[critic]", "[orch]", "[reviewer]", "[design]", "[imp]", "[search]", "[commit]"]
     for k in range(num_cols):
         color = PIXEL_ART_ANIMALS[k][1]
         tag = roles_mid[k] if cell_w >= 14 else roles_short[k]
-        pad = max(0, cell_w - len(tag))
+        vis_tag_len = _visible_len(tag)
+        pad = max(0, cell_w - vis_tag_len)
         colored_tag = f"{rgb_fg(color)}{BOLD}{tag}{RESET}" if sys.stdout.isatty() else tag
         row += " " * (pad // 2) + colored_tag + " " * (pad - pad // 2)
     lines.append(row)
@@ -410,15 +549,21 @@ def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Opt
     # Divider
     lines.append(m + DIM + "─" * total_w + RESET)
 
-    # 4 rows: agy, codex, claude, fallback
+    # 4 rows: agy, codex, claude, fallback with dynamic active provider accent
+    active_p = detect_active_provider(project_path)
+    agy_c = YELLOW if active_p == "agy" else CYAN
+    codex_c = YELLOW if active_p == "codex" else CYAN
+    claude_c = YELLOW if active_p == "claude" else CYAN
+
     row_defs = [
-        ("agy:", CYAN, agy_specs),
-        ("codex:", YELLOW, codex_specs),
-        ("claude:", RESET, claude_specs),
-        ("fallback:", DIM, fb_specs),
+        ("agy:", agy_c, agy_specs, active_p == "agy"),
+        ("codex:", codex_c, codex_specs, active_p == "codex"),
+        ("claude:", claude_c, claude_specs, active_p == "claude"),
+        ("fallback:", DIM, fb_specs, False),
     ]
-    for lbl, col_c, vals in row_defs:
-        row = m + BOLD + lbl.ljust(hdr_w) + RESET
+    for lbl, col_c, vals, is_active_row in row_defs:
+        row = m + BOLD + col_c + lbl.ljust(hdr_w) + RESET
+        write_color = GREEN if is_active_row else CYAN
         for k in range(num_cols):
             v = vals[k]
             if len(v) > cell_w:
@@ -427,11 +572,11 @@ def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Opt
             disp_v = v
             if sys.stdout.isatty():
                 if "[Write]" in disp_v:
-                    disp_v = disp_v.replace("[Write]", f"{GREEN}[Write]{RESET}")
+                    disp_v = disp_v.replace("[Write]", f"{write_color}[Write]{RESET}{col_c}")
                 elif "[W]" in disp_v:
-                    disp_v = disp_v.replace("[W]", f"{GREEN}[W]{RESET}")
+                    disp_v = disp_v.replace("[W]", f"{write_color}[W]{RESET}{col_c}")
                 elif "[RO]" in disp_v:
-                    disp_v = disp_v.replace("[RO]", f"{DIM}[RO]{RESET}")
+                    disp_v = disp_v.replace("[RO]", f"{DIM}[RO]{RESET}{col_c}")
                 disp_v = f"{col_c}{disp_v}{RESET}"
             row += " " * (pad // 2) + disp_v + " " * (pad - pad // 2)
         lines.append(row)
@@ -441,13 +586,17 @@ def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Opt
     return "\n".join(lines)
 
 
+render_agent_grid = render_7col_agent_grid
+
+
 # Mascot Emojis for status and ps monitor
 MASCOT_EMOJIS = {
-    "lead-architect": "🦉",
+    "lead-architect": "🐋",
     "lead-critic": "🐋",
     "orchestrator": "🐙",
     "reviewer": "🦈",
-    "implementer": "🦅",
+    "designer": "🐧",
+    "implementer": "🦈",
     "searcher": "🐟",
     "committer": "⭐",
 }
@@ -457,24 +606,41 @@ ROLE_ALIASES = {
     "lead-architect": "lead-architect",
     "arch": "lead-architect",
     "owl": "lead-architect",
+    "whale": "lead-architect",
+    "cá voi": "lead-architect",
     "critic": "lead-critic",
     "lead-critic": "lead-critic",
     "cat": "lead-critic",
     "orca": "lead-critic",
-    "whale": "lead-critic",
+    "killer whale": "lead-critic",
+    "cá voi sát thủ": "lead-critic",
     "orchestrator": "orchestrator",
     "orch": "orchestrator",
     "octopus": "orchestrator",
+    "bạch tuộc": "orchestrator",
     "reviewer": "reviewer",
     "rev": "reviewer",
     "frog": "reviewer",
     "shark": "reviewer",
+    "cá mập": "reviewer",
+    "designer": "designer",
+    "ui-designer": "designer",
+    "ui": "designer",
+    "design": "designer",
+    "rockhopper": "designer",
+    "penguin": "designer",
+    "southern rockhopper penguin": "designer",
+    "cánh cụt": "designer",
+    "chim cánh cụt": "designer",
     "implementer": "implementer",
     "imp": "implementer",
     "hawk": "implementer",
     "falcon": "implementer",
     "chim ưng": "implementer",
     "rabbit": "implementer",
+    "hammerhead": "implementer",
+    "hammerhead shark": "implementer",
+    "cá mập đầu búa": "implementer",
     "searcher": "searcher",
     "search": "searcher",
     "swordfish": "searcher",
@@ -483,9 +649,8 @@ ROLE_ALIASES = {
     "bat": "searcher",
     "committer": "committer",
     "commit": "committer",
-    "starfish": "committer",
+    "starfish": "starfish",
     "sao biển": "committer",
-    "penguin": "committer",
 }
 
 
@@ -494,7 +659,7 @@ def render_7col_agent_ps_grid(
     term_w: Optional[int] = None,
 ) -> str:
     """
-    Render 7 columns of mascot pixel art with dynamic glowing effect for active roles.
+    Render 8 columns of mascot pixel art with dynamic glowing effect for active roles.
     - Active roles: Overhead '✦ ACTIVE ✦' crown, radiant boosted RGB colors, bold role tag, '● BUSY' badge.
     - Idle roles: Dimmed palette, dim role tag, '○ idle' badge.
     """
@@ -511,7 +676,7 @@ def render_7col_agent_ps_grid(
     num_cols = len(PIXEL_ART_ANIMALS)
     hdr_w = 4
     avail_w = term_w - hdr_w
-    cell_w = max(13, min(18, avail_w // num_cols))
+    cell_w = max(11, min(18, avail_w // num_cols))
     total_w = hdr_w + cell_w * num_cols
     margin = max(0, (term_w - total_w) // 2)
     m = " " * margin
@@ -566,30 +731,32 @@ def render_7col_agent_ps_grid(
             row += " " * (pad // 2) + s + " " * (pad - pad // 2)
         lines.append(row)
 
-    # Animal kind
-    row = m + " " * hdr_w
-    for k in range(num_cols):
-        role_id = PIXEL_ART_ANIMALS[k][0]
-        kind = ROLE_ANIMALS_VI.get(role_id, PIXEL_ART_ANIMALS[k][2]) if CURRENT_LANG == "vi" else PIXEL_ART_ANIMALS[k][2]
-        color = PIXEL_ART_ANIMALS[k][1]
-        is_active = role_id in normalized_active
-        vis_kind_len = _visible_len(kind)
-        pad = max(0, cell_w - vis_kind_len)
-        if is_active:
-            boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
-            colored_kind = f"{BOLD}{rgb_fg(boost_c)}{kind}{RESET}" if sys.stdout.isatty() else kind
-        else:
-            colored_kind = f"{DIM}{kind}{RESET}" if sys.stdout.isatty() else kind
-        row += " " * (pad // 2) + colored_kind + " " * (pad - pad // 2)
-    lines.append(row)
+    # Mascot Name 2 Lines
+    mascot_labels = MASCOT_LABELS_VI if CURRENT_LANG == "vi" else MASCOT_LABELS_EN
+    for line_idx in (0, 1):
+        row = m + " " * hdr_w
+        for k in range(num_cols):
+            role_id = PIXEL_ART_ANIMALS[k][0]
+            w = mascot_labels.get(role_id, ("", ""))[line_idx]
+            color = PIXEL_ART_ANIMALS[k][1]
+            is_active = role_id in normalized_active
+            vis_w_len = _visible_len(w)
+            pad = max(0, cell_w - vis_w_len)
+            if is_active:
+                boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
+                colored_w = f"{BOLD}{rgb_fg(boost_c)}{w}{RESET}" if sys.stdout.isatty() else w
+            else:
+                colored_w = f"{DIM}{w}{RESET}" if sys.stdout.isatty() else w
+            row += " " * (pad // 2) + colored_w + " " * (pad - pad // 2)
+        lines.append(row)
 
     # Roles
     if CURRENT_LANG == "vi":
-        roles_mid = ["[kiến trúc]", "[phản biện]", "[điều phối]", "[kiểm định]", "[thực thi]", "[trinh sát]", "[đóng gói]"]
-        roles_short = ["[k.trúc]", "[p.biện]", "[đ.phối]", "[k.định]", "[t.thi]", "[t.sát]", "[đ.gói]"]
+        roles_mid = ["[kiến trúc]", "[phản biện]", "[điều phối]", "[kiểm định]", "[thiết kế]", "[thực thi]", "[trinh sát]", "[đóng gói]"]
+        roles_short = ["[k.trúc]", "[p.biện]", "[đ.phối]", "[k.định]", "[t.kế]", "[t.thi]", "[t.sát]", "[đ.gói]"]
     else:
-        roles_mid = ["[architect]", "[critic]", "[orchestrator]", "[reviewer]", "[implementer]", "[searcher]", "[committer]"]
-        roles_short = ["[arch]", "[critic]", "[orch]", "[reviewer]", "[imp]", "[search]", "[commit]"]
+        roles_mid = ["[architect]", "[critic]", "[orchestrator]", "[reviewer]", "[designer]", "[implementer]", "[searcher]", "[committer]"]
+        roles_short = ["[arch]", "[critic]", "[orch]", "[reviewer]", "[design]", "[imp]", "[search]", "[commit]"]
     row = m + " " * hdr_w
     for k in range(num_cols):
         role_id = PIXEL_ART_ANIMALS[k][0]
@@ -626,6 +793,9 @@ def render_7col_agent_ps_grid(
     return "\n".join(lines)
 
 
+render_agent_ps_grid = render_7col_agent_ps_grid
+
+
 # Backward compatibility alias
 render_pixel_art_banner = render_7col_agent_grid
 
@@ -645,14 +815,14 @@ def banner() -> None:
         header_title = " ✦ AGENT-TEAM "
         line_1 = f"{c('▸ NỀN TẢNG', BOLD + YELLOW)} : Antigravity • OpenAI Codex • Claude Code"
         line_2 = f"{c('▸ PHA 1   ', BOLD + GREEN)} : Cặp Lead Phản Biện 2 Vòng (Argon ⮂ Pro 3.1)"
-        line_3 = f"{c('▸ PHA 2   ', BOLD + GREEN)} : Orchestrator Điều Phối [Search/Imp/Rev/Git]"
+        line_3 = f"{c('▸ PHA 2   ', BOLD + GREEN)} : Orchestrator Điều Phối [Search/Imp/Design/Rev/Git]"
         line_4 = f"{c('▸ CƠ CHẾ  ', BOLD + YELLOW)} : Đồng Thuận Thiết Kế ➔ Thực Thi TDD Phân Cấp"
         footer_tag = " ◈ .agents   ◈ .codex   ◈ .claude   ◈ 150+ skills "
     else:
         header_title = " ✦ AGENT-TEAM "
         line_1 = f"{c('▸ HARNESS', BOLD + YELLOW)} : Antigravity • OpenAI Codex • Claude Code"
         line_2 = f"{c('▸ PHASE 1', BOLD + GREEN)} : Lead Architect ⮂ Lead Critic (2-Rnd Debate)"
-        line_3 = f"{c('▸ PHASE 2', BOLD + GREEN)} : Orchestrator → [Search/Imp/Rev/Commit]"
+        line_3 = f"{c('▸ PHASE 2', BOLD + GREEN)} : Orchestrator → [Search/Imp/Design/Rev/Commit]"
         line_4 = f"{c('▸ PATTERN', BOLD + YELLOW)} : Strategic Consensus ➔ Hierarchical TDD"
         footer_tag = " ◈ .agents   ◈ .codex   ◈ .claude   ◈ 150+ skills "
 
@@ -1025,6 +1195,19 @@ def get_fallback_presets() -> List[Tuple[str, str, List[str]]]:
             ],
         ),
         (
+            "designer-flash38-sonnet-sol6",
+            tr(
+                "3.8 Flash High → 3.1 Pro High → Claude Sonnet → Codex Sol 6.0 (xhigh) [Designer / UI/UX]",
+                "3.8 Flash High → 3.1 Pro High → Claude Sonnet → Codex Sol 6.0 (xhigh) [Thiết kế / UI/UX]",
+            ),
+            [
+                "agy:gemini-3.8-flash-high",
+                "agy:gemini-3.1-pro-high",
+                "claude:sonnet",
+                "codex:gpt-6-sol (xhigh)",
+            ],
+        ),
+        (
             "flash38-pro31-sonnet-sol60",
             tr(
                 "3.8 Flash High → 3.1 Pro High → Claude Sonnet → Codex Sol 6.0 (xhigh) [Implementer / TDD]",
@@ -1270,6 +1453,44 @@ DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
             "agy:claude-opus-5-5-medium",
             "agy:gemini-3.8-flash-high",
             "codex:gpt-6.1-sol (xhigh)",
+        ],
+    },
+    "designer": {
+        "title": "Flash-3.8 / Sol 6: UI/UX & Anti-Slop Visual Designer",
+        "role": "UI/UX & Anti-Slop Visual Designer",
+        "mission": (
+            "Design and implement pixel-perfect, anti-slop frontend interfaces, UI components, animations, "
+            "and visual assets adhering to strict design taste and design systems."
+        ),
+        "provider": "multi",
+        "agy_model": "gemini-3.8-flash-high",
+        "claude_model": "sonnet",
+        "codex_model": "gpt-6-sol",
+        "reasoning_effort": "high",
+        "context_scope": "Frontend components, styles, design tokens, UI templates, design system guidelines, and user experience assets.",
+        "goal_criteria": (
+            "Deliver high-end, responsive, accessible, and anti-slop visual designs and components with clean code and token adherence."
+        ),
+        "enable_write": True,
+        "enable_subagents": False,
+        "enable_mcp": True,
+        "workspace_mode": "share",
+        "agy_tools": list(READ_WRITE_TOOLS),
+        "skills": [
+            "design-taste-frontend",
+            "ui-ux-pro-max",
+            "ui-styling",
+            "design-system",
+            "design",
+            "brand",
+            "banner-design",
+            "slides",
+        ],
+        "fallback_chain": [
+            "agy:gemini-3.8-flash-high",
+            "agy:gemini-3.1-pro-high",
+            "claude:sonnet",
+            "codex:gpt-6-sol (xhigh)",
         ],
     },
     "implementer": {
@@ -1524,6 +1745,44 @@ DEFAULT_AGENT_TEMPLATES_VI: Dict[str, Dict] = {
             "agy:claude-opus-5-5-medium",
             "agy:gemini-3.8-flash-high",
             "codex:gpt-6.1-sol (xhigh)",
+        ],
+    },
+    "designer": {
+        "title": "Flash-3.8 / Sol 6: Kỹ sư thiết kế UI/UX & Bản sắc thị giác Anti-Slop",
+        "role": "Kỹ sư thiết kế UI/UX & Bản sắc thị giác Anti-Slop",
+        "mission": (
+            "Thiết kế và triển khai giao diện frontend chuẩn mực, loại bỏ slop, đảm bảo tính thẩm mỹ pixel-perfect, "
+            "design system và trải nghiệm người dùng cao cấp."
+        ),
+        "provider": "multi",
+        "agy_model": "gemini-3.8-flash-high",
+        "claude_model": "sonnet",
+        "codex_model": "gpt-6-sol",
+        "reasoning_effort": "high",
+        "context_scope": "Thành phần giao diện (UI components), styles, design tokens, mẫu layout, quy chuẩn thiết kế và tài nguyên đồ họa.",
+        "goal_criteria": (
+            "Tạo ra giao diện sắc nét, đáp ứng tốt, truy cập chuẩn (a11y) và loại bỏ hoàn toàn các lỗi slop phổ biến với code sạch và token nhất quán."
+        ),
+        "enable_write": True,
+        "enable_subagents": False,
+        "enable_mcp": True,
+        "workspace_mode": "share",
+        "agy_tools": list(READ_WRITE_TOOLS),
+        "skills": [
+            "design-taste-frontend",
+            "ui-ux-pro-max",
+            "ui-styling",
+            "design-system",
+            "design",
+            "brand",
+            "banner-design",
+            "slides",
+        ],
+        "fallback_chain": [
+            "agy:gemini-3.8-flash-high",
+            "agy:gemini-3.1-pro-high",
+            "claude:sonnet",
+            "codex:gpt-6-sol (xhigh)",
         ],
     },
     "implementer": {
@@ -2398,6 +2657,13 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
             ),
         ),
         (
+            "designer",
+            tr(
+                "UI/UX & Anti-Slop Visual Designer — Agy: gemini-3.8-flash-high | Codex: gpt-6-sol xhigh",
+                "Kỹ sư thiết kế UI/UX & Bản sắc thị giác — Agy: gemini-3.8-flash-high | Codex: gpt-6-sol xhigh",
+            ),
+        ),
+        (
             "implementer",
             tr(
                 "Feature & TDD Implementer — Agy: gemini-3.8-flash-high | Codex: gpt-6-sol xhigh",
@@ -2422,14 +2688,14 @@ def run_interactive_wizard(target_dir: Path, projects_root: Path, show_banner: b
     selected_roles = ask_multi_choice(
         tr("Select Agents to include in this Project's roster", "Chọn các Agents trong đội hình của Project này"),
         role_options,
-        default_indices=[0, 1, 2, 3, 4, 5, 6],
+        default_indices=[0, 1, 2, 3, 4, 5, 6, 7],
     )
 
     active_templates = get_agent_templates()
     while ask_yes_no(
         tr(
-            "Add a custom specialist Agent (e.g. ui-designer, security-auditor, ml-tuner)?",
-            "Bạn có muốn thêm một Agent chuyên biệt mới (VD: ui-designer, security-auditor, ml-tuner)?",
+            "Add a custom specialist Agent (e.g. security-auditor, ml-tuner, devops-infra)?",
+            "Bạn có muốn thêm một Agent chuyên biệt mới (VD: security-auditor, ml-tuner, devops-infra)?",
         ),
         default=False,
     ):
@@ -3291,6 +3557,7 @@ def build_preset_config(
         "lead-critic",
         "orchestrator",
         "reviewer",
+        "designer",
         "implementer",
         "searcher",
         "committer",
@@ -3448,8 +3715,8 @@ def cmd_status(target_dir: Path) -> None:
     print(
         c(
             tr(
-                f"ℹ️  Target: {project_path.name} ({project_path}) — [Standard 2-Phase 7-Role Catalog]",
-                f"ℹ️  Thư mục: {project_path.name} ({project_path}) — [Bảng Roster 7 Roles Chuẩn 2 Pha]",
+                f"ℹ️  Target: {project_path.name} ({project_path}) — [Standard 2-Phase 8-Role Catalog]",
+                f"ℹ️  Thư mục: {project_path.name} ({project_path}) — [Bảng Roster 8 Roles Chuẩn 2 Pha]",
             ),
             BOLD + YELLOW,
         )
@@ -3646,12 +3913,21 @@ def detect_live_agent_occupancy(
                         elif age_sec < 180 and not manual_active:
                             # Heuristic based on active recent session tools (< 3 minutes)
                             if tname in ("write_file", "edit_file"):
-                                active_roles.setdefault("implementer", {
-                                    "canonical": "implementer",
-                                    "role_raw": "",
-                                    "prompt": tr(f"Editing code via {tname}", f"Đang sửa mã qua {tname}"),
-                                    "is_heuristic": True,
-                                })
+                                target_path = str(args_obj.get("Path", "")).lower()
+                                if any(ext in target_path for ext in (".css", ".scss", ".tailwind", "design", "style", "banner", "ui")):
+                                    active_roles.setdefault("designer", {
+                                        "canonical": "designer",
+                                        "role_raw": "",
+                                        "prompt": tr(f"Designing UI via {tname}", f"Đang thiết kế UI qua {tname}"),
+                                        "is_heuristic": True,
+                                    })
+                                else:
+                                    active_roles.setdefault("implementer", {
+                                        "canonical": "implementer",
+                                        "role_raw": "",
+                                        "prompt": tr(f"Editing code via {tname}", f"Đang sửa mã qua {tname}"),
+                                        "is_heuristic": True,
+                                    })
                             elif tname in ("read_file", "search_web", "list_resources"):
                                 active_roles.setdefault("searcher", {
                                     "canonical": "searcher",
@@ -4616,14 +4892,14 @@ def print_cli_help(lang: str = "en") -> None:
             f"{c('COMMANDS:', BOLD + YELLOW)}\n"
             f"  {c('(no command)', BOLD + CYAN)}  Open the interactive CLI dashboard menu (or run wizard)\n"
             f"  {c('init', BOLD + CYAN)}          Run the Multi-Agent & Skills setup wizard for a Project/Repo\n"
-            f"  {c('status', BOLD + CYAN)}        Inspect active AI Team Status, 7-Role Animals & Skills\n"
+            f"  {c('status', BOLD + CYAN)}        Inspect active AI Team Status, 8-Role Animals & Skills\n"
             f"  {c('fallback', BOLD + CYAN)}      Configure or step down along the Model & Provider Fallback Chain\n"
             f"  {c('ps / tasks', BOLD + CYAN)}    Continuous live monitor like `top` (press `q` to quit, `--once` for snapshot)\n"
             f"  {c('clean', BOLD + CYAN)}         Clean / remove all AI agent configurations from a repo\n"
             f"  {c('list-skills', BOLD + CYAN)}   List all discovered local Skills\n\n"
             f"{c('OPTIONS:', BOLD + YELLOW)}\n"
             f"  {c('-t, --target <path>', CYAN)}     Target project directory (default: current directory)\n"
-            f"  {c('-y, --yes', CYAN)}               Non-interactive mode using standard 5-agent preset\n"
+            f"  {c('-y, --yes', CYAN)}               Non-interactive mode using standard 8-agent preset\n"
             f"  {c('--clean', CYAN)}                 Clean / remove all AI agent configurations in target repo\n"
             f"  {c('--once, -1', CYAN)}              Print ps monitor snapshot once and exit (disable continuous loop)\n"
             f"  {c('--interval, -i <sec>', CYAN)}    Refresh interval in seconds for top monitor (default: 2.0)\n"
@@ -4654,14 +4930,14 @@ def print_cli_help(lang: str = "en") -> None:
             f"{c('CÁC LỆNH CHÍNH:', BOLD + YELLOW)}\n"
             f"  {c('(không truyền lệnh)', BOLD + CYAN)} Mở Bảng điều khiển tương tác (TUI Menu / Wizard)\n"
             f"  {c('init', BOLD + CYAN)}                Chạy Wizard thiết lập đội ngũ AI & Skills cho Project/Repo\n"
-            f"  {c('status', BOLD + CYAN)}              Xem trạng thái Đội ngũ AI, 7 Linh vật & Skills\n"
+            f"  {c('status', BOLD + CYAN)}              Xem trạng thái Đội ngũ AI, 8 Linh vật & Skills\n"
             f"  {c('fallback', BOLD + CYAN)}            Thiết lập hoặc lùi Model theo Chuỗi Fallback đa Provider\n"
             f"  {c('ps / tasks', BOLD + CYAN)}          Giám sát liên tục như `top` (bấm `q` để thoát, `--once` để in 1 lần)\n"
             f"  {c('clean', BOLD + CYAN)}               Dọn dẹp / xóa toàn bộ cấu hình AI Agents khỏi repo\n"
             f"  {c('list-skills', BOLD + CYAN)}         Liệt kê toàn bộ 150+ Skills đang có trên máy\n\n"
             f"{c('TÙY CHỌN (OPTIONS):', BOLD + YELLOW)}\n"
             f"  {c('-t, --target <path>', CYAN)}     Đường dẫn tới project/repo cần thiết lập (mặc định: `.`)\n"
-            f"  {c('-y, --yes', CYAN)}               Khởi tạo tự động bằng Preset 5 Agents chuẩn (không hỏi đáp)\n"
+            f"  {c('-y, --yes', CYAN)}               Khởi tạo tự động bằng Preset 8 Agents chuẩn (không hỏi đáp)\n"
             f"  {c('--clean', CYAN)}                 Dọn dẹp / xóa toàn bộ cấu hình AI Agents trong repo chỉ định\n"
             f"  {c('--once, -1', CYAN)}              In ảnh chụp trạng thái 1 lần rồi thoát (tắt vòng lặp như `top`)\n"
             f"  {c('--interval, -i <sec>', CYAN)}    Chu kỳ làm mới màn hình theo dõi (mặc định: 2.0 giây)\n"
@@ -4699,7 +4975,7 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             menu_opts = [
                 ("wizard", "Thiết lập đội ngũ AI & Skills theo từng bước (Interactive Wizard)"),
                 ("preset", "Khởi tạo nhanh Đội ngũ Multi-Agent 2 Pha (Lead Phản biện + Thực thi)"),
-                ("status", "Xem trạng thái Đội ngũ AI, 7 Linh vật & Skills (`agt status`)"),
+                ("status", "Xem trạng thái Đội ngũ AI, 8 Linh vật & Skills (`agt status`)"),
                 ("fallback", "Thiết lập / Lùi Model theo Chuỗi Fallback đa Provider (`agt fallback`)"),
                 ("ps", "Kiểm tra Agents nào đang chạy task nào (Live Agent & Task Monitor)"),
                 ("clean", "Dọn dẹp / Xóa toàn bộ cấu hình AI Agents trong repo (`agt clean`)"),
@@ -4713,7 +4989,7 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             menu_opts = [
                 ("wizard", "Configure Multi-Agent Team & Skills step-by-step (Interactive Wizard)"),
                 ("preset", "Quick-initialize 2-Phase Multi-Agent Team (Lead Debate + Execution)"),
-                ("status", "Inspect active AI Team Status, 7-Role Animals & Skills (`agt status`)"),
+                ("status", "Inspect active AI Team Status, 8-Role Animals & Skills (`agt status`)"),
                 ("fallback", "Configure or Step Down Model & Provider Fallback Chains (`agt fallback`)"),
                 ("ps", "Check live running Agents, subagents & active tasks (`agt ps`)"),
                 ("clean", "Clean / Remove all AI agent configurations from repo (`agt clean`)"),
