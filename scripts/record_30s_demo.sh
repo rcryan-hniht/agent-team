@@ -2,8 +2,9 @@
 set -euo pipefail
 
 # ==============================================================================
-# agt 30-Second Demo Master Recording Script
+# agt Demo Master Recording Script
 # Orchestrates isolated OBS recording on Workspace 9 and Ghostty on Workspace 2
+# Automates 2-pass high-fidelity GIF generation to assets/demo.gif
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,11 +12,29 @@ PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 VIDEOS_DIR="${HOME}/Videos"
 OUTPUT_TARGET="${VIDEOS_DIR}/agt_demo_30s.mp4"
 
-echo "=== [AGT 30s DEMO RECORDER] Initializing ==="
+echo "=== [AGT DEMO RECORDER] Initializing ==="
 echo "Project Directory: $PROJECT_DIR"
 echo "Target Video Output: $OUTPUT_TARGET"
 
 mkdir -p "$VIDEOS_DIR"
+
+# Ensure webcam overlay is disabled in OBS scene
+python3 -c '
+import json
+p = "/home/killua/.config/obs-studio/basic/scenes/Untitled.json"
+try:
+    with open(p) as f:
+        d = json.load(f)
+    for s in d.get("sources", []):
+        if s.get("id") == "scene":
+            for item in s.get("settings", {}).get("items", []):
+                if item.get("name") == "Video Capture Device (V4L2)":
+                    item["visible"] = False
+    with open(p, "w") as f:
+        json.dump(d, f, indent=4)
+except Exception:
+    pass
+'
 
 # Snapshot existing recordings before launch
 BEFORE_LIST=$(mktemp)
@@ -64,8 +83,8 @@ else
     echo "   ⚠️ Warning: Could not locate window title 'agt-recording-demo', continuing..."
 fi
 
-# 7. Wait for demo runner to finish (33s total duration)
-echo "7. Waiting for demo runner to finish 5 segments + outro..."
+# 7. Wait for demo runner to finish (47s total duration)
+echo "7. Waiting for demo runner to finish all segments..."
 wait "$GHOSTTY_PID" || true
 echo "   Ghostty demo completed!"
 
@@ -130,3 +149,17 @@ echo "   Resolution  : $RESOLUTION"
 echo "   FPS         : $FPS"
 echo "   Duration    : ${DURATION}s"
 echo "============================================================"
+
+# 12. Convert to high-fidelity assets/demo.gif via 2-pass palette ffmpeg
+# Cut out initial 4.0s (startup/workspace switch) so ONLY fullscreen Ghostty terminal is shown
+echo "12. Converting to assets/demo.gif (trimming startup to isolate Ghostty terminal)..."
+TRIM_START="00:00:04.0"
+TRIM_DURATION="47.0"
+
+PALETTE_PNG=$(mktemp --suffix=.png)
+ffmpeg -y -ss "$TRIM_START" -t "$TRIM_DURATION" -i "$OUTPUT_TARGET" -vf "fps=10,scale=960:-1:flags=lanczos,palettegen=max_colors=96:stats_mode=diff" "$PALETTE_PNG"
+ffmpeg -y -ss "$TRIM_START" -t "$TRIM_DURATION" -i "$OUTPUT_TARGET" -i "$PALETTE_PNG" -lavfi "fps=10,scale=960:-1:flags=lanczos [x]; [x][1:v] paletteuse=dither=bayer:bayer_scale=3" "${PROJECT_DIR}/assets/demo.gif"
+rm -f "$PALETTE_PNG"
+
+GIF_SIZE=$(stat -c%s "${PROJECT_DIR}/assets/demo.gif" 2>/dev/null || stat -f%z "${PROJECT_DIR}/assets/demo.gif")
+echo "✅ assets/demo.gif generated: $GIF_SIZE bytes ($((GIF_SIZE / 1024 / 1024)) MB)"

@@ -1,16 +1,26 @@
 #!/usr/bin/env python3
 """
-agt 30-Second Terminal Demo Runner
+agt Terminal Demo Runner
 Executes an authentic, timed CLI showcase inside a native terminal (e.g. Ghostty).
 
-Timeline:
+Features demonstrated:
+  • 8-Role Multi-Agent Team Catalog & Mascot Pixel Art (with southern rockhopper penguin)
+  • Realtime Token Velocity Telemetry & 15m Sparklines
+  • System Theme Auto-Sync (Dark Mode cool neon glow vs Light Mode warm rosewood accents)
+  • Model & Cross-Provider Fallback Chains
+  • Scaffolding Presets
+
+Timeline (~47s total duration):
   • 00:00 - 00:02 (2.0s): Warm-up buffer
-  • 00:02 - 00:06 (4.0s): agt --help
-  • 00:06 - 00:14 (8.0s): clear -> agt status
-  • 00:14 - 00:22 (8.0s): clear -> agt ps --once
-  • 00:22 - 00:27 (5.0s): clear -> agt fallback
-  • 00:27 - 00:30 (3.0s): clear -> agt init -h
-  • 00:30 - 00:33 (3.0s): Freeze outro buffer
+  • 00:02 - 00:07 (5.0s): agt --help (Command catalog & options)
+  • 00:07 - 00:15 (8.0s): clear -> agt status (8 mascots & fallback chains)
+  • 00:15 - 00:24 (9.0s): clear -> agt ps --once (Dark Theme: live telemetry & task occupancy)
+  • 00:24 - 00:34 (10.0s): clear -> Theme Auto-Sync Showcase
+                          AGT_THEME=light agt ps --once --active "designer,implementer"
+                          (Light Theme: warm rosewood pink/red active accents & lavender grey idle sprites)
+  • 00:34 - 00:40 (6.0s): clear -> agt fallback (Cross-provider model chains)
+  • 00:40 - 00:44 (4.0s): clear -> agt init -h (Fast scaffolding options)
+  • 00:44 - 00:47 (3.0s): Freeze outro buffer
 """
 
 import os
@@ -46,12 +56,15 @@ def run_command(
     cmd: list[str],
     t_start: float,
     stdin_input: str | None = None,
+    extra_env: dict[str, str] | None = None,
 ) -> None:
     """Run command preserving terminal formatting and ANSI codes."""
     env = os.environ.copy()
     env["COLORTERM"] = "truecolor"
     env["TERM"] = "xterm-256color"
     env["FORCE_COLOR"] = "1"
+    if extra_env:
+        env.update(extra_env)
 
     kwargs = {
         "cwd": PROJECT_DIR,
@@ -81,7 +94,7 @@ def main() -> None:
     wait_until(t0, 2.0)
 
     # -------------------------------------------------------------
-    # 00:02 - 00:06 (4.0s): agt --help
+    # 00:02 - 00:07 (5.0s): agt --help
     # -------------------------------------------------------------
     typewriter("agt --help")
     time.sleep(0.12)
@@ -91,10 +104,10 @@ def main() -> None:
     run_command([AGT_BIN, "--help"], t0)
     sys.stdout.write("\n" + PROMPT)
     sys.stdout.flush()
-    wait_until(t0, 6.0)
+    wait_until(t0, 7.0)
 
     # -------------------------------------------------------------
-    # 00:06 - 00:14 (8.0s): clear -> agt status
+    # 00:07 - 00:15 (8.0s): clear -> agt status
     # -------------------------------------------------------------
     sys.stdout.write(CLEAR_SCREEN)
     sys.stdout.write(PROMPT)
@@ -109,10 +122,10 @@ def main() -> None:
     run_command([AGT_BIN, "status"], t0)
     sys.stdout.write("\n" + PROMPT)
     sys.stdout.flush()
-    wait_until(t0, 14.0)
+    wait_until(t0, 15.0)
 
     # -------------------------------------------------------------
-    # 00:14 - 00:22 (8.0s): clear -> agt ps --once
+    # 00:15 - 00:24 (9.0s): clear -> agt ps --once (Dark Theme)
     # -------------------------------------------------------------
     sys.stdout.write(CLEAR_SCREEN)
     sys.stdout.write(PROMPT)
@@ -124,13 +137,35 @@ def main() -> None:
     sys.stdout.write("\n")
     sys.stdout.flush()
 
-    run_command([AGT_BIN, "ps", "--once"], t0)
+    run_command([AGT_BIN, "ps", "--once"], t0, extra_env={"AGT_THEME": "dark"})
     sys.stdout.write("\n" + PROMPT)
     sys.stdout.flush()
-    wait_until(t0, 22.0)
+    wait_until(t0, 24.0)
 
     # -------------------------------------------------------------
-    # 00:22 - 00:27 (5.0s): clear -> agt fallback
+    # 00:24 - 00:34 (10.0s): clear -> Theme Auto-Sync Showcase (Light Theme)
+    # -------------------------------------------------------------
+    sys.stdout.write(CLEAR_SCREEN)
+    sys.stdout.write(PROMPT)
+    sys.stdout.flush()
+    time.sleep(0.08)
+
+    typewriter('AGT_THEME=light agt ps --once --active "designer,implementer"')
+    time.sleep(0.12)
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+
+    run_command(
+        [AGT_BIN, "ps", "--once", "--active", "designer,implementer"],
+        t0,
+        extra_env={"AGT_THEME": "light"},
+    )
+    sys.stdout.write("\n" + PROMPT)
+    sys.stdout.flush()
+    wait_until(t0, 34.0)
+
+    # -------------------------------------------------------------
+    # 00:34 - 00:40 (6.0s): clear -> agt fallback
     # -------------------------------------------------------------
     sys.stdout.write(CLEAR_SCREEN)
     sys.stdout.write(PROMPT)
@@ -146,10 +181,10 @@ def main() -> None:
     run_command([AGT_BIN, "fallback"], t0, stdin_input="4\n")
     sys.stdout.write("\n" + PROMPT)
     sys.stdout.flush()
-    wait_until(t0, 27.0)
+    wait_until(t0, 40.0)
 
     # -------------------------------------------------------------
-    # 00:27 - 00:30 (3.0s): clear -> agt init -h
+    # 00:40 - 00:44 (4.0s): clear -> agt init -h
     # -------------------------------------------------------------
     sys.stdout.write(CLEAR_SCREEN)
     sys.stdout.write(PROMPT)
@@ -164,12 +199,12 @@ def main() -> None:
     run_command([AGT_BIN, "init", "-h"], t0)
     sys.stdout.write("\n" + PROMPT)
     sys.stdout.flush()
-    wait_until(t0, 30.0)
+    wait_until(t0, 44.0)
 
     # -------------------------------------------------------------
-    # 00:30 - 00:33 (3.0s): Freeze outro buffer
+    # 00:44 - 00:47 (3.0s): Freeze outro buffer
     # -------------------------------------------------------------
-    wait_until(t0, 33.0)
+    wait_until(t0, 47.0)
 
 
 if __name__ == "__main__":
