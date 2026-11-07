@@ -228,6 +228,115 @@ PIXEL_ART_ANIMALS = [
 
 ROLE_COLORS = {r[0]: r[1] for r in PIXEL_ART_ANIMALS}
 ROLE_ANIMALS = {r[0]: r[2] for r in PIXEL_ART_ANIMALS}
+ROLE_ANIMALS_VI = {
+    "lead-architect": "cú",
+    "lead-critic": "mèo",
+    "orchestrator": "bạch tuộc",
+    "reviewer": "ếch",
+    "implementer": "thỏ",
+    "searcher": "dơi",
+    "committer": "cánh cụt",
+}
+
+ROLE_DESCRIPTIONS_EN = {
+    "lead-architect": "Lead Solution Architect & Planner",
+    "lead-critic": "Lead Technical Critic & Challenger",
+    "orchestrator": "Execution Orchestration & Worker Dispatcher",
+    "reviewer": "Independent Code Quality & Security Reviewer",
+    "implementer": "Senior Feature & TDD Implementer",
+    "searcher": "Primary Documentation & Codebase Scout",
+    "committer": "Conventional Git Committer",
+}
+
+ROLE_DESCRIPTIONS_VI = {
+    "lead-architect": "Kiến trúc sư trưởng & Hoạch định giải pháp",
+    "lead-critic": "Phản biện trưởng & Thẩm định rủi ro kỹ thuật",
+    "orchestrator": "Tổng điều phối viên thực thi",
+    "reviewer": "Kiểm định viên chất lượng & Bảo mật độc lập",
+    "implementer": "Kỹ sư thực thi tính năng & TDD",
+    "searcher": "Trinh sát mã nguồn & Tra cứu tài liệu",
+    "committer": "Chuyên viên đóng gói Git Commit",
+}
+
+ROLE_TASK_DEFAULT_EN = {
+    "lead-architect": "Drafting architecture RFC & task breakdown",
+    "lead-critic": "Reviewing technical risks & stress-testing design",
+    "orchestrator": "Orchestrating subagents & execution pipeline",
+    "reviewer": "Reviewing code correctness & security standards",
+    "implementer": "Implementing minimal code & unit tests (TDD)",
+    "searcher": "Scouting codebase & researching documentation",
+    "committer": "Packaging conventional git commits",
+}
+
+ROLE_TASK_DEFAULT_VI = {
+    "lead-architect": "Đang lập đề xuất kiến trúc & phân rã nhiệm vụ",
+    "lead-critic": "Đang phản biện rủi ro kỹ thuật & stress-test thiết kế",
+    "orchestrator": "Đang điều phối các subagent & kế hoạch thực thi",
+    "reviewer": "Đang kiểm định chất lượng code & bảo mật",
+    "implementer": "Đang viết code & kiểm thử đơn vị (TDD)",
+    "searcher": "Đang trinh sát mã nguồn & tra cứu tài liệu",
+    "committer": "Đang đóng gói git commit chuẩn Conventional Commits",
+}
+
+
+def format_active_role_desc(r_id: str, info: Any, lang: str = "en") -> str:
+    """Format the active role description cleanly according to the selected language."""
+    if isinstance(info, dict):
+        prompt = str(info.get("prompt", "")).strip().strip('"').strip("'")
+        is_heuristic = info.get("is_heuristic", False)
+        is_manual = info.get("is_manual", False)
+
+        if is_heuristic or is_manual:
+            return prompt
+
+        if lang == "vi":
+            role_desc = ROLE_DESCRIPTIONS_VI.get(r_id, info.get("role_raw") or "Chuyên viên")
+            if _is_vi_text(prompt) and prompt:
+                clean_p = prompt
+                for prefix in (f"Bạn là `{r_id}`", f"Bạn là {r_id}", "Bạn là"):
+                    if clean_p.startswith(prefix):
+                        if "Nhiệm vụ:" in clean_p:
+                            clean_p = clean_p.split("Nhiệm vụ:", 1)[1].strip()
+                        elif ":" in clean_p:
+                            clean_p = clean_p.split(":", 1)[1].strip()
+                        break
+                clean_p = clean_p[:70].strip().strip('"').strip("'")
+                return f"{role_desc} — {clean_p}…" if len(clean_p) >= 70 else f"{role_desc} — {clean_p}"
+            else:
+                task_desc = ROLE_TASK_DEFAULT_VI.get(r_id, "Đang xử lý nhiệm vụ")
+                return f"{role_desc} — {task_desc}"
+        else:
+            role_desc = ROLE_DESCRIPTIONS_EN.get(r_id, "Specialist")
+            if not _is_vi_text(prompt) and prompt:
+                clean_p = prompt
+                for prefix in (f"You are `{r_id}`", f"You are {r_id}", "You are"):
+                    if clean_p.startswith(prefix):
+                        if "Mission:" in clean_p:
+                            clean_p = clean_p.split("Mission:", 1)[1].strip()
+                        elif ":" in clean_p:
+                            clean_p = clean_p.split(":", 1)[1].strip()
+                        break
+                clean_p = clean_p[:70].strip().strip('"').strip("'")
+                return f"{role_desc} — {clean_p}…" if len(clean_p) >= 70 else f"{role_desc} — {clean_p}"
+            else:
+                task_desc = ROLE_TASK_DEFAULT_EN.get(r_id, "Executing assigned task")
+                return f"{role_desc} — {task_desc}"
+
+    if isinstance(info, str):
+        raw_str = info.strip().strip('"').strip("'")
+        if lang == "en" and _is_vi_text(raw_str):
+            role_desc = ROLE_DESCRIPTIONS_EN.get(r_id, "Specialist")
+            task_desc = ROLE_TASK_DEFAULT_EN.get(r_id, "Executing assigned task")
+            return f"{role_desc} — {task_desc}"
+        elif lang == "vi" and not _is_vi_text(raw_str):
+            role_desc = ROLE_DESCRIPTIONS_VI.get(r_id, "Chuyên viên")
+            task_desc = ROLE_TASK_DEFAULT_VI.get(r_id, "Đang xử lý nhiệm vụ")
+            return f"{role_desc} — {task_desc}"
+        return raw_str
+
+    role_desc = ROLE_DESCRIPTIONS_VI.get(r_id, "Chuyên viên") if lang == "vi" else ROLE_DESCRIPTIONS_EN.get(r_id, "Specialist")
+    task_desc = ROLE_TASK_DEFAULT_VI.get(r_id, "Đang xử lý nhiệm vụ") if lang == "vi" else ROLE_TASK_DEFAULT_EN.get(r_id, "Executing assigned task")
+    return f"{role_desc} — {task_desc}"
 
 
 def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Optional[int] = None) -> str:
@@ -450,10 +559,11 @@ def render_7col_agent_ps_grid(
     row = m + " " * hdr_w
     for k in range(num_cols):
         role_id = PIXEL_ART_ANIMALS[k][0]
-        kind = PIXEL_ART_ANIMALS[k][2]
+        kind = ROLE_ANIMALS_VI.get(role_id, PIXEL_ART_ANIMALS[k][2]) if CURRENT_LANG == "vi" else PIXEL_ART_ANIMALS[k][2]
         color = PIXEL_ART_ANIMALS[k][1]
         is_active = role_id in normalized_active
-        pad = max(0, cell_w - len(kind))
+        vis_kind_len = _visible_len(kind)
+        pad = max(0, cell_w - vis_kind_len)
         if is_active:
             boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
             colored_kind = f"{BOLD}{rgb_fg(boost_c)}{kind}{RESET}" if sys.stdout.isatty() else kind
@@ -463,15 +573,20 @@ def render_7col_agent_ps_grid(
     lines.append(row)
 
     # Roles
-    roles_mid = ["[architect]", "[critic]", "[orchestrator]", "[reviewer]", "[implementer]", "[searcher]", "[committer]"]
-    roles_short = ["[arch]", "[critic]", "[orch]", "[reviewer]", "[imp]", "[search]", "[commit]"]
+    if CURRENT_LANG == "vi":
+        roles_mid = ["[kiến trúc]", "[phản biện]", "[điều phối]", "[kiểm định]", "[thực thi]", "[trinh sát]", "[đóng gói]"]
+        roles_short = ["[k.trúc]", "[p.biện]", "[đ.phối]", "[k.định]", "[t.thi]", "[t.sát]", "[đ.gói]"]
+    else:
+        roles_mid = ["[architect]", "[critic]", "[orchestrator]", "[reviewer]", "[implementer]", "[searcher]", "[committer]"]
+        roles_short = ["[arch]", "[critic]", "[orch]", "[reviewer]", "[imp]", "[search]", "[commit]"]
     row = m + " " * hdr_w
     for k in range(num_cols):
         role_id = PIXEL_ART_ANIMALS[k][0]
         color = PIXEL_ART_ANIMALS[k][1]
         is_active = role_id in normalized_active
         tag = roles_mid[k] if cell_w >= 14 else roles_short[k]
-        pad = max(0, cell_w - len(tag))
+        vis_tag_len = _visible_len(tag)
+        pad = max(0, cell_w - vis_tag_len)
         if is_active:
             boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
             colored_tag = f"{BOLD}{rgb_fg(boost_c)}{tag}{RESET}" if sys.stdout.isatty() else tag
@@ -3437,13 +3552,13 @@ def get_live_os_procs(project_path: Path) -> List[Dict[str, Any]]:
 def detect_live_agent_occupancy(
     project_path: Path,
     manual_active: str = "",
-) -> Tuple[Dict[str, str], List[Dict[str, Any]]]:
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """
     Detect currently active tasks and which role is occupying which task.
     Inspects ~/.gemini/antigravity-cli/brain/ for recent sessions, tool calls, and subagent invocations.
     Allows manual override/simulation via manual_active.
     """
-    active_roles: Dict[str, str] = {}
+    active_roles: Dict[str, Any] = {}
     recent_sessions: List[Dict[str, Any]] = []
     now_ts = datetime.now().timestamp()
 
@@ -3452,10 +3567,15 @@ def detect_live_agent_occupancy(
         parts = [p.strip().lower() for p in manual_active.replace(";", ",").split(",") if p.strip()]
         for p in parts:
             canonical = ROLE_ALIASES.get(p, p)
-            active_roles[canonical] = tr(
-                "Active task (specified via --active)",
-                "Tác vụ đang chiếm giữ (chỉ định qua --active)",
-            )
+            active_roles[canonical] = {
+                "canonical": canonical,
+                "role_raw": "",
+                "prompt": tr(
+                    "Active task (specified via --active)",
+                    "Tác vụ đang chiếm giữ (chỉ định qua --active)",
+                ),
+                "is_manual": True,
+            }
 
     # 2. Inspect Antigravity brain sessions
     brain_root = Path.home() / ".gemini" / "antigravity-cli" / "brain"
@@ -3500,29 +3620,64 @@ def detect_live_agent_occupancy(
 
                         if tname == "invoke_subagent":
                             tn = str(args_obj.get("TypeName", "subagent")).lower()
-                            r = str(args_obj.get("Role", ""))
-                            p = str(args_obj.get("Prompt", ""))[:70].replace("\n", " ")
-                            subagents_invoked.append({"type": tn, "role": r, "prompt": p})
+                            r = str(args_obj.get("Role", "")).strip().strip('"').strip("'")
+                            p = str(args_obj.get("Prompt", "")).strip().replace("\n", " ")
+                            p_clean = p.strip('"').strip("'").strip()
+                            subagents_invoked.append({"type": tn, "role": r, "prompt": p_clean[:70]})
                             for kr in ROLE_ALIASES:
                                 if kr in tn or kr in r.lower():
                                     canonical = ROLE_ALIASES[kr]
-                                    active_roles[canonical] = f"{r}: \"{p}\""
+                                    active_roles[canonical] = {
+                                        "canonical": canonical,
+                                        "role_raw": r,
+                                        "prompt": p_clean,
+                                    }
                         elif age_sec < 180 and not manual_active:
                             # Heuristic based on active recent session tools (< 3 minutes)
                             if tname in ("write_file", "edit_file"):
-                                active_roles.setdefault("implementer", tr(f"Editing code via {tname}", f"Đang sửa mã qua {tname}"))
+                                active_roles.setdefault("implementer", {
+                                    "canonical": "implementer",
+                                    "role_raw": "",
+                                    "prompt": tr(f"Editing code via {tname}", f"Đang sửa mã qua {tname}"),
+                                    "is_heuristic": True,
+                                })
                             elif tname in ("read_file", "search_web", "list_resources"):
-                                active_roles.setdefault("searcher", tr(f"Researching codebase via {tname}", f"Đang đọc mã/tài liệu qua {tname}"))
+                                active_roles.setdefault("searcher", {
+                                    "canonical": "searcher",
+                                    "role_raw": "",
+                                    "prompt": tr(f"Researching codebase via {tname}", f"Đang đọc mã/tài liệu qua {tname}"),
+                                    "is_heuristic": True,
+                                })
                             elif tname == "run_command":
                                 cmd_str = str(args_obj.get("CommandLine", ""))
                                 if cmd_str.strip().startswith("git ") or " git " in cmd_str:
-                                    active_roles.setdefault("committer", tr("Executing git command", "Đang chạy lệnh git"))
+                                    active_roles.setdefault("committer", {
+                                        "canonical": "committer",
+                                        "role_raw": "",
+                                        "prompt": tr("Executing git command", "Đang chạy lệnh git"),
+                                        "is_heuristic": True,
+                                    })
                                 elif any(k in cmd_str for k in ("pytest", "python -m unittest", "cargo test", "npm test")):
-                                    active_roles.setdefault("implementer", tr("Running tests/verification", "Đang chạy test kiểm định"))
+                                    active_roles.setdefault("implementer", {
+                                        "canonical": "implementer",
+                                        "role_raw": "",
+                                        "prompt": tr("Running tests/verification", "Đang chạy test kiểm định"),
+                                        "is_heuristic": True,
+                                    })
                                 else:
-                                    active_roles.setdefault("orchestrator", tr("Executing system command", "Đang điều phối lệnh hệ thống"))
+                                    active_roles.setdefault("orchestrator", {
+                                        "canonical": "orchestrator",
+                                        "role_raw": "",
+                                        "prompt": tr("Executing system command", "Đang điều phối lệnh hệ thống"),
+                                        "is_heuristic": True,
+                                    })
                             elif tname == "ask_question":
-                                active_roles.setdefault("lead-architect", tr("Clarifying architecture with user", "Đang làm rõ kiến trúc với người dùng"))
+                                active_roles.setdefault("lead-architect", {
+                                    "canonical": "lead-architect",
+                                    "role_raw": "",
+                                    "prompt": tr("Clarifying architecture with user", "Đang làm rõ kiến trúc với người dùng"),
+                                    "is_heuristic": True,
+                                })
             except Exception:
                 pass
 
@@ -3586,11 +3741,13 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
         for r_id in ["lead-architect", "lead-critic", "orchestrator", "reviewer", "implementer", "searcher", "committer"]:
             if r_id in active_roles:
                 emoji = MASCOT_EMOJIS.get(r_id, "🤖")
-                desc = active_roles[r_id]
+                info = active_roles[r_id]
+                desc = format_active_role_desc(r_id, info, lang=CURRENT_LANG)
                 color = ROLE_COLORS.get(r_id, (255, 255, 255))
                 boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
                 role_lbl = f"{BOLD}{rgb_fg(boost_c)}[{r_id}]{RESET}"
-                kind_lbl = f"({ROLE_ANIMALS.get(r_id, 'mascot')})"
+                kind_name = ROLE_ANIMALS_VI.get(r_id, "linh vật") if CURRENT_LANG == "vi" else ROLE_ANIMALS.get(r_id, "mascot")
+                kind_lbl = f"({kind_name})"
                 lines.append(f"     • {emoji} {role_lbl} {kind_lbl:<12} : {c(desc, YELLOW)}")
     else:
         lines.append(
@@ -3670,9 +3827,19 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
             )
             if s["subagents"]:
                 for sa in s["subagents"][-3:]:
-                    lines.append(
-                        f"       ↳ 🤖 {c(sa['type'], BOLD + MAGENTA)} ({sa['role']}): \"{sa['prompt']}…\""
-                    )
+                    sa_type = sa['type']
+                    sa_canonical = ROLE_ALIASES.get(sa_type, sa_type)
+                    sa_role_title = ROLE_DESCRIPTIONS_VI.get(sa_canonical, sa['role']) if CURRENT_LANG == "vi" else ROLE_DESCRIPTIONS_EN.get(sa_canonical, sa['role'])
+                    p_disp = sa['prompt']
+                    if CURRENT_LANG == "en" and _is_vi_text(p_disp):
+                        p_disp = ROLE_TASK_DEFAULT_EN.get(sa_canonical, "Executing subagent task")
+                        lines.append(
+                            f"       ↳ 🤖 {c(sa['type'], BOLD + MAGENTA)} ({sa_role_title}): {p_disp}"
+                        )
+                    else:
+                        lines.append(
+                            f"       ↳ 🤖 {c(sa['type'], BOLD + MAGENTA)} ({sa_role_title}): \"{p_disp}…\""
+                        )
             else:
                 lines.append(
                     f"       ↳ {c(tr('Main agent executing directly (no subagents spawned in recent steps).', 'Main agent đang xử lý trực tiếp (chưa gọi subagent ở các bước gần đây).'), DIM)}"
