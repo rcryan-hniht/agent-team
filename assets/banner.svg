@@ -252,26 +252,26 @@
 
       <!-- 4 Worker Cards (2x2 Grid) -->
 
-      <!-- Agent 04: Searcher (bat) -->
+      <!-- Agent 04: Searcher (swordfish) -->
       <g transform="translate(0, 102)">
         <rect x="0" y="0" width="276" height="66" rx="4" fill="url(#oaCardBg)" stroke="#c5bc9f" stroke-width="1" filter="url(#oaSoftShadow)"/>
         <rect x="0" y="0" width="4" height="66" rx="2" fill="#685f10"/>
-        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">04 SEARCHER 🦇</text>
+        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">04 SEARCHER 🐟</text>
         <rect x="206" y="6" width="60" height="15" rx="2.5" fill="#f4efe2"/>
         <text x="236" y="16.5" text-anchor="middle" fill="#685f10" font-size="8" font-weight="700">SCOUT [RO]</text>
-        <text x="12" y="32" fill="#68707a" font-size="9">bat • Codebase &amp; Docs Scout</text>
+        <text x="12" y="32" fill="#68707a" font-size="9">swordfish • Codebase &amp; Docs Scout</text>
         <text x="12" y="46" fill="#4f4a23" font-size="8.5">flash-3.8 (m) • luna (m) • haiku</text>
         <text x="12" y="58" fill="#868d90" font-size="8">fallback: →haiku→luna</text>
       </g>
 
-      <!-- Agent 05: Implementer (rabbit) -->
+      <!-- Agent 05: Implementer (hawk) -->
       <g transform="translate(292, 102)">
         <rect x="0" y="0" width="276" height="66" rx="4" fill="url(#oaCardBg)" stroke="#85ad83" stroke-width="1.2" filter="url(#oaSoftShadow)"/>
         <rect x="0" y="0" width="4" height="66" rx="2" fill="#1d5c14"/>
-        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">05 IMPLEMENTER 🐰</text>
+        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">05 IMPLEMENTER 🦅</text>
         <rect x="198" y="6" width="68" height="15" rx="2.5" fill="#d7ebd7"/>
         <text x="232" y="16.5" text-anchor="middle" fill="#1d5c14" font-size="8" font-weight="700">TDD [WRITE]</text>
-        <text x="12" y="32" fill="#68707a" font-size="9">rabbit • Red-Green-Refactor Code</text>
+        <text x="12" y="32" fill="#68707a" font-size="9">hawk • Red-Green-Refactor Code</text>
         <text x="12" y="46" fill="#1d5c14" font-size="8.5">flash-3.8 (h) • sol-6 (xh) • sonnet</text>
         <text x="12" y="58" fill="#868d90" font-size="8">fallback: →pro→sonnet→sol</text>
       </g>
@@ -288,14 +288,14 @@
         <text x="12" y="58" fill="#868d90" font-size="8">fallback: →opus→sol</text>
       </g>
 
-      <!-- Agent 07: Committer (penguin) -->
+      <!-- Agent 07: Committer (starfish) -->
       <g transform="translate(292, 176)">
         <rect x="0" y="0" width="276" height="66" rx="4" fill="url(#oaCardBg)" stroke="#8da9c4" stroke-width="1" filter="url(#oaSoftShadow)"/>
         <rect x="0" y="0" width="4" height="66" rx="2" fill="#2a649f"/>
-        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">07 COMMITTER 🐧</text>
+        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">07 COMMITTER ⭐</text>
         <rect x="188" y="6" width="78" height="15" rx="2.5" fill="#d5e4f2"/>
         <text x="227" y="16.5" text-anchor="middle" fill="#184571" font-size="8" font-weight="700">GIT GATE [RO]</text>
-        <text x="12" y="32" fill="#68707a" font-size="9">penguin • Conventional Commits</text>
+        <text x="12" y="32" fill="#68707a" font-size="9">starfish • Conventional Commits</text>
         <text x="12" y="46" fill="#184571" font-size="8.5">flash-3.7 (l) • luna (low) • haiku</text>
         <text x="12" y="58" fill="#868d90" font-size="8">fallback: →haiku→luna</text>
       </g>

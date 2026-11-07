@@ -173,14 +173,14 @@ PIXEL_ART_ANIMALS = [
     (
         "implementer",
         (129, 161, 193),  # Nord 9 (Glacier Arctic Blue)
-        "rabbit",
+        "hawk",
         "Senior Feature & TDD Implementer",
         [
-            "#...#",
-            "#...#",
+            ".###.",
             "#####",
             "#.#.#",
             "#####",
+            ".###.",
             ".#.#.",
         ],
         "gemini-3.8-flash-high",
@@ -191,15 +191,15 @@ PIXEL_ART_ANIMALS = [
     (
         "searcher",
         (144, 140, 170),  # Rosé Pine Subtle / Blackmetal Frosted Lilac
-        "bat",
+        "swordfish",
         "Primary Documentation & Codebase Scout",
         [
-            "#...#",
-            ".###.",
-            "#.#.#",
-            "#####",
-            ".###.",
             "..#..",
+            "..#..",
+            ".###.",
+            "#####",
+            "..#..",
+            "#...#",
         ],
         "gemini-3.8-flash-medium",
         "gpt-6-luna (medium)",
@@ -209,15 +209,15 @@ PIXEL_ART_ANIMALS = [
     (
         "committer",
         (94, 129, 172),  # Nord 10 (Deep Steel Blue)
-        "penguin",
+        "starfish",
         "Conventional Git Committer",
         [
-            ".###.",
-            "#.#.#",
-            ".###.",
+            "..#..",
+            "..#..",
             "#####",
             ".###.",
             ".#.#.",
+            "#...#",
         ],
         "gemini-3.7-flash",
         "gpt-6-luna (low)",
@@ -233,9 +233,9 @@ ROLE_ANIMALS_VI = {
     "lead-critic": "cá voi",
     "orchestrator": "bạch tuộc",
     "reviewer": "cá mập",
-    "implementer": "thỏ",
-    "searcher": "dơi",
-    "committer": "cánh cụt",
+    "implementer": "chim ưng",
+    "searcher": "cá kiếm",
+    "committer": "sao biển",
 }
 
 ROLE_DESCRIPTIONS_EN = {
@@ -447,9 +447,9 @@ MASCOT_EMOJIS = {
     "lead-critic": "🐋",
     "orchestrator": "🐙",
     "reviewer": "🦈",
-    "implementer": "🐰",
-    "searcher": "🦇",
-    "committer": "🐧",
+    "implementer": "🦅",
+    "searcher": "🐟",
+    "committer": "⭐",
 }
 
 ROLE_ALIASES = {
@@ -471,12 +471,20 @@ ROLE_ALIASES = {
     "shark": "reviewer",
     "implementer": "implementer",
     "imp": "implementer",
+    "hawk": "implementer",
+    "falcon": "implementer",
+    "chim ưng": "implementer",
     "rabbit": "implementer",
     "searcher": "searcher",
     "search": "searcher",
+    "swordfish": "searcher",
+    "marlin": "searcher",
+    "cá kiếm": "searcher",
     "bat": "searcher",
     "committer": "committer",
     "commit": "committer",
+    "starfish": "committer",
+    "sao biển": "committer",
     "penguin": "committer",
 }
 
