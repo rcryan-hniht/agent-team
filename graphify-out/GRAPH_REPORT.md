@@ -1,17 +1,17 @@
 # Graph Report - agent-team  (2026-11-08)
 
 ## Corpus Check
-- 47 files · ~262,047 words
+- 47 files · ~126,675 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 11 file(s) not represented in the graph (top: .toml 9, (none) 2)
 
 ## Summary
-- 382 nodes · 722 edges · 38 communities (18 shown, 20 thin omitted)
+- 384 nodes · 728 edges · 38 communities (18 shown, 20 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 9 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ba605fec`
+- Built from commit: `6e7b8233`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -93,7 +93,7 @@ Nodes (18): apply_skills_to_workspace(), build_agents_json(), build_agents_readm
 
 ### Community 2 - "render_ps_view"
 Cohesion: 0.06
-Nodes (26): _char_width(), _col(), detect_live_agent_occupancy(), detect_system_theme(), format_active_role_desc(), format_token_count(), get_live_os_procs(), _is_vi_text() (+18 more)
+Nodes (25): _char_width(), _col(), detect_live_agent_occupancy(), detect_system_theme(), format_active_role_desc(), format_token_count(), get_live_os_procs(), _is_vi_text() (+17 more)
 
 ### Community 3 - "detect_active_providers"
 Cohesion: 0.13
@@ -104,8 +104,8 @@ Cohesion: 0.12
 Nodes (6): _build_sparkline(), collect_token_telemetry(), _extract_record_tokens(), tail_jsonl_lines(), TokenTelemetrySnapshot, TestTokenTelemetry
 
 ### Community 5 - "demo_runner.py"
-Cohesion: 0.12
-Nodes (6): main(), run_command(), typewriter(), wait_until(), TestMascotsAndCatalog, TestRoleAliases
+Cohesion: 0.11
+Nodes (8): main(), run_command(), typewriter(), wait_for_handshake(), wait_until(), TestMascotsAndCatalog, TestPsViewSimplifiedHeadings, TestRoleAliases
 
 ### Community 6 - "README.md"
 Cohesion: 0.25
@@ -172,6 +172,6 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `build_single_agent_md()` connect `TestScaffoldGenerators` to `tr`, `TeamConfig`?**
   _High betweenness centrality (0.022) - this node is a cross-community bridge._
 - **Should `render_ps_view` be split into smaller, more focused modules?**
-  _Cohesion score 0.06060606060606061 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06386066763425254 - nodes in this community are weakly interconnected._
 - **Should `detect_active_providers` be split into smaller, more focused modules?**
   _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
