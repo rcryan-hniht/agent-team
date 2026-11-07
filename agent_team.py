@@ -375,8 +375,8 @@ def render_7col_agent_ps_grid(
 ) -> str:
     """
     Render 7 columns of mascot pixel art with dynamic glowing effect for active roles.
-    - Active roles: Overhead '⚡ ACTIVE ⚡' crown, radiant boosted RGB colors, bold role tag, '⚡ BUSY' badge.
-    - Idle roles: Dimmed palette, dim role tag, '○ idle' badge.
+    - Active roles: Overhead '* ACTIVE *' crown, radiant boosted RGB colors, bold role tag, 'BUSY' badge.
+    - Idle roles: Dimmed palette, dim role tag, 'idle' badge.
     """
     if active_roles is None:
         active_roles = {}
@@ -405,7 +405,7 @@ def render_7col_agent_ps_grid(
         role_id = PIXEL_ART_ANIMALS[k][0]
         is_active = role_id in normalized_active
         if is_active:
-            glow_raw = "⚡ ACTIVE ⚡" if cell_w >= 14 else "⚡ACTIVE⚡"
+            glow_raw = "* ACTIVE *" if cell_w >= 14 else "*ACTIVE*"
             glow_tag = f"{BOLD}{YELLOW}{glow_raw}{RESET}" if sys.stdout.isatty() else glow_raw
             tag_len = _visible_len(glow_raw)
             pad = max(0, cell_w - tag_len)
@@ -480,16 +480,16 @@ def render_7col_agent_ps_grid(
         row += " " * (pad // 2) + colored_tag + " " * (pad - pad // 2)
     lines.append(row)
 
-    # State row (⚡ BUSY vs ○ idle)
+    # State row (BUSY vs idle)
     row = m + " " * hdr_w
     for k in range(num_cols):
         role_id = PIXEL_ART_ANIMALS[k][0]
         is_active = role_id in normalized_active
         if is_active:
-            st = "⚡ BUSY"
+            st = "BUSY"
             colored_st = f"{BOLD}{YELLOW}{st}{RESET}" if sys.stdout.isatty() else st
         else:
-            st = "○ idle"
+            st = "idle"
             colored_st = f"{DIM}{st}{RESET}" if sys.stdout.isatty() else st
         vis_len = _visible_len(st)
         pad = max(0, cell_w - vis_len)
