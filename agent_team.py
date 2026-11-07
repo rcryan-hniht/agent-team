@@ -30,7 +30,7 @@ import sys
 import time
 import unicodedata
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -262,8 +262,20 @@ LIGHT_ACTIVE_BADGE_RGB: Tuple[int, int, int] = (180, 50, 70)    # Rosewood Garne
 LIGHT_IDLE_SPRITE_RGB: Tuple[int, int, int] = (148, 144, 156)   # Muted Lavender Grey (#94909C)
 
 
-def detect_system_theme() -> str:
+_LAST_DESKTOP_THEME_CHECK: float = 0.0
+_CACHED_DESKTOP_THEME: str = "dark"
+_THEME_CACHE_TTL: float = 2.0
+
+
+def _clear_theme_cache() -> None:
+    global _LAST_DESKTOP_THEME_CHECK
+    _LAST_DESKTOP_THEME_CHECK = 0.0
+
+
+def detect_system_theme(use_cache: bool = True) -> str:
     """Auto-detect system/terminal appearance ('light' or 'dark'); defaults to 'dark'."""
+    global _LAST_DESKTOP_THEME_CHECK, _CACHED_DESKTOP_THEME
+
     env_theme = os.environ.get("AGT_THEME", "").strip().lower()
     if env_theme in ("light", "dark"):
         return env_theme
@@ -278,6 +290,20 @@ def detect_system_theme() -> str:
             if 0 <= bg_idx <= 8:
                 return "dark"
 
+    now = time.time()
+    # Cache desktop subprocess theme probes for 2.0s to avoid process storms at high refresh rates
+    # If in test suite, disable cache to allow mocking
+    if use_cache and ("unittest" not in sys.modules) and (now - _LAST_DESKTOP_THEME_CHECK < _THEME_CACHE_TTL):
+        return _CACHED_DESKTOP_THEME
+
+    theme = _probe_desktop_environment_theme()
+    _CACHED_DESKTOP_THEME = theme
+    _LAST_DESKTOP_THEME_CHECK = now
+    return theme
+
+
+def _probe_desktop_environment_theme() -> str:
+    """Probe desktop GUI environment (macOS defaults / Linux DMS session / GNOME gsettings)."""
     if sys.platform == "darwin" and shutil.which("defaults"):
         try:
             res = subprocess.run(
@@ -4430,6 +4456,347 @@ def detect_live_agent_occupancy(
     return active_roles, recent_sessions
 
 
+# ---------------------------------------------------------------------------
+# Realtime Token Velocity Telemetry (TPM & Rolling Sparkline)
+# ---------------------------------------------------------------------------
+@dataclass
+class TokenTelemetrySnapshot:
+    window_minutes: int = 15
+    buckets_tpm: List[int] = field(default_factory=list)  # 15 buckets, 1 bucket per minute
+    current_tpm: int = 0                                  # buckets_tpm[-1]
+    peak_tpm: int = 0
+    avg_tpm: int = 0                                      # Trung bình các phút active (> 0 TPM)
+    total_input: int = 0
+    total_output: int = 0
+    total_cache_read: int = 0
+    cache_hit_rate: float = 0.0                           # (total_cache_read / (total_input + total_cache_read) * 100) nếu mẫu số > 0
+    active_sessions_count: int = 0
+    sparkline_15: str = ""                                # 15 ký tự Unicode
+    sparkline_10: str = ""                                # 10 ký tự Unicode (cho term_w < 88)
+
+    def __post_init__(self):
+        if not self.buckets_tpm:
+            self.buckets_tpm = [0] * self.window_minutes
+        if not self.sparkline_15:
+            self.sparkline_15 = " " * min(15, self.window_minutes)
+        if not self.sparkline_10:
+            self.sparkline_10 = " " * min(10, self.window_minutes)
+
+
+SPARK_CHARS = (" ", "▂", "▃", "▄", "▅", "▆", "▇", "█")
+
+
+def format_token_count(n: int) -> str:
+    """Format token count into compact human readable string (e.g. 13.47M, 80.0k, 500)."""
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.2f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}k"
+    return str(max(0, n))
+
+
+def tail_jsonl_lines(path: Path, max_bytes: int = 131072, max_lines: int = 100) -> List[str]:
+    """Safely tail the last `max_lines` records within `max_bytes` of a JSONL file.
+
+    Drops any partial first line resulting from seeking into the middle of a record.
+    """
+    p = Path(path)
+    if not p.is_file():
+        return []
+    try:
+        file_size = p.stat().st_size
+        if file_size == 0:
+            return []
+        read_bytes = min(file_size, max_bytes)
+        offset = max(0, file_size - read_bytes)
+        with open(p, "rb") as f:
+            if offset > 0:
+                f.seek(offset)
+            raw = f.read(read_bytes)
+        text = raw.decode("utf-8", errors="replace")
+        lines = text.splitlines()
+        if offset > 0 and lines:
+            lines = lines[1:]
+        clean_lines = [line.strip() for line in lines if line.strip()]
+        if max_lines and len(clean_lines) > max_lines:
+            clean_lines = clean_lines[-max_lines:]
+        return clean_lines
+    except Exception:
+        return []
+
+
+def _build_sparkline(buckets: List[int], peak: int) -> str:
+    """Build Unicode 8-level sparkline string from integer buckets."""
+    if peak <= 0:
+        return " " * len(buckets)
+    chars = []
+    for val in buckets:
+        if val <= 0:
+            chars.append(" ")
+        else:
+            ratio = val / peak
+            idx = min(7, max(1, int(round(ratio * 6)) + 1 if ratio < 1.0 else 7))
+            chars.append(SPARK_CHARS[idx])
+    return "".join(chars)
+
+
+def _extract_record_tokens(rec: dict) -> Tuple[int, int, int]:
+    """Extract (input_tokens, output_tokens, cache_read_tokens) from various JSON record formats."""
+    inp = rec.get("input_tokens") or 0
+    out = rec.get("output_tokens") or 0
+    cache = rec.get("cache_read_tokens") or rec.get("cache_tokens") or rec.get("cached_tokens") or 0
+
+    usage = rec.get("usage") or rec.get("token_usage")
+    if isinstance(usage, dict):
+        inp = inp or usage.get("input_tokens") or usage.get("prompt_tokens") or 0
+        out = out or usage.get("output_tokens") or usage.get("completion_tokens") or 0
+        cache = cache or usage.get("cache_read_tokens") or usage.get("cached_tokens") or usage.get("cache_tokens") or 0
+
+    for parent_k in ("metadata", "response", "message"):
+        parent = rec.get(parent_k)
+        if isinstance(parent, dict):
+            p_usage = parent.get("usage") or parent.get("token_usage")
+            if isinstance(p_usage, dict):
+                inp = inp or p_usage.get("input_tokens") or p_usage.get("prompt_tokens") or 0
+                out = out or p_usage.get("output_tokens") or p_usage.get("completion_tokens") or 0
+                cache = cache or p_usage.get("cache_read_tokens") or p_usage.get("cached_tokens") or 0
+
+    return int(inp or 0), int(out or 0), int(cache or 0)
+
+
+def collect_token_telemetry(
+    brain_root: Optional[Path] = None,
+    window_minutes: int = 15,
+    max_session_age_minutes: int = 30,
+    now_dt: Optional[datetime] = None,
+) -> TokenTelemetrySnapshot:
+    """Collect 15-minute rolling token throughput across active Antigravity sessions."""
+    if brain_root is None:
+        brain_root = Path.home() / ".gemini" / "antigravity-cli" / "brain"
+    else:
+        brain_root = Path(brain_root)
+
+    snapshot = TokenTelemetrySnapshot(window_minutes=window_minutes)
+    if not brain_root.exists() or not brain_root.is_dir():
+        return snapshot
+
+    if now_dt is None:
+        now_dt = datetime.now(timezone.utc)
+    elif now_dt.tzinfo is None:
+        now_dt = now_dt.replace(tzinfo=timezone.utc)
+    else:
+        now_dt = now_dt.astimezone(timezone.utc)
+
+    now_ts = now_dt.timestamp()
+    cutoff_dt = now_dt - timedelta(minutes=window_minutes)
+    window_sec = window_minutes * 60
+
+    try:
+        session_dirs = [d for d in brain_root.iterdir() if d.is_dir()]
+    except Exception:
+        return snapshot
+
+    buckets = [0] * window_minutes
+    total_in = 0
+    total_out = 0
+    total_cache = 0
+    sessions_with_calls: Set[str] = set()
+
+    for conv_dir in session_dirs:
+        cand1 = conv_dir / ".system_generated" / "logs" / "transcript.jsonl"
+        cand2 = conv_dir / "transcript.jsonl"
+        tr_path = cand1 if cand1.is_file() else (cand2 if cand2.is_file() else None)
+        if not tr_path:
+            continue
+
+        try:
+            mtime = tr_path.stat().st_mtime
+            age_sys = time.time() - mtime
+            age_now = now_ts - mtime
+            if max_session_age_minutes > 0 and age_sys > max_session_age_minutes * 60 and age_now > max_session_age_minutes * 60:
+                continue
+        except Exception:
+            continue
+
+        lines = tail_jsonl_lines(tr_path, max_bytes=131072, max_lines=100)
+        session_active = False
+
+        for line in lines:
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            if not isinstance(rec, dict):
+                continue
+
+            created_str = rec.get("created_at") or rec.get("timestamp") or rec.get("time")
+            if not created_str:
+                continue
+
+            try:
+                if isinstance(created_str, (int, float)):
+                    dt = datetime.fromtimestamp(created_str, tz=timezone.utc)
+                elif isinstance(created_str, str):
+                    c_clean = created_str.strip()
+                    if c_clean.endswith("Z"):
+                        c_clean = c_clean[:-1] + "+00:00"
+                    dt = datetime.fromisoformat(c_clean)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    else:
+                        dt = dt.astimezone(timezone.utc)
+                else:
+                    continue
+            except Exception:
+                continue
+
+            if dt < cutoff_dt:
+                continue
+
+            diff_sec = (now_dt - dt).total_seconds()
+            if diff_sec < 0:
+                diff_sec = 0.0
+            if diff_sec >= window_sec:
+                continue
+
+            in_t, out_t, cache_t = _extract_record_tokens(rec)
+            if in_t == 0 and out_t == 0 and cache_t == 0:
+                continue
+
+            session_active = True
+            throughput = in_t + out_t
+
+            # Minute bucket: index 0 is (window_minutes - 1)m ago, last index is current min
+            bucket_idx = min(window_minutes - 1, max(0, (window_minutes - 1) - int(diff_sec // 60)))
+            buckets[bucket_idx] += throughput
+            total_in += in_t
+            total_out += out_t
+            total_cache += cache_t
+
+        if session_active:
+            sessions_with_calls.add(conv_dir.name)
+
+    peak_tpm = max(buckets) if buckets else 0
+    current_tpm = buckets[-1] if buckets else 0
+    active_buckets = [b for b in buckets if b > 0]
+    avg_tpm = int(round(sum(active_buckets) / len(active_buckets))) if active_buckets else 0
+
+    if total_in + total_cache > 0:
+        cache_hit_rate = round((total_cache / (total_in + total_cache)) * 100.0, 1)
+    else:
+        cache_hit_rate = 0.0
+
+    spark_15 = _build_sparkline(buckets[-15:] if len(buckets) >= 15 else buckets, peak_tpm)
+    spark_10 = _build_sparkline(buckets[-10:] if len(buckets) >= 10 else buckets, peak_tpm)
+
+    return TokenTelemetrySnapshot(
+        window_minutes=window_minutes,
+        buckets_tpm=buckets,
+        current_tpm=current_tpm,
+        peak_tpm=peak_tpm,
+        avg_tpm=avg_tpm,
+        total_input=total_in,
+        total_output=total_out,
+        total_cache_read=total_cache,
+        cache_hit_rate=cache_hit_rate,
+        active_sessions_count=len(sessions_with_calls),
+        sparkline_15=spark_15,
+        sparkline_10=spark_10,
+    )
+
+
+def render_token_dashboard(
+    snapshot: TokenTelemetrySnapshot,
+    theme: str = "dark",
+    term_w: Optional[int] = None,
+) -> List[str]:
+    """Render realtime token telemetry sparkline & throughput metrics for PS monitor."""
+    if term_w is None:
+        term_w = shutil.get_terminal_size((100, 24)).columns
+
+    resolved_theme = theme if theme in ("light", "dark") else detect_system_theme()
+    is_light = resolved_theme == "light"
+
+    if is_light:
+        spark_c = rgb_fg((178, 54, 76)) or CYAN
+        title_c = BOLD + (rgb_fg((180, 50, 70)) or CYAN)
+        num_c = BOLD + (rgb_fg((180, 50, 70)) or GREEN)
+        hit_c = BOLD + (rgb_fg((178, 54, 76)) or GREEN)
+        dim_c = DIM
+    else:
+        spark_c = CYAN
+        title_c = BOLD + CYAN
+        num_c = YELLOW
+        hit_c = BOLD + GREEN
+        dim_c = DIM
+
+    if snapshot.peak_tpm == 0:
+        telemetry_title = c(tr("⚡ Token Telemetry:", "⚡ Đo lường Token:"), title_c)
+        standby_msg = c(
+            tr(
+                "[ standby / 0 TPM ] (No model calls in last 15m)",
+                "[ chờ lệnh / 0 TPM ] (Không có lệnh gọi model trong 15p)",
+            ),
+            dim_c,
+        )
+        return [f"     {telemetry_title} {standby_msg}"]
+
+    now_str = format_token_count(snapshot.current_tpm)
+    peak_str = format_token_count(snapshot.peak_tpm)
+    avg_str = format_token_count(snapshot.avg_tpm)
+    in_str = format_token_count(snapshot.total_input)
+    out_str = format_token_count(snapshot.total_output)
+    cache_str = format_token_count(snapshot.total_cache_read)
+    hit_rate_str = f"{snapshot.cache_hit_rate:.1f}%"
+    active_cnt = snapshot.active_sessions_count
+
+    dot = f"{dim_c}•{RESET}"
+    lines: List[str] = []
+
+    if term_w >= 88:
+        # Full 15-minute rolling window
+        sparkline = c(snapshot.sparkline_15, spark_c)
+        lbl_vel = c(tr("Token Velocity (15m):", "Tốc Độ Tiêu Thụ Token (15p):"), title_c)
+        lbl_vol = c(tr("Volume (15m):  ", "Lưu Lượng (15p):  "), title_c)
+
+        vel_line = (
+            f"     {lbl_vel} [{sparkline}]  "
+            f"{tr('Now:', 'Hiện tại:')} {c(now_str + ' TPM', num_c)} {dot} "
+            f"{tr('Peak:', 'Đỉnh:')} {c(peak_str + ' TPM', num_c)} {dot} "
+            f"{tr('Avg:', 'TB:')} {c(avg_str + ' TPM', num_c)}"
+        )
+        vol_line = (
+            f"     {lbl_vol} {tr('In:', 'Vào:')} {c(in_str, num_c)} {dot} "
+            f"{tr('Out:', 'Ra:')} {c(out_str, num_c)} {dot} "
+            f"{tr('Cache:', 'Đệm:')} {c(cache_str, num_c)} "
+            f"({tr('Hit:', 'Tỷ lệ:')} {c(hit_rate_str, hit_c)}) {dot} "
+            f"{c(str(active_cnt) + tr(' active', ' hoạt động'), dim_c)}"
+        )
+        lines.append(vel_line)
+        lines.append(vol_line)
+    else:
+        # Compact 10-minute rolling window for narrow terminal (term_w < 88)
+        sparkline = c(snapshot.sparkline_10, spark_c)
+        lbl_vel = c(tr("Token Velocity:", "Tốc Độ Tiêu Thụ Token:"), title_c)
+        lbl_vol = c(tr("Volume:  ", "Lưu Lượng:  "), title_c)
+
+        vel_line = (
+            f"     {lbl_vel} [{sparkline}] "
+            f"{tr('Now:', 'Hiện tại:')} {c(now_str + ' TPM', num_c)} {dot} "
+            f"{tr('Peak:', 'Đỉnh:')} {c(peak_str + ' TPM', num_c)}"
+        )
+        vol_line = (
+            f"     {lbl_vol} {tr('In:', 'Vào:')} {c(in_str, num_c)} {dot} "
+            f"{tr('Out:', 'Ra:')} {c(out_str, num_c)} {dot} "
+            f"{tr('Cache:', 'Đệm:')} {c(cache_str, num_c)} "
+            f"({tr('Hit:', 'Tỷ lệ:')} {c(hit_rate_str, hit_c)})"
+        )
+        lines.append(vel_line)
+        lines.append(vol_line)
+
+    return lines
+
+
 def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
     """Render the full PS monitor view as a string."""
     project_path = target_dir.resolve()
@@ -4447,6 +4814,7 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
     # Detect live occupancy and sessions
     active_roles, recent_sessions = detect_live_agent_occupancy(project_path, manual_active=active_arg)
     resolved_theme = detect_system_theme()
+    term_w = shutil.get_terminal_size((115, 24)).columns
     active_accent = (rgb_fg(LIGHT_ACTIVE_BADGE_RGB) or YELLOW) if resolved_theme == "light" else YELLOW
 
     # 1. 8-Column Mascot Pixel Art with Glow
@@ -4479,6 +4847,13 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
             f"  {c(tr('○ Standby: All 8 mascots are idle. No background subagents currently occupying tasks.', '○ Chờ lệnh: Cả 8 linh vật đang nghỉ. Chưa có subagent nào chiếm giữ tác vụ.'), DIM)}"
         )
     lines.append("")
+
+    # Realtime Token Velocity Telemetry Dashboard (TPM)
+    telemetry_snap = collect_token_telemetry()
+    telemetry_lines = render_token_dashboard(telemetry_snap, theme=resolved_theme, term_w=term_w)
+    if telemetry_lines:
+        lines.extend(telemetry_lines)
+        lines.append("")
 
     # 2. Live OS Processes from /proc
     lines.append(
@@ -4720,7 +5095,7 @@ def cmd_ps(
     target_dir: Path,
     active_arg: str = "",
     watch: Optional[bool] = None,
-    interval: float = 2.0,
+    interval: float = 0.5,
 ) -> None:
     """
     Live Multi-Agent & OS Process Monitor.
@@ -4775,7 +5150,7 @@ def cmd_ps(
     last_fetch_time = 0.0
     scroll_offset = 0
     paused = False
-    cur_interval = max(0.5, float(interval))
+    cur_interval = max(0.2, float(interval))
 
     # Switch to alternate screen buffer, hide cursor, and enable SGR mouse tracking
     sys.stdout.write("\033[?1049h\033[?25l\033[?1000h\033[?1006h")
@@ -4801,15 +5176,13 @@ def cmd_ps(
 
             visible_lines = all_lines[scroll_offset : scroll_offset + content_height]
 
-            # 3. Clear alternate screen and write visible viewport
-            sys.stdout.write("\033[H\033[2J")
-            for vl in visible_lines:
-                sys.stdout.write(vl + "\n")
+            # 3. Assemble full frame in-memory to prevent visual strobe tearing / flicker
+            frame_buffer: List[str] = list(visible_lines)
             if len(visible_lines) < content_height:
-                sys.stdout.write("\n" * (content_height - len(visible_lines)))
+                frame_buffer.extend([""] * (content_height - len(visible_lines)))
 
             # 4. Divider and nvim-style scroll footer bar
-            sys.stdout.write(DIM + "─" * term_w + RESET + "\n")
+            frame_buffer.append(f"{DIM}{'─' * term_w}{RESET}")
             now_str = datetime.now().strftime("%H:%M:%S")
             pause_badge = f"{BOLD}{YELLOW}[PAUSED] {RESET}" if paused else ""
 
@@ -4834,7 +5207,11 @@ def cmd_ps(
                     f"  {pause_badge}[q] Quit  [j/k] {scroll_info}  •  {now_str}",
                     f"  {pause_badge}[q] Thoát  [j/k] {scroll_info}  •  {now_str}",
                 )
-            sys.stdout.write(footer_text[:term_w] + "\n")
+            frame_buffer.append(footer_text[:term_w])
+
+            # Atomic single-buffer render: \033[H repositions cursor to (1, 1), overwriting cells in-place
+            # with zero blank-screen flash, followed by \033[J to clear any trailing residue below
+            sys.stdout.write("\033[H" + "\n".join(frame_buffer) + "\n\033[J")
             sys.stdout.flush()
 
             # 5. Wait for keypress or interval timeout
@@ -4869,10 +5246,16 @@ def cmd_ps(
                 last_fetch_time = 0.0
             elif key == " ":  # Toggle pause
                 paused = not paused
-            elif key in ("+", "="):  # Faster refresh
-                cur_interval = max(0.5, round(cur_interval - 0.5, 1))
-            elif key in ("-", "_"):  # Slower refresh
-                cur_interval = min(10.0, round(cur_interval + 0.5, 1))
+            elif key in ("+", "="):  # Faster refresh with adaptive granularity
+                if cur_interval <= 1.05:
+                    cur_interval = max(0.2, round(cur_interval - 0.1, 2))
+                else:
+                    cur_interval = max(1.0, round(cur_interval - 0.5, 1))
+            elif key in ("-", "_"):  # Slower refresh with adaptive granularity
+                if cur_interval < 1.0:
+                    cur_interval = min(1.0, round(cur_interval + 0.1, 2))
+                else:
+                    cur_interval = min(10.0, round(cur_interval + 0.5, 1))
 
     except KeyboardInterrupt:
         pass
@@ -5544,7 +5927,7 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('-y, --yes', CYAN)}               Non-interactive mode using standard 8-agent preset\n"
             f"  {c('--clean', CYAN)}                 Clean / remove all AI agent configurations in target repo\n"
             f"  {c('--once, -1', CYAN)}              Print ps monitor snapshot once and exit (disable continuous loop)\n"
-            f"  {c('--interval, -i <sec>', CYAN)}    Refresh interval in seconds for top monitor (default: 2.0)\n"
+            f"  {c('--interval, -i <sec>', CYAN)}    Refresh interval in seconds for top monitor (default: 0.5)\n"
             f"  {c('--watch, -w', CYAN)}             Force continuous watch loop even in non-standard TTY\n"
             f"  {c('--active, -a <roles>', CYAN)}    Manually specify active role(s) to simulate glowing mascots\n"
             f"  {c('--goal <text>', CYAN)}           Primary project goal (used with --yes)\n"
@@ -5582,7 +5965,7 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('-y, --yes', CYAN)}               Khởi tạo tự động bằng Preset 8 Agents chuẩn (không hỏi đáp)\n"
             f"  {c('--clean', CYAN)}                 Dọn dẹp / xóa toàn bộ cấu hình AI Agents trong repo chỉ định\n"
             f"  {c('--once, -1', CYAN)}              In ảnh chụp trạng thái 1 lần rồi thoát (tắt vòng lặp như `top`)\n"
-            f"  {c('--interval, -i <sec>', CYAN)}    Chu kỳ làm mới màn hình theo dõi (mặc định: 2.0 giây)\n"
+            f"  {c('--interval, -i <sec>', CYAN)}    Chu kỳ làm mới màn hình theo dõi (mặc định: 0.5 giây)\n"
             f"  {c('--watch, -w', CYAN)}             Bắt buộc chạy vòng lặp theo dõi liên tục\n"
             f"  {c('--active, -a <roles>', CYAN)}    Chỉ định vai trò đang chiếm task để linh vật phát sáng\n"
             f"  {c('--goal <text>', CYAN)}           Mục tiêu chính của project (dùng kèm `--yes`)\n"
@@ -5708,7 +6091,7 @@ def build_cli_parser() -> argparse.ArgumentParser:
     parser.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode with standard preset")
     parser.add_argument("--active", "-a", type=str, default="", help="Active role(s) to simulate/highlight in ps monitor (comma-separated)")
     parser.add_argument("--once", "-1", action="store_true", help="Print snapshot once and exit (disable continuous top monitor)")
-    parser.add_argument("--interval", "-i", type=float, default=2.0, help="Refresh interval in seconds for top monitor (default: 2.0)")
+    parser.add_argument("--interval", "-i", type=float, default=0.5, help="Refresh interval in seconds for top monitor (default: 0.5)")
     parser.add_argument("--watch", "-w", action="store_true", help="Force continuous watch loop even in non-standard TTY")
     parser.add_argument("--clean", action="store_true", help="Remove all AI agent configurations in target repo")
     parser.add_argument("--dry-run", action="store_true", help="Preview generated files without writing")
@@ -5753,7 +6136,7 @@ def build_cli_parser() -> argparse.ArgumentParser:
     p_ps.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
     p_ps.add_argument("--active", "-a", type=str, default=argparse.SUPPRESS, help="Active role(s) to highlight (comma-separated)")
     p_ps.add_argument("--once", "-1", action="store_true", default=argparse.SUPPRESS, help="Print snapshot once and exit")
-    p_ps.add_argument("--interval", "-i", type=float, default=argparse.SUPPRESS, help="Refresh interval in seconds (default: 2.0)")
+    p_ps.add_argument("--interval", "-i", type=float, default=argparse.SUPPRESS, help="Refresh interval in seconds (default: 0.5)")
     p_ps.add_argument("--watch", "-w", action="store_true", default=argparse.SUPPRESS, help="Force continuous watch loop")
 
     p_tasks = subparsers.add_parser("tasks", add_help=False, help="Alias for `ps` — continuous live monitor like `top`")
@@ -5761,7 +6144,7 @@ def build_cli_parser() -> argparse.ArgumentParser:
     p_tasks.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
     p_tasks.add_argument("--active", "-a", type=str, default=argparse.SUPPRESS, help="Active role(s) to highlight (comma-separated)")
     p_tasks.add_argument("--once", "-1", action="store_true", default=argparse.SUPPRESS, help="Print snapshot once and exit")
-    p_tasks.add_argument("--interval", "-i", type=float, default=argparse.SUPPRESS, help="Refresh interval in seconds (default: 2.0)")
+    p_tasks.add_argument("--interval", "-i", type=float, default=argparse.SUPPRESS, help="Refresh interval in seconds (default: 0.5)")
     p_tasks.add_argument("--watch", "-w", action="store_true", default=argparse.SUPPRESS, help="Force continuous watch loop")
 
     p_clean = subparsers.add_parser("clean", add_help=False, help="Remove all AI agent configurations in target repo")
@@ -5815,7 +6198,7 @@ def main() -> None:
         active_arg = getattr(args, "active", "")
         once_flag = getattr(args, "once", False)
         watch_flag = True if getattr(args, "watch", False) else (False if once_flag else None)
-        interval = float(getattr(args, "interval", 2.0))
+        interval = float(getattr(args, "interval", 0.5))
         cmd_ps(
             Path(args.target),
             active_arg=active_arg,

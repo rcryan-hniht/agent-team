@@ -444,6 +444,18 @@ class TestScaffoldGenerators(unittest.TestCase):
             self.assertIn("Edit", claude_des)
             self.assertIn("Write", claude_des)
 
+    def test_ps_default_fastest_refresh_interval(self):
+        """Verify ps monitor default interval is aligned to 0.5s (fastest rate) across parser and function."""
+        parser = agent_team.build_cli_parser()
+        # Root parser default
+        args = parser.parse_args(["ps"])
+        self.assertEqual(getattr(args, "interval", 0.5), 0.5)
+
+        # Inspect cmd_ps signature default
+        import inspect
+        sig = inspect.signature(agent_team.cmd_ps)
+        self.assertEqual(sig.parameters["interval"].default, 0.5)
+
 
 if __name__ == "__main__":
     unittest.main()
