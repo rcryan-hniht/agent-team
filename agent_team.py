@@ -3743,6 +3743,78 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
     return "\n".join(lines)
 
 
+def _read_terminal_key(timeout: float = 0.05) -> str:
+    """Read a single keypress or escape sequence (arrows, mouse wheel, etc.)."""
+    import select
+
+    try:
+        r, _, _ = select.select([sys.stdin], [], [], timeout)
+    except (InterruptedError, OSError):
+        return ""
+    if not r:
+        return ""
+    try:
+        ch = sys.stdin.read(1)
+    except Exception:
+        return ""
+    if not ch or ch != "\x1b":
+        return ch
+
+    # Handle ANSI escape sequence
+    try:
+        r2, _, _ = select.select([sys.stdin], [], [], 0.03)
+        if not r2:
+            return "\x1b"
+        ch2 = sys.stdin.read(1)
+        if ch2 == "[":
+            buf = ""
+            while True:
+                r3, _, _ = select.select([sys.stdin], [], [], 0.01)
+                if not r3:
+                    break
+                c_sub = sys.stdin.read(1)
+                buf += c_sub
+                if c_sub in ("M", "m", "~", "A", "B", "C", "D", "H", "F"):
+                    break
+            full_seq = ch2 + buf
+            # SGR Mouse wheel events
+            if full_seq.startswith("[<64;") and full_seq.endswith("M"):
+                return "WHEEL_UP"
+            elif full_seq.startswith("[<65;") and full_seq.endswith("M"):
+                return "WHEEL_DOWN"
+            elif full_seq == "[A":
+                return "UP"
+            elif full_seq == "[B":
+                return "DOWN"
+            elif full_seq == "[C":
+                return "RIGHT"
+            elif full_seq == "[D":
+                return "LEFT"
+            elif full_seq.startswith("[5"):
+                return "PAGE_UP"
+            elif full_seq.startswith("[6"):
+                return "PAGE_DOWN"
+            elif full_seq.startswith("[H") or full_seq.startswith("[1"):
+                return "HOME"
+            elif full_seq.startswith("[F") or full_seq.startswith("[4"):
+                return "END"
+            return full_seq
+        elif ch2 == "O":
+            ch3 = sys.stdin.read(1)
+            if ch3 == "A":
+                return "UP"
+            elif ch3 == "B":
+                return "DOWN"
+            elif ch3 == "H":
+                return "HOME"
+            elif ch3 == "F":
+                return "END"
+            return ch2 + ch3
+        return ch2
+    except Exception:
+        return ch
+
+
 def cmd_ps(
     target_dir: Path,
     active_arg: str = "",
@@ -3751,7 +3823,8 @@ def cmd_ps(
 ) -> None:
     """
     Live Multi-Agent & OS Process Monitor.
-    Runs continuously like `top`/`htop` when run interactively, until user presses 'q' or Ctrl+C.
+    Runs continuously like `top`/`htop` when run interactively, with nvim-style scrolling (j/k/d/u/g/G),
+    until user presses 'q' or Ctrl+C.
     Can be run once with `--once` / `-1` or if not attached to a TTY.
     """
     project_path = target_dir.resolve()
@@ -3774,15 +3847,14 @@ def cmd_ps(
         print(
             tr(
                 f"     • Inside {BOLD}agy{RESET}  : Type {c('/agents', GREEN)} to switch/view workspace agents (or press {c('k', YELLOW)} to kill a running subagent), and {c('/tasks', GREEN)} for background tasks.\n"
-                f"     • Inside {BOLD}shell{RESET}: Run {c('agt ps', GREEN)} for live continuous top monitor (press {c('q', YELLOW)} to quit), or {c('agt ps --once', GREEN)} for single snapshot.",
+                f"     • Inside {BOLD}shell{RESET}: Run {c('agt ps', GREEN)} for live continuous top monitor (nvim keys {c('j/k', GREEN)}, press {c('q', YELLOW)} to quit), or {c('agt ps --once', GREEN)} for single snapshot.",
                 f"     • Trong {BOLD}agy{RESET}     : Gõ {c('/agents', GREEN)} để xem/chuyển đổi agents (nhấn {c('k', YELLOW)} để dừng subagent đang chạy), và {c('/tasks', GREEN)} để xem tác vụ nền.\n"
-                f"     • Ngoài {BOLD}terminal{RESET}: Gõ {c('agt ps', GREEN)} để theo dõi liên tục như top (nhấn {c('q', YELLOW)} để thoát), hoặc {c('agt ps --once', GREEN)} để in 1 lần.",
+                f"     • Ngoài {BOLD}terminal{RESET}: Gõ {c('agt ps', GREEN)} để theo dõi liên tục như top (cuộn phím {c('j/k', GREEN)}, nhấn {c('q', YELLOW)} để thoát), hoặc {c('agt ps --once', GREEN)} để in 1 lần.",
             )
         )
         return
 
     try:
-        import select
         import termios
         import tty
     except ImportError:
@@ -3798,66 +3870,108 @@ def cmd_ps(
         print(f"\n{view}")
         return
 
+    all_lines: List[str] = []
+    last_fetch_time = 0.0
+    scroll_offset = 0
     paused = False
     cur_interval = max(0.5, float(interval))
 
-    # Switch to alternate screen buffer and hide cursor
-    sys.stdout.write("\033[?1049h\033[?25l")
+    # Switch to alternate screen buffer, hide cursor, and enable SGR mouse tracking
+    sys.stdout.write("\033[?1049h\033[?25l\033[?1000h\033[?1006h")
     sys.stdout.flush()
 
     try:
         tty.setcbreak(fd)
         while True:
-            # 1. Clear alternate screen and move to top-left
+            now = time.time()
+            # 1. Fetch fresh telemetry data if interval expired or first run
+            if not all_lines or (not paused and (now - last_fetch_time >= cur_interval)):
+                view = render_ps_view(project_path, active_arg=active_arg)
+                all_lines = view.splitlines()
+                last_fetch_time = now
+
+            # 2. Viewport calculation with nvim-like scroll offset
+            term_size = shutil.get_terminal_size((115, 24))
+            term_h, term_w = term_size.lines, term_size.columns
+            content_height = max(1, term_h - 2)
+            total_lines = len(all_lines)
+            max_scroll = max(0, total_lines - content_height)
+            scroll_offset = max(0, min(max_scroll, scroll_offset))
+
+            visible_lines = all_lines[scroll_offset : scroll_offset + content_height]
+
+            # 3. Clear alternate screen and write visible viewport
             sys.stdout.write("\033[H\033[2J")
+            for vl in visible_lines:
+                sys.stdout.write(vl + "\n")
+            if len(visible_lines) < content_height:
+                sys.stdout.write("\n" * (content_height - len(visible_lines)))
 
-            # 2. Render monitor screen
-            view = render_ps_view(project_path, active_arg=active_arg)
-            sys.stdout.write(view + "\n")
-
-            # 3. Footer Control Bar
+            # 4. Divider and nvim-style scroll footer bar
+            sys.stdout.write(DIM + "─" * term_w + RESET + "\n")
             now_str = datetime.now().strftime("%H:%M:%S")
             pause_badge = f"{BOLD}{YELLOW}[PAUSED] {RESET}" if paused else ""
-            footer_text = tr(
-                f"  {pause_badge}[q] Quit  [r] Refresh  [space] {'Resume' if paused else 'Pause'}  [+/-] Interval ({cur_interval:.1f}s)  •  Last updated: {now_str}",
-                f"  {pause_badge}[q] Thoát  [r] Làm mới  [space] {'Tiếp tục' if paused else 'Tạm dừng'}  [+/-] Chu kỳ ({cur_interval:.1f}s)  •  Cập nhật lúc: {now_str}",
-            )
-            term_w = shutil.get_terminal_size((115, 24)).columns
-            sys.stdout.write(DIM + "─" * term_w + RESET + "\n")
-            sys.stdout.write(footer_text + "\n")
+
+            if total_lines <= content_height:
+                scroll_info = tr("[All]", "[Tất cả]")
+            else:
+                pct = int((scroll_offset / max_scroll) * 100) if max_scroll > 0 else 0
+                scroll_info = f"[{scroll_offset + 1}-{min(total_lines, scroll_offset + content_height)}/{total_lines} ({pct}%)]"
+
+            if term_w >= 105:
+                footer_text = tr(
+                    f"  {pause_badge}[q] Quit  [j/k] Scroll  [d/u] Half-page  [g/G] Top/Bot  [r] Refresh  [space] {'Resume' if paused else 'Pause'}  [+/-] ({cur_interval:.1f}s)  •  {scroll_info}  •  {now_str}",
+                    f"  {pause_badge}[q] Thoát  [j/k] Cuộn  [d/u] Nửa trang  [g/G] Đầu/Cuối  [r] Làm mới  [space] {'Tiếp tục' if paused else 'Tạm dừng'}  [+/-] ({cur_interval:.1f}s)  •  {scroll_info}  •  {now_str}",
+                )
+            elif term_w >= 80:
+                footer_text = tr(
+                    f"  {pause_badge}[q] Quit  [j/k] Scroll  [d/u] Half-pg  [space] Pause  [+/-] ({cur_interval:.1f}s)  •  {scroll_info}  •  {now_str}",
+                    f"  {pause_badge}[q] Thoát  [j/k] Cuộn  [d/u] Nửa trang  [space] Tạm dừng  [+/-] ({cur_interval:.1f}s)  •  {scroll_info}  •  {now_str}",
+                )
+            else:
+                footer_text = tr(
+                    f"  {pause_badge}[q] Quit  [j/k] {scroll_info}  •  {now_str}",
+                    f"  {pause_badge}[q] Thoát  [j/k] {scroll_info}  •  {now_str}",
+                )
+            sys.stdout.write(footer_text[:term_w] + "\n")
             sys.stdout.flush()
 
-            # 4. Wait for keypress or interval timeout
-            deadline = time.time() + (cur_interval if not paused else 0.5)
+            # 5. Wait for keypress or interval timeout
+            time_until_refresh = max(0.05, cur_interval - (time.time() - last_fetch_time)) if not paused else 0.5
+            key = _read_terminal_key(timeout=min(0.2, time_until_refresh))
+            if not key:
+                continue
 
-            while time.time() < deadline:
-                remaining = max(0.05, deadline - time.time())
-                try:
-                    r_ready, _, _ = select.select([sys.stdin], [], [], min(remaining, 0.2))
-                except (InterruptedError, OSError):
-                    # Handle window resize (SIGWINCH) gracefully
-                    break
-
-                if r_ready:
-                    try:
-                        ch = sys.stdin.read(1)
-                    except Exception:
-                        return
-                    if not ch:  # EOF
-                        return
-                    if ch in ("q", "Q", "\x03"):  # 'q', 'Q', or Ctrl+C
-                        return
-                    elif ch in ("r", "R"):  # Manual instant refresh
-                        break
-                    elif ch == " ":  # Toggle pause
-                        paused = not paused
-                        break
-                    elif ch in ("+", "="):
-                        cur_interval = max(0.5, round(cur_interval - 0.5, 1))
-                        break
-                    elif ch in ("-", "_"):
-                        cur_interval = min(10.0, round(cur_interval + 0.5, 1))
-                        break
+            if key in ("q", "Q", "\x03"):  # 'q' or Ctrl+C
+                return
+            elif key in ("j", "DOWN", "\x05"):  # scroll down 1 line (nvim j / Down / Ctrl+E)
+                scroll_offset = min(max_scroll, scroll_offset + 1)
+            elif key in ("k", "UP", "\x19"):  # scroll up 1 line (nvim k / Up / Ctrl+Y)
+                scroll_offset = max(0, scroll_offset - 1)
+            elif key == "WHEEL_DOWN":  # mouse wheel down
+                scroll_offset = min(max_scroll, scroll_offset + 3)
+            elif key == "WHEEL_UP":  # mouse wheel up
+                scroll_offset = max(0, scroll_offset - 3)
+            elif key in ("d", "PAGE_DOWN", "\x04"):  # half-page down (nvim d / Ctrl+D / PgDown)
+                scroll_offset = min(max_scroll, scroll_offset + max(1, content_height // 2))
+            elif key in ("u", "PAGE_UP", "\x15"):  # half-page up (nvim u / Ctrl+U / PgUp)
+                scroll_offset = max(0, scroll_offset - max(1, content_height // 2))
+            elif key in ("\x06",):  # full page down (Ctrl+F)
+                scroll_offset = min(max_scroll, scroll_offset + max(1, content_height - 1))
+            elif key in ("\x02",):  # full page up (Ctrl+B)
+                scroll_offset = max(0, scroll_offset - max(1, content_height - 1))
+            elif key in ("g", "HOME"):  # jump to top (nvim g / Home)
+                scroll_offset = 0
+            elif key in ("G", "END"):  # jump to bottom (nvim G / End)
+                scroll_offset = max_scroll
+            elif key in ("r", "R"):  # Manual instant refresh
+                last_fetch_time = 0.0
+            elif key == " ":  # Toggle pause
+                paused = not paused
+            elif key in ("+", "="):  # Faster refresh
+                cur_interval = max(0.5, round(cur_interval - 0.5, 1))
+            elif key in ("-", "_"):  # Slower refresh
+                cur_interval = min(10.0, round(cur_interval + 0.5, 1))
 
     except KeyboardInterrupt:
         pass
@@ -3866,7 +3980,8 @@ def cmd_ps(
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         except Exception:
             pass
-        sys.stdout.write("\033[?25h\033[?1049l\n")
+        # Disable mouse tracking, show cursor, and leave alternate buffer
+        sys.stdout.write("\033[?1000l\033[?1006l\033[?25h\033[?1049l\n")
         sys.stdout.flush()
 
 
