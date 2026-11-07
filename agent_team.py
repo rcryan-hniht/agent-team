@@ -27,6 +27,7 @@ import re
 import shutil
 import sys
 import time
+import unicodedata
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -62,8 +63,17 @@ def c(text: str, color: str = "") -> str:
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
+def _char_width(ch: str) -> int:
+    if unicodedata.combining(ch):
+        return 0
+    if unicodedata.east_asian_width(ch) in ("W", "F"):
+        return 2
+    return 1
+
+
 def _visible_len(text: str) -> int:
-    return len(ANSI_ESCAPE_RE.sub("", text))
+    clean = ANSI_ESCAPE_RE.sub("", text)
+    return sum(_char_width(ch) for ch in clean)
 
 
 def _box_line(text: str, inner_width: int = 54) -> str:
@@ -78,8 +88,7 @@ def rgb_fg(color: Tuple[int, int, int]) -> str:
 
 
 def _col(text: str, width: int, color_str: str = "") -> str:
-    raw = ANSI_ESCAPE_RE.sub("", text)
-    pad = max(0, width - len(raw))
+    pad = max(0, width - _visible_len(text))
     colored = c(text, color_str) if color_str else text
     return colored + (" " * pad)
 
@@ -396,8 +405,9 @@ def render_7col_agent_ps_grid(
         role_id = PIXEL_ART_ANIMALS[k][0]
         is_active = role_id in normalized_active
         if is_active:
-            glow_tag = f"{BOLD}{YELLOW}⚡ ACTIVE ⚡{RESET}" if sys.stdout.isatty() else "⚡ ACTIVE ⚡"
-            tag_len = 10
+            glow_raw = "⚡ ACTIVE ⚡" if cell_w >= 14 else "⚡ACTIVE⚡"
+            glow_tag = f"{BOLD}{YELLOW}{glow_raw}{RESET}" if sys.stdout.isatty() else glow_raw
+            tag_len = _visible_len(glow_raw)
             pad = max(0, cell_w - tag_len)
             crown_row += " " * (pad // 2) + glow_tag + " " * (pad - pad // 2)
         else:
@@ -477,12 +487,11 @@ def render_7col_agent_ps_grid(
         is_active = role_id in normalized_active
         if is_active:
             st = "⚡ BUSY"
-            vis_len = 6
             colored_st = f"{BOLD}{YELLOW}{st}{RESET}" if sys.stdout.isatty() else st
         else:
             st = "○ idle"
-            vis_len = 6
             colored_st = f"{DIM}{st}{RESET}" if sys.stdout.isatty() else st
+        vis_len = _visible_len(st)
         pad = max(0, cell_w - vis_len)
         row += " " * (pad // 2) + colored_st + " " * (pad - pad // 2)
     lines.append(row)
