@@ -239,7 +239,7 @@ class TestGridGeometryAndTwoLineMascots(unittest.TestCase):
 class TestDynamicProviderAccentColors(unittest.TestCase):
     @patch("sys.stdout.isatty", return_value=True)
     def test_agy_active_accent_yellow(self, _mock_isatty):
-        with patch.dict(os.environ, {"AGT_PROVIDER": "agy"}):
+        with patch.dict(os.environ, {"AGT_PROVIDER": "agy", "AGT_THEME": "dark"}):
             grid = agent_team.render_7col_agent_grid(term_w=157)
             lines = grid.splitlines()
 
@@ -264,7 +264,7 @@ class TestDynamicProviderAccentColors(unittest.TestCase):
 
     @patch("sys.stdout.isatty", return_value=True)
     def test_codex_active_accent_yellow(self, _mock_isatty):
-        with patch.dict(os.environ, {"AGT_PROVIDER": "codex"}):
+        with patch.dict(os.environ, {"AGT_PROVIDER": "codex", "AGT_THEME": "dark"}):
             grid = agent_team.render_7col_agent_grid(term_w=157)
             lines = grid.splitlines()
 
@@ -279,7 +279,7 @@ class TestDynamicProviderAccentColors(unittest.TestCase):
 
     @patch("sys.stdout.isatty", return_value=True)
     def test_claude_active_accent_yellow(self, _mock_isatty):
-        with patch.dict(os.environ, {"AGT_PROVIDER": "claude"}):
+        with patch.dict(os.environ, {"AGT_PROVIDER": "claude", "AGT_THEME": "dark"}):
             grid = agent_team.render_7col_agent_grid(term_w=157)
             lines = grid.splitlines()
 
@@ -294,7 +294,7 @@ class TestDynamicProviderAccentColors(unittest.TestCase):
 
     @patch("sys.stdout.isatty", return_value=True)
     def test_multiple_providers_share_active_accent(self, _mock_isatty):
-        with patch.dict(os.environ, {"AGT_PROVIDER": "agy,codex"}, clear=True):
+        with patch.dict(os.environ, {"AGT_PROVIDER": "agy,codex", "AGT_THEME": "dark"}, clear=True):
             grid = agent_team.render_7col_agent_grid(term_w=157)
         lines = grid.splitlines()
         agy_line = next(l for l in lines if "agy:" in l)

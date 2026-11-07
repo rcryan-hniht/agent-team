@@ -13,7 +13,7 @@
   </p>
 </div>
 
-`agt` (`agent-team`) là công cụ CLI tương tác (không phụ thuộc thư viện ngoài) giúp bạn thiết lập một **Đội ngũ AI (Multi-Agent Team)** gồm **Orchestrator**, **Reviewer**, **Implementer**, **Searcher**, **Committer** (hoặc bất kỳ vai trò tùy chỉnh nào) cho từng dự án trong `~/Projects`, đồng thời đảm bảo `AGENTS.md` luôn gọn gàng **dưới 150 dòng (< 150 lines)**.
+`agt` (`agent-team`) là công cụ CLI tương tác (không phụ thuộc thư viện ngoài) giúp bạn thiết lập một **Đội ngũ AI 2 Pha 8 Vai Trò** (**lead-architect**, **lead-critic**, **orchestrator**, **reviewer**, **designer**, **implementer**, **searcher**, **committer**) cho từng dự án trong `~/Projects`, đồng thời đảm bảo `AGENTS.md` luôn gọn gàng **dưới 150 dòng (< 150 lines)**.
 
 Khi chạy lệnh `agt`, giao diện dòng lệnh Tiếng Việt sẽ hỏi từng bước về:
 - **Nhiệm vụ riêng (Mission)** của từng agent
@@ -59,7 +59,7 @@ agt --lang vi   # Mở giao diện dòng lệnh hoàn toàn bằng Tiếng Việ
 ### B. Tạo nhanh bằng Preset (Không cần hỏi đáp)
 ```bash
 agt init --target ~/project-example --yes \
-  --goal "Xây dựng và tối ưu hệ thống với đội ngũ 5 agents"
+  --goal "Xây dựng và tối ưu hệ thống với đội ngũ 8 vai trò"
 ```
 
 ### C. Giám sát Agents/Tasks đang chạy, Trạng thái đội AI & Danh sách Skills
@@ -102,7 +102,30 @@ agt fallback --target ~/project-example --role reviewer \
 
 ---
 
-## 3. Cấu Trúc File Được Sinh Ra Tự Động Cho Mỗi Project
+## 3. Bảng Đội Hình 8 Vai Trò & Ánh Xạ Mô Hình
+
+| Vai trò | Đường dẫn Workspace | Model mặc định (`agy`) | Model mặc định (`codex`) | Chế độ | Mục tiêu |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`lead-architect`** | `.agents/agents/lead-architect/agent.md` | `gemini-4-argon-high` / `claude-opus-5-5-medium` | `gpt-6-astra` (`high`) | Read-Only | Pha 1: Kiến trúc giải pháp, thông số kỹ thuật và phân rã task |
+| **`lead-critic`** | `.agents/agents/lead-critic/agent.md` | `gemini-3.1-pro-high` / `claude-opus-5-5-medium` | `gpt-6.1-sol` (`xhigh`) | Read-Only | Pha 1: Phản biện 2 vòng, stress-test giả định và kiểm chứng YAGNI |
+| **`orchestrator`** | `.agents/agents/orchestrator/agent.md` | `gemini-4-argon-high` / `claude-opus-5-5-medium` | `gpt-6-astra` (`high`) | Read/Coord | Pha 2: Tổng điều phối thực thi, phân công task và kiểm chứng tích hợp |
+| **`reviewer`** | `.agents/agents/reviewer/agent.md` | `gemini-3.1-pro-high` | `gpt-6.1-sol` (`xhigh`) | Read-Only | Pha 2: Kiểm định độc lập 2 trục theo Spec, Bảo mật và Chất lượng test |
+| **`designer`** | `.agents/agents/designer/agent.md` | `gemini-3.8-flash-high` | `gpt-6-sol` (`xhigh`) | Read+Write | Pha 2: Kỹ sư thiết kế UI/UX & bản sắc thị giác Anti-Slop |
+| **`implementer`** | `.agents/agents/implementer/agent.md` | `gemini-3.8-flash-high` | `gpt-6-sol` (`xhigh`) | Read+Write | Pha 2: Thực thi code tối giản theo chuẩn TDD (Red-Green-Refactor) |
+| **`searcher`** | `.agents/agents/searcher/agent.md` | `gemini-3.8-flash-medium` | `gpt-6-luna` (`medium`) | Read-Only | Pha 2: Trinh sát codebase nhanh và tra cứu tài liệu sơ cấp |
+| **`committer`** | `.agents/agents/committer/agent.md` | `gemini-3.7-flash` | `gpt-6-luna` (`low`) | Read-Only | Pha 2: Đóng gói commit chuẩn atomic Conventional Commits |
+
+---
+
+## 🔄 Điều Phối Host-Native & Giao Thức Thực Thi
+
+1. **Không Custom Runtime**: `agt` hoạt động thuần túy là bộ scaffold và generator đa harness. Hệ thống chạy bằng cơ chế điều phối native của host (`agy` subagents, `codex` `[agents]` threads, và `claude` agent markdown) mà không tạo runtime daemon hay process giả lập agent riêng để mô phỏng vai trò.
+2. **Giao Thức Đồng Thời & Thứ Tự Thực Thi**: Cho phép fan-out các tác vụ đọc độc lập (`searcher`) chạy song song để tăng tốc độ khám phá. Ngược lại, các tác vụ sửa file chung giữa `implementer` và `designer` phải tuân thủ nghiêm ngặt nguyên tắc đơn ghi (single-writer) tuần tự, tiếp nối bởi kiểm định độc lập (`reviewer`) và đóng gói commit (`committer`).
+3. **Ranh Giới Quyết Định Workflow Graph**: Mô hình máy trạng thái dạng đồ thị (workflow graph) không bắt buộc cho quy trình phát triển thông thường. Chỉ cân nhắc tích hợp workflow graph khi môi trường thực thi yêu cầu: thực thi cổng kiểm soát (gate enforcement), lưu/khôi phục state bền vững qua đĩa, hoặc quản lý chu trình retry sửa lỗi có hệ thống.
+
+---
+
+## 4. Cấu Trúc File Được Sinh Ra Tự Động Cho Mỗi Project
 
 ```text
 <project-root>/
@@ -120,6 +143,7 @@ agt fallback --target ~/project-example --role reviewer \
 │   │   ├── lead-critic/ (agent.md, agent.toml)    # Pha 1: Phản biện trưởng & Stress-test 2 vòng
 │   │   ├── orchestrator/ (agent.md, agent.toml)   # Pha 2: Tổng điều phối thực thi
 │   │   ├── reviewer/ (agent.md, agent.toml)       # Pha 2: Kiểm định độc lập chất lượng & bảo mật
+│   │   ├── designer/ (agent.md, agent.toml)       # Pha 2: Kỹ sư thiết kế UI/UX & Anti-Slop
 │   │   ├── implementer/ (agent.md, agent.toml)    # Pha 2: Kỹ sư TDD thực thi
 │   │   ├── searcher/ (agent.md, agent.toml)       # Pha 2: Trinh sát mã nguồn & tra cứu tài liệu
 │   │   └── committer/ (agent.md, agent.toml)      # Pha 2: Đóng gói Conventional Commits
@@ -128,6 +152,7 @@ agt fallback --target ~/project-example --role reviewer \
 │   │   ├── lead-critic.json (.md)
 │   │   ├── orchestrator.json (.md)
 │   │   ├── reviewer.json (.md)
+│   │   ├── designer.json (.md)
 │   │   ├── implementer.json (.md)
 │   │   ├── searcher.json (.md)
 │   │   └── committer.json (.md)
@@ -138,6 +163,7 @@ agt fallback --target ~/project-example --role reviewer \
 │       ├── lead-critic.md
 │       ├── orchestrator.md
 │       ├── reviewer.md
+│       ├── designer.md
 │       ├── implementer.md
 │       ├── searcher.md
 │       └── committer.md
@@ -147,6 +173,6 @@ agt fallback --target ~/project-example --role reviewer \
 
 ---
 
-## 4. Giấy phép (License)
+## 5. Giấy phép (License)
 
 Phát hành dưới giấy phép [MIT License](./LICENSE).

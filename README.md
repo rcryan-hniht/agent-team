@@ -13,7 +13,7 @@
   </p>
 </div>
 
-`agt` (`agent-team`) is an interactive, zero-dependency CLI wizard that scaffolds a coordinated **Multi-Agent AI Team** (**Orchestrator**, **Reviewer**, **Implementer**, **Searcher**, **Committer**, or custom specialist roles) for any repository inside your `~/Projects` workspace.
+`agt` (`agent-team`) is an interactive, zero-dependency CLI wizard that scaffolds a coordinated **2-Phase 8-Role AI Team** (**lead-architect**, **lead-critic**, **orchestrator**, **reviewer**, **designer**, **implementer**, **searcher**, **committer**) for any repository inside your `~/Projects` workspace.
 
 It generates unified, cross-compatible agent definitions and applies local **Skills** across all three major agentic coding harnesses:
 - **Google Antigravity (`agy`)**: `AGENTS.md`, `.agents/README.md`, `.agents/agents.json`, `.agents/agents/<role>/agent.md`, `.agents/skills.json`, `.agents/skills/`
@@ -65,11 +65,11 @@ agt --lang en
 ```
 
 #### B. One-Command Preset Initialization (Non-Interactive)
-Bootstrap the standard 5-agent team (`orchestrator`, `reviewer`, `implementer`, `committer`, `searcher`) with default models and skill bundles:
+Bootstrap the standard 8-role team (`lead-architect`, `lead-critic`, `orchestrator`, `reviewer`, `designer`, `implementer`, `searcher`, `committer`) with default models and skill bundles:
 
 ```bash
 agt init --target ~/project-example --yes \
-  --goal "Build and verify core features with a 5-agent team"
+  --goal "Build and verify core features with an 8-role team"
 ```
 
 #### C. Inspect Applied Agents, Live Running Tasks & Local Skills
@@ -116,9 +116,18 @@ agt fallback --target ~/project-example --role reviewer \
 | **`lead-critic`** | `.agents/agents/lead-critic/agent.md` | `gemini-3.1-pro-high` / `claude-opus-5-5-medium` | `gpt-6.1-sol` (`xhigh`) | Read-Only | Phase 1: 2-round technical stress-testing, challenge assumptions, and YAGNI verification |
 | **`orchestrator`** | `.agents/agents/orchestrator/agent.md` | `gemini-4-argon-high` / `claude-opus-5-5-medium` | `gpt-6-astra` (`high`) | Read/Coord | Phase 2: Overall execution orchestration, task delegation, and integration verification |
 | **`reviewer`** | `.agents/agents/reviewer/agent.md` | `gemini-3.1-pro-high` | `gpt-6.1-sol` (`xhigh`) | Read-Only | Phase 2: Independent code review along Spec Compliance, Security, and Test Quality |
+| **`designer`** | `.agents/agents/designer/agent.md` | `gemini-3.8-flash-high` | `gpt-6-sol` (`xhigh`) | Read+Write | Phase 2: UI/UX & Anti-Slop visual styling adhering to design taste rules |
 | **`implementer`** | `.agents/agents/implementer/agent.md` | `gemini-3.8-flash-high` | `gpt-6-sol` (`xhigh`) | Read+Write | Phase 2: Minimal complete implementation, TDD (Red-Green-Refactor), and test execution |
 | **`searcher`** | `.agents/agents/searcher/agent.md` | `gemini-3.8-flash-medium` | `gpt-6-luna` (`medium`) | Read-Only | Phase 2: Focused research against primary documentation and fast codebase scouting |
 | **`committer`** | `.agents/agents/committer/agent.md` | `gemini-3.7-flash` | `gpt-6-luna` (`low`) | Read-Only | Phase 2: Concise, atomic Conventional Commits creation |
+
+---
+
+## 🔄 Host-Native Orchestration & Concurrency Contract
+
+1. **Zero Custom Runtime**: `agt` operates strictly as a multi-harness scaffold and generator. It leverages host-native orchestration mechanisms (`agy` subagents, `codex` `[agents]` threads, and `claude` agent markdown files) without introducing custom runtime daemons or process emulators to mimic role structure.
+2. **Execution Concurrency & Ordering**: Independent codebase scouting and documentation reads (`searcher`) can fan out in parallel. In contrast, shared-file modifications across `implementer` and `designer` remain strictly single-writer and sequential, followed in order by independent verification (`reviewer`) and atomic commits (`committer`).
+3. **Workflow Graph Boundary**: A graph-based workflow engine is not required for everyday linear development. Consider an external workflow graph only when the execution host must enforce hard quality gates, persist and restore execution state across interruptions, or automate systematic remediation retry loops.
 
 ---
 
@@ -140,6 +149,7 @@ agt fallback --target ~/project-example --role reviewer \
 │   │   ├── lead-critic/ (agent.md, agent.toml)    # Phase 1: 2-round debate & stress-test
 │   │   ├── orchestrator/ (agent.md, agent.toml)   # Phase 2: Execution orchestrator
 │   │   ├── reviewer/ (agent.md, agent.toml)
+│   │   ├── designer/ (agent.md, agent.toml)       # Phase 2: UI/UX & Anti-Slop designer
 │   │   ├── implementer/ (agent.md, agent.toml)
 │   │   ├── searcher/ (agent.md, agent.toml)
 │   │   └── committer/ (agent.md, agent.toml)
@@ -148,6 +158,7 @@ agt fallback --target ~/project-example --role reviewer \
 │   │   ├── lead-critic.json (.md)
 │   │   ├── orchestrator.json (.md)
 │   │   ├── reviewer.json (.md)
+│   │   ├── designer.json (.md)
 │   │   ├── implementer.json (.md)
 │   │   ├── searcher.json (.md)
 │   │   └── committer.json (.md)
@@ -158,6 +169,7 @@ agt fallback --target ~/project-example --role reviewer \
 │       ├── lead-critic.md
 │       ├── orchestrator.md
 │       ├── reviewer.md
+│       ├── designer.md
 │       ├── implementer.md
 │       ├── searcher.md
 │       └── committer.md

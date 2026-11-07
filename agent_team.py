@@ -25,6 +25,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 import unicodedata
@@ -245,6 +246,97 @@ PIXEL_ART_ANIMALS = [
 ]
 
 ROLE_COLORS = {r[0]: r[1] for r in PIXEL_ART_ANIMALS}
+
+# Soothing Rosé Pine Dawn / Warm Rosewood & Blush palette for Light system theme (WCAG AA, S <= 57%)
+LIGHT_ROLE_COLORS: Dict[str, Tuple[int, int, int]] = {
+    "lead-architect": (178, 54, 76),   # Antique Rosewood Red (#B2364C)
+    "lead-critic": (168, 62, 104),     # Muted Berry Wine (#A83E68)
+    "orchestrator": (182, 70, 56),     # Warm Terracotta Brick (#B64638)
+    "reviewer": (152, 56, 92),         # Deep Plum Wine (#98385C)
+    "designer": (188, 76, 110),        # Soft Blush Pink (#BC4C6E)
+    "implementer": (180, 84, 68),      # Desert Coral (#B45444)
+    "searcher": (158, 72, 122),        # Smoky Mauve Orchid (#9E487A)
+    "committer": (164, 48, 56),        # Vintage Carmine Brick (#A43038)
+}
+LIGHT_ACTIVE_BADGE_RGB: Tuple[int, int, int] = (180, 50, 70)    # Rosewood Garnet (#B43246)
+LIGHT_IDLE_SPRITE_RGB: Tuple[int, int, int] = (148, 144, 156)   # Muted Lavender Grey (#94909C)
+
+
+def detect_system_theme() -> str:
+    """Auto-detect system/terminal appearance ('light' or 'dark'); defaults to 'dark'."""
+    env_theme = os.environ.get("AGT_THEME", "").strip().lower()
+    if env_theme in ("light", "dark"):
+        return env_theme
+
+    colorfgbg = os.environ.get("COLORFGBG", "").strip()
+    if ";" in colorfgbg:
+        bg_part = colorfgbg.rsplit(";", 1)[-1].strip()
+        if bg_part.isdigit():
+            bg_idx = int(bg_part)
+            if bg_idx in (7, 15):
+                return "light"
+            if 0 <= bg_idx <= 8:
+                return "dark"
+
+    if sys.platform == "darwin" and shutil.which("defaults"):
+        try:
+            res = subprocess.run(
+                ["defaults", "read", "-g", "AppleInterfaceStyle"],
+                capture_output=True,
+                text=True,
+                timeout=0.4,
+            )
+            return "dark" if res.returncode == 0 and "dark" in res.stdout.lower() else "light"
+        except Exception:
+            return "dark"
+
+    if sys.platform.startswith("linux"):
+        try:
+            dms_session = Path.home() / ".local" / "state" / "DankMaterialShell" / "session.json"
+            if dms_session.exists():
+                dms_data = json.loads(dms_session.read_text(encoding="utf-8"))
+                if isinstance(dms_data.get("isLightMode"), bool):
+                    return "light" if dms_data["isLightMode"] else "dark"
+        except Exception:
+            pass
+
+        if (
+            os.environ.get("WAYLAND_DISPLAY")
+            or os.environ.get("DISPLAY")
+            or os.environ.get("DBUS_SESSION_BUS_ADDRESS")
+        ) and shutil.which("gsettings"):
+            try:
+                res = subprocess.run(
+                    ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
+                    capture_output=True,
+                    text=True,
+                    timeout=0.4,
+                )
+                if res.returncode == 0:
+                    scheme = res.stdout.strip().strip("'").strip('"').lower()
+                    if scheme == "prefer-dark":
+                        return "dark"
+                    if scheme in ("prefer-light", "default"):
+                        return "light"
+            except Exception:
+                pass
+
+    return "dark"
+
+
+def _mascot_role_rgb(role_id: str, theme: str, active_boost: bool = False) -> Tuple[int, int, int]:
+    if theme == "light":
+        return LIGHT_ROLE_COLORS.get(role_id, LIGHT_ACTIVE_BADGE_RGB)
+    base = ROLE_COLORS.get(role_id, (255, 255, 255))
+    if active_boost:
+        return (
+            min(255, int(base[0] * 1.35 + 45)),
+            min(255, int(base[1] * 1.35 + 45)),
+            min(255, int(base[2] * 1.35 + 45)),
+        )
+    return base
+
+
 ROLE_ANIMALS = {r[0]: r[2] for r in PIXEL_ART_ANIMALS}
 ROLE_ANIMALS_VI = {
     "lead-architect": "cá voi",
@@ -483,8 +575,15 @@ MASCOT_LABELS_VI = {
 }
 
 
-def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Optional[int] = None, project_path: Optional[Path] = None) -> str:
+def render_7col_agent_grid(
+    agents_data: Optional[List[Dict]] = None,
+    term_w: Optional[int] = None,
+    project_path: Optional[Path] = None,
+    theme: Optional[str] = None,
+) -> str:
     """Render 8 columns (art, animal name, roles, model, reasoning effects) with 4 rows (agy, codex, claude, fallback)."""
+    resolved_theme = theme if theme in ("light", "dark") else detect_system_theme()
+
     if term_w is None:
         term_w = shutil.get_terminal_size((115, 24)).columns
     num_cols = len(PIXEL_ART_ANIMALS)
@@ -522,8 +621,9 @@ def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Opt
     for r in range(6):
         row = m + " " * hdr_w
         for k in range(num_cols):
+            role_id = PIXEL_ART_ANIMALS[k][0]
             grid = PIXEL_ART_ANIMALS[k][4]
-            color = PIXEL_ART_ANIMALS[k][1]
+            color = _mascot_role_rgb(role_id, resolved_theme)
             s = "".join((rgb_fg(color) + "██" + RESET) if ch == "#" else "  " for ch in grid[r])
             pad = max(0, cell_w - 10)
             row += " " * (pad // 2) + s + " " * (pad - pad // 2)
@@ -535,7 +635,7 @@ def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Opt
         row = m + " " * hdr_w
         for k in range(num_cols):
             role_id = PIXEL_ART_ANIMALS[k][0]
-            color = PIXEL_ART_ANIMALS[k][1]
+            color = _mascot_role_rgb(role_id, resolved_theme)
             w = mascot_labels.get(role_id, ("", ""))[line_idx]
             vis_w_len = _visible_len(w)
             pad = max(0, cell_w - vis_w_len)
@@ -552,7 +652,8 @@ def render_7col_agent_grid(agents_data: Optional[List[Dict]] = None, term_w: Opt
         roles_mid = ["[architect]", "[critic]", "[orchestrator]", "[reviewer]", "[designer]", "[implementer]", "[searcher]", "[committer]"]
         roles_short = ["[arch]", "[critic]", "[orch]", "[reviewer]", "[design]", "[imp]", "[search]", "[commit]"]
     for k in range(num_cols):
-        color = PIXEL_ART_ANIMALS[k][1]
+        role_id = PIXEL_ART_ANIMALS[k][0]
+        color = _mascot_role_rgb(role_id, resolved_theme)
         tag = roles_mid[k] if cell_w >= 14 else roles_short[k]
         vis_tag_len = _visible_len(tag)
         pad = max(0, cell_w - vis_tag_len)
@@ -671,12 +772,17 @@ ROLE_ALIASES = {
 def render_7col_agent_ps_grid(
     active_roles: Optional[Dict[str, str]] = None,
     term_w: Optional[int] = None,
+    theme: Optional[str] = None,
 ) -> str:
     """
     Render 8 columns of mascot pixel art with dynamic glowing effect for active roles.
-    - Active roles: Overhead '✦ ACTIVE ✦' crown, radiant boosted RGB colors, bold role tag, '● BUSY' badge.
-    - Idle roles: Dimmed palette, dim role tag, '○ idle' badge.
+    - Active roles: Overhead '✦ ACTIVE ✦' crown, radiant boosted RGB colors (warm pink/red in light mode), bold role tag, '● BUSY' badge.
+    - Idle roles: Dimmed/neutral palette, dim role tag, '○ idle' badge.
     """
+    resolved_theme = theme if theme in ("light", "dark") else detect_system_theme()
+    is_light = resolved_theme == "light"
+    active_badge_c = (rgb_fg(LIGHT_ACTIVE_BADGE_RGB) or YELLOW) if is_light else YELLOW
+
     if active_roles is None:
         active_roles = {}
     normalized_active: Dict[str, str] = {}
@@ -705,7 +811,7 @@ def render_7col_agent_ps_grid(
         is_active = role_id in normalized_active
         if is_active:
             glow_raw = "✦ ACTIVE ✦" if cell_w >= 14 else "✦ACTIVE✦"
-            glow_tag = f"{BOLD}{YELLOW}{glow_raw}{RESET}" if sys.stdout.isatty() else glow_raw
+            glow_tag = f"{BOLD}{active_badge_c}{glow_raw}{RESET}" if sys.stdout.isatty() else glow_raw
             tag_len = _visible_len(glow_raw)
             pad = max(0, cell_w - tag_len)
             crown_row += " " * (pad // 2) + glow_tag + " " * (pad - pad // 2)
@@ -722,23 +828,22 @@ def render_7col_agent_ps_grid(
             grid = PIXEL_ART_ANIMALS[k][4]
             is_active = role_id in normalized_active
             if is_active:
-                boost_c = (
-                    min(255, int(color[0] * 1.35 + 45)),
-                    min(255, int(color[1] * 1.35 + 45)),
-                    min(255, int(color[2] * 1.35 + 45)),
-                )
+                boost_c = _mascot_role_rgb(role_id, resolved_theme, active_boost=True)
                 if sys.stdout.isatty():
                     s = "".join((f"{BOLD}{rgb_fg(boost_c)}██{RESET}") if ch == "#" else "  " for ch in grid[r])
                 else:
                     s = "".join("██" if ch == "#" else "  " for ch in grid[r])
             else:
-                dim_c = (
-                    max(20, int(color[0] * 0.42)),
-                    max(20, int(color[1] * 0.42)),
-                    max(20, int(color[2] * 0.42)),
-                )
                 if sys.stdout.isatty():
-                    s = "".join((f"{DIM}{rgb_fg(dim_c)}██{RESET}") if ch == "#" else "  " for ch in grid[r])
+                    if is_light:
+                        s = "".join((f"{rgb_fg(LIGHT_IDLE_SPRITE_RGB)}██{RESET}") if ch == "#" else "  " for ch in grid[r])
+                    else:
+                        dim_c = (
+                            max(20, int(color[0] * 0.42)),
+                            max(20, int(color[1] * 0.42)),
+                            max(20, int(color[2] * 0.42)),
+                        )
+                        s = "".join((f"{DIM}{rgb_fg(dim_c)}██{RESET}") if ch == "#" else "  " for ch in grid[r])
                 else:
                     s = "".join("░░" if ch == "#" else "  " for ch in grid[r])
             pad = max(0, cell_w - 10)
@@ -752,12 +857,11 @@ def render_7col_agent_ps_grid(
         for k in range(num_cols):
             role_id = PIXEL_ART_ANIMALS[k][0]
             w = mascot_labels.get(role_id, ("", ""))[line_idx]
-            color = PIXEL_ART_ANIMALS[k][1]
             is_active = role_id in normalized_active
             vis_w_len = _visible_len(w)
             pad = max(0, cell_w - vis_w_len)
             if is_active:
-                boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
+                boost_c = _mascot_role_rgb(role_id, resolved_theme, active_boost=True)
                 colored_w = f"{BOLD}{rgb_fg(boost_c)}{w}{RESET}" if sys.stdout.isatty() else w
             else:
                 colored_w = f"{DIM}{w}{RESET}" if sys.stdout.isatty() else w
@@ -774,13 +878,12 @@ def render_7col_agent_ps_grid(
     row = m + " " * hdr_w
     for k in range(num_cols):
         role_id = PIXEL_ART_ANIMALS[k][0]
-        color = PIXEL_ART_ANIMALS[k][1]
         is_active = role_id in normalized_active
         tag = roles_mid[k] if cell_w >= 14 else roles_short[k]
         vis_tag_len = _visible_len(tag)
         pad = max(0, cell_w - vis_tag_len)
         if is_active:
-            boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
+            boost_c = _mascot_role_rgb(role_id, resolved_theme, active_boost=True)
             colored_tag = f"{BOLD}{rgb_fg(boost_c)}{tag}{RESET}" if sys.stdout.isatty() else tag
         else:
             colored_tag = f"{DIM}{tag}{RESET}" if sys.stdout.isatty() else tag
@@ -794,7 +897,7 @@ def render_7col_agent_ps_grid(
         is_active = role_id in normalized_active
         if is_active:
             st = "● BUSY"
-            colored_st = f"{BOLD}{YELLOW}{st}{RESET}" if sys.stdout.isatty() else st
+            colored_st = f"{BOLD}{active_badge_c}{st}{RESET}" if sys.stdout.isatty() else st
         else:
             st = "○ idle"
             colored_st = f"{DIM}{st}{RESET}" if sys.stdout.isatty() else st
@@ -1270,56 +1373,89 @@ def format_fallback_chain(chain: List[str]) -> str:
 
 
 READ_WRITE_TOOLS = [
+    "read_file",
+    "edit_file",
+    "write_file",
     "run_command",
-    "view_file",
-    "write_to_file",
-    "replace_file_content",
-    "multi_replace_file_content",
-    "grep_search",
-    "find_by_name",
-    "list_dir",
+    "manage_task",
 ]
 
 REVIEWER_TOOLS = [
-    "view_file",
-    "grep_search",
-    "find_by_name",
-    "list_dir",
+    "read_file",
     "run_command",
+    "manage_task",
 ]
 
 SEARCHER_TOOLS = [
-    "view_file",
-    "grep_search",
-    "find_by_name",
+    "read_file",
+    "run_command",
     "search_web",
-    "read_url_content",
 ]
 
 COMMITTER_TOOLS = [
+    "read_file",
     "run_command",
-    "view_file",
-    "grep_search",
-    "list_dir",
+    "manage_task",
 ]
 
 LEAD_ARCHITECT_TOOLS = [
-    "view_file",
-    "grep_search",
-    "find_by_name",
-    "list_dir",
-    "search_web",
-    "read_url_content",
+    "read_file",
     "run_command",
+    "manage_task",
+    "search_web",
 ]
 
 LEAD_CRITIC_TOOLS = [
-    "view_file",
-    "grep_search",
-    "find_by_name",
-    "list_dir",
+    "read_file",
     "run_command",
+    "manage_task",
 ]
+
+ORCHESTRATOR_TOOLS = [
+    "read_file",
+    "run_command",
+    "manage_task",
+    "invoke_subagent",
+    "send_message",
+    "manage_subagents",
+    "define_subagent",
+]
+
+ANTIGRAVITY_CANONICAL_TOOL_MAP: Dict[str, str] = {
+    "view_file": "read_file",
+    "grep_search": "read_file",
+    "find_by_name": "read_file",
+    "list_dir": "read_file",
+    "write_to_file": "write_file",
+    "replace_file_content": "edit_file",
+    "multi_replace_file_content": "edit_file",
+    "read_url_content": "search_web",
+}
+
+DISALLOWED_WRITE_TOOLS = {
+    "edit_file",
+    "write_file",
+    "write_to_file",
+    "replace_file_content",
+    "multi_replace_file_content",
+}
+
+
+def canonicalize_antigravity_tools(tools: Sequence[str], enable_write: bool = True) -> List[str]:
+    """
+    Map legacy tool names to Antigravity 2.0 canonical tool names,
+    deduplicating while preserving order, and stripping write tools if enable_write is False.
+    """
+    seen = set()
+    canonical: List[str] = []
+    for t in tools:
+        resolved = ANTIGRAVITY_CANONICAL_TOOL_MAP.get(t, t)
+        if not enable_write and resolved in DISALLOWED_WRITE_TOOLS:
+            continue
+        if resolved not in seen:
+            seen.add(resolved)
+            canonical.append(resolved)
+    return canonical
 
 DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
     "lead-architect": {
@@ -1401,8 +1537,9 @@ DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
         "role": "Lead Execution Orchestrator",
         "mission": (
             "Receive the finalized architecture blueprint approved from the 2-round lead debate (lead-architect ⮂ lead-critic). "
-            "Coordinate execution by dispatching searcher for codebase scouting, implementer for TDD coding, reviewer for independent "
-            "code review, and committer for Conventional Commits. Verify overall integration without modifying production code directly."
+            "Coordinate execution across worker subagents: allow parallel fan-out for independent codebase reads (searcher); "
+            "keep shared-file implementation (implementer, designer), independent verification (reviewer), and commits (committer) "
+            "strictly ordered. Verify overall integration without modifying production code directly."
         ),
         "provider": "multi",
         "agy_model": "gemini-4-argon-high",
@@ -1411,14 +1548,14 @@ DEFAULT_AGENT_TEMPLATES_EN: Dict[str, Dict] = {
         "reasoning_effort": "high",
         "context_scope": "Approved design blueprint, repository architecture, AGENTS.md, module contracts, and worker task statuses.",
         "goal_criteria": (
-            "Zero overlapping file ownership across subagents; all reviewer findings resolved; "
+            "Single-writer file boundaries across implementer and designer; all reviewer findings resolved; "
             "full application builds and passes tests before claiming completion."
         ),
         "enable_write": False,
         "enable_subagents": True,
         "enable_mcp": True,
         "workspace_mode": "inherit",
-        "agy_tools": list(READ_WRITE_TOOLS),
+        "agy_tools": list(ORCHESTRATOR_TOOLS),
         "skills": [
             "subagent-driven-development",
             "dispatching-parallel-agents",
@@ -1693,8 +1830,9 @@ DEFAULT_AGENT_TEMPLATES_VI: Dict[str, Dict] = {
         "role": "Tổng điều phối viên thực thi",
         "mission": (
             "Tiếp nhận bản thiết kế kiến trúc hoàn thiện đã đạt đồng thuận từ cặp Lead phản biện (lead-architect ⮂ lead-critic). "
-            "Điều phối thực thi phân cấp: giao searcher trinh sát mã nguồn, giao implementer viết code & test (TDD), giao reviewer "
-            "kiểm định độc lập, và giao committer đóng gói git commit chuẩn. Giữ vai trò kiểm chứng tích hợp, không tự sửa code sản phẩm."
+            "Điều phối thực thi phân cấp: cho phép fan-out các tác vụ đọc độc lập (searcher); giữ các tác vụ sửa file chung "
+            "(implementer, designer), kiểm định độc lập (reviewer) và commit (committer) theo đúng thứ tự tuần tự. "
+            "Giữ vai trò kiểm chứng tích hợp, không tự sửa code sản phẩm trực tiếp."
         ),
         "provider": "multi",
         "agy_model": "gemini-4-argon-high",
@@ -1703,14 +1841,14 @@ DEFAULT_AGENT_TEMPLATES_VI: Dict[str, Dict] = {
         "reasoning_effort": "high",
         "context_scope": "Bản thiết kế kiến trúc đã thống nhất, AGENTS.md, hợp đồng module và trạng thái tiến độ các worker.",
         "goal_criteria": (
-            "Không có 2 subagent sửa cùng một file; mọi phát hiện của reviewer được xử lý triệt để; "
+            "Ranh giới tệp đơn ghi (single-writer) rõ ràng giữa implementer và designer; mọi phát hiện của reviewer được xử lý triệt để; "
             "toàn bộ test suite vượt qua hoàn toàn trước khi báo cáo hoàn thành."
         ),
         "enable_write": False,
         "enable_subagents": True,
         "enable_mcp": True,
         "workspace_mode": "inherit",
-        "agy_tools": list(READ_WRITE_TOOLS),
+        "agy_tools": list(ORCHESTRATOR_TOOLS),
         "skills": [
             "subagent-driven-development",
             "dispatching-parallel-agents",
@@ -2931,11 +3069,42 @@ def enforce_agents_md_line_limit(content: str, max_lines: int = MAX_AGENTS_MD_LI
     return "\n".join(kept) + "\n"
 
 
+def _parse_markdown_h2_sections(content: str) -> Tuple[str, List[Tuple[str, List[str]]]]:
+    """
+    Parse a markdown document into preamble and level-2 sections (## ...).
+    Does NOT split on level-3 subheadings (### ...).
+    Returns (preamble, [(heading_line, section_lines), ...]).
+    """
+    lines = content.splitlines()
+    preamble_lines: List[str] = []
+    sections: List[Tuple[str, List[str]]] = []
+    current_heading: Optional[str] = None
+    current_body: List[str] = []
+
+    for line in lines:
+        if line.startswith("## "):
+            if current_heading is not None:
+                sections.append((current_heading, current_body))
+            current_heading = line.strip()
+            current_body = [line]
+        elif current_heading is not None:
+            current_body.append(line)
+        else:
+            preamble_lines.append(line)
+
+    if current_heading is not None:
+        sections.append((current_heading, current_body))
+
+    preamble = "\n".join(preamble_lines).strip()
+    return preamble, sections
+
+
 def build_root_agents_md(cfg: TeamConfig, existing_content: Optional[str] = None) -> str:
     """
     Sinh hoặc cập nhật AGENTS.md tại gốc repo theo đúng chuẩn Orpheus / Act2Morse (< 150 lines):
     - Nếu repo đã có sẵn AGENTS.md với các mục riêng (như Project Structure, Build Commands...),
-      giữ nguyên phần hướng dẫn riêng của repo và cập nhật mục `## Agent-Specific Instructions`!
+      giữ nguyên phần hướng dẫn riêng của repo và cập nhật các mục do `agt` quản lý:
+      `## Team Topology & Delegation Rules` và `## Agent-Specific Instructions`!
     """
     subagent_lines = [
         "- Workspace subagents are located in `.agents/agents/{agent_name}/agent.md` (and configured for Codex in `.agents/agents/{agent_name}/agent.toml` via `.codex/config.toml`):"
@@ -2950,6 +3119,11 @@ def build_root_agents_md(cfg: TeamConfig, existing_content: Optional[str] = None
     extra_bullets = format_extra_rules_bullets(cfg)
     skills_summary = ", ".join(f"`{s['name']}`" for s in cfg.selected_skills)
 
+    contract_bullet = tr(
+        "- **Execution & Concurrency Contract**: Keep `agt` as a multi-harness scaffold and run via host-native orchestration (`agy`, `codex`, `claude`). Allow parallel fan-out for independent reads; keep shared-file edits (single-writer), independent verification, and commits strictly ordered. Consider a workflow graph only when the host must enforce hard gates, checkpoint/restore state, or run systematic retries (details in `.agents/README.md`).",
+        "- **Execution & Concurrency Contract**: Giữ `agt` làm scaffold đa harness và chạy bằng orchestration native của host (`agy`, `codex`, `claude`). Cho phép fan-out các việc đọc độc lập; giữ sửa file chung (single-writer), kiểm định độc lập và commit theo đúng thứ tự tuần tự. Chỉ cân nhắc workflow graph khi host cần thực thi gate, lưu/khôi phục state hoặc retry có hệ thống (chi tiết tại `.agents/README.md`).",
+    )
+
     agent_section_lines = [
         "## Agent-Specific Instructions",
         "",
@@ -2957,6 +3131,7 @@ def build_root_agents_md(cfg: TeamConfig, existing_content: Optional[str] = None
         f"- **Primary Goal**: {cfg.project_goal}",
         "- **Line Limit**: Keep `AGENTS.md` strictly under 150 lines; put detailed specs in `.agents/README.md`.",
         "- **Model & Cross-Provider Fallback**: When a primary model hits quota/rate limits, step down along the agent's `Fallback` chain (or run `agt fallback --step-down <role>`); if Antigravity models are exhausted, switch execution to the configured OpenAI Codex provider.",
+        contract_bullet,
         *extra_bullets,
         *subagent_lines,
         f"- **Applied Workspace Skills**: {skills_summary or 'See `.agents/skills.json`'}.",
@@ -2964,37 +3139,114 @@ def build_root_agents_md(cfg: TeamConfig, existing_content: Optional[str] = None
     ]
     agent_section = "\n".join(agent_section_lines)
 
-    if existing_content and "## Agent-Specific Instructions" in existing_content:
-        prefix_lines = existing_content.split("## Agent-Specific Instructions")[0].rstrip().splitlines()
-        max_prefix = MAX_AGENTS_MD_LINES - len(agent_section_lines) - 2
-        if len(prefix_lines) > max_prefix:
-            prefix_lines = prefix_lines[:max_prefix]
-        combined = "\n".join(prefix_lines) + "\n\n" + agent_section
-        return enforce_agents_md_line_limit(combined)
+    topology_section = "\n".join(
+        [
+            tr("## Team Topology & Delegation Rules", "## Cấu Trúc Đội Ngũ & Quy Tắc Ủy Quyền"),
+            "",
+            tr(
+                "### Phase 1: Bounded 2-Round Lead Debate (Strategy & Stress-Testing)",
+                "### Phase 1: Bounded 2-Round Lead Debate (Chiến lược & Phản biện)",
+            ),
+            tr(
+                "- `lead-architect`: Formulates initial architecture, design specs, and task breakdown.",
+                "- `lead-architect`: Xây dựng đề xuất kiến trúc ban đầu, thông số thiết kế và phân rã task.",
+            ),
+            tr(
+                "- `lead-critic`: Stress-tests assumptions, security, scalability, edge cases, and YAGNI simplicity across 2 structured debate rounds.",
+                "- `lead-critic`: Phản biện độc lập, stress-test giả định, rủi ro bảo mật/hiệu năng và YAGNI trong đúng 2 vòng.",
+            ),
+            tr(
+                "- Consensus (`CONSENSUS_REACHED`) is required before passing the blueprint to Phase 2.",
+                "- Bắt buộc đạt đồng thuận (`CONSENSUS_REACHED`) trước khi chuyển giao kế hoạch sang Pha 2.",
+            ),
+            "",
+            tr(
+                "### Phase 2: Hierarchical Execution (Orchestrator + Sub-agents)",
+                "### Phase 2: Hierarchical Execution (Điều phối & Thực thi phân cấp)",
+            ),
+            tr(
+                "- `orchestrator`: Takes the approved blueprint and coordinates worker subagents without direct code edits.",
+                "- `orchestrator`: Nhận thiết kế đã duyệt, tổng điều phối các worker subagents mà không sửa code trực tiếp.",
+            ),
+            tr(
+                "- `searcher`: Read-only codebase scouting and documentation lookup to maintain clean context.",
+                "- `searcher`: Trinh sát mã nguồn và tra cứu tài liệu ở chế độ chỉ đọc để giữ sạch context.",
+            ),
+            tr(
+                "- `designer`: UI/UX & Anti-Slop visual styling adhering to design taste rules.",
+                "- `designer`: Kỹ sư thiết kế UI/UX & bản sắc thị giác Anti-Slop tuân thủ design taste.",
+            ),
+            tr(
+                "- `implementer`: Minimal TDD implementation (Red-Green-Refactor) with single-writer file boundaries.",
+                "- `implementer`: Kỹ sư thực thi code & viết test theo quy trình TDD (Red-Green-Refactor) với thay đổi nhỏ nhất.",
+            ),
+            tr(
+                "- `reviewer`: Independent 2-axis quality and security review (Spec & Coding Standards).",
+                "- `reviewer`: Kiểm định độc lập chất lượng code và bảo mật theo 2 trục Spec & Coding Standards.",
+            ),
+            tr(
+                "- `committer`: Atomic Conventional Commits after reviewer approval.",
+                "- `committer`: Đóng gói Git Commit chuẩn Conventional Commits sau khi reviewer duyệt.",
+            ),
+        ]
+    )
+
+    if existing_content and existing_content.strip():
+        preamble, parsed_sections = _parse_markdown_h2_sections(existing_content)
+        managed_topology_headings = {
+            "## Team Topology & Delegation Rules",
+            "## Cấu Trúc Đội Ngũ & Quy Tắc Ủy Quyền",
+        }
+        managed_agent_headings = {
+            "## Agent-Specific Instructions",
+        }
+
+        parts: List[str] = []
+        if preamble:
+            parts.append(preamble)
+
+        topology_replaced = False
+        agent_replaced = False
+
+        for h, sec_lines in parsed_sections:
+            if h in managed_topology_headings:
+                if not topology_replaced:
+                    parts.append(topology_section.strip())
+                    topology_replaced = True
+            elif h in managed_agent_headings:
+                if not agent_replaced:
+                    parts.append(agent_section.strip())
+                    agent_replaced = True
+            else:
+                sec_text = "\n".join(sec_lines).strip()
+                if sec_text:
+                    parts.append(sec_text)
+
+        if not topology_replaced:
+            parts.append(topology_section.strip())
+        if not agent_replaced:
+            parts.append(agent_section.strip())
+
+        combined = "\n\n".join(parts) + "\n"
+        merged_lines = combined.splitlines()
+        if len(merged_lines) > MAX_AGENTS_MD_LINES:
+            raise ValueError(
+                f"Merged AGENTS.md requires {len(merged_lines)} lines (max {MAX_AGENTS_MD_LINES} < 150). "
+                "Move detailed documentation into .agents/README.md before regenerating."
+            )
+        return "\n".join(merged_lines) + "\n"
 
     fresh = "\n".join(
         [
             f"# Repository & Agent Guidelines — {cfg.project_name}",
             "",
-            "## Project Context & Goals",
+            tr("## Project Context & Goals", "## Bối Cảnh & Mục Tiêu Dự Án"),
             "",
             f"- **Tech Stack**: {cfg.tech_stack}",
             f"- **Context**: {cfg.project_context}",
             f"- **Current Goal**: {cfg.project_goal}",
             "",
-            "## Team Topology & Delegation Rules",
-            "",
-            "### Phase 1: Bounded 2-Round Lead Debate (Strategy & Stress-Testing)",
-            "- `lead-architect`: Formulates initial architecture, design specs, and task breakdown.",
-            "- `lead-critic`: Stress-tests assumptions, security, scalability, edge cases, and YAGNI simplicity across 2 structured debate rounds.",
-            "- Consensus (`CONSENSUS_REACHED`) is required before passing the blueprint to Phase 2.",
-            "",
-            "### Phase 2: Hierarchical Execution (Orchestrator + Sub-agents)",
-            "- `orchestrator`: Takes the approved blueprint and coordinates worker subagents without direct code edits.",
-            "- `searcher`: Read-only codebase scouting and documentation lookup to maintain clean context.",
-            "- `implementer`: Minimal TDD implementation (Red-Green-Refactor) with single-writer file boundaries.",
-            "- `reviewer`: Independent 2-axis quality and security review (Spec & Coding Standards).",
-            "- `committer`: Atomic Conventional Commits after reviewer approval.",
+            topology_section,
             "",
             agent_section,
         ]
@@ -3017,21 +3269,86 @@ def build_agents_readme_md(cfg: TeamConfig) -> str:
         skill_rows.append(f"- **`{s['name']}`**: {s['description']}")
     skills_block = "\n".join(skill_rows) if skill_rows else "- None"
 
+    header_title = tr(
+        f"# {cfg.project_name} Agents & Skills",
+        f"# Danh Mục Agents & Skills — {cfg.project_name}",
+    )
+    discovery_intro = tr(
+        "Workspace subagents are located in `.agents/agents/{agent_name}/agent.md`.\n\n"
+        "Both **Codex**, **Claude Code**, and **Antigravity CLI (`agy`)** discover the agents in this workspace natively:\n"
+        "- **agy** reads `.agents/agents/{agent_name}/agent.md`, `.agents/agents.json`, and `.agents/skills.json`.\n"
+        "- **Codex** reads `.agents/agents/{agent_name}/agent.toml` registered via `.codex/config.toml`.\n"
+        "- **Claude Code** reads `.claude/agents/{agent_name}.md` and `CLAUDE.md`.",
+        "Các subagents được cấu hình tại `.agents/agents/{agent_name}/agent.md`.\n\n"
+        "Cả 3 harness (**Antigravity CLI `agy`**, **Codex**, và **Claude Code**) phát hiện agent theo cơ chế native:\n"
+        "- **agy** đọc `.agents/agents/{agent_name}/agent.md`, `.agents/agents.json`, và `.agents/skills.json`.\n"
+        "- **Codex** đọc `.agents/agents/{agent_name}/agent.toml` được đăng ký qua `.codex/config.toml`.\n"
+        "- **Claude Code** đọc `.claude/agents/{agent_name}.md` và `CLAUDE.md`.",
+    )
+    roles_heading = tr("## Agent Roles & Model Mapping", "## Bảng Vai Trò & Ánh Xạ Mô Hình")
+    table_header = tr(
+        "| Role | Workspace Path | Model (Agy) | Model (Codex) | Fallback Chain | Purpose |\n| --- | --- | --- | --- | --- | --- |",
+        "| Vai trò | Đường dẫn Workspace | Mô hình (Agy) | Mô hình (Codex) | Fallback Chain | Mục tiêu |\n| --- | --- | --- | --- | --- | --- |",
+    )
+    context_heading = tr("## Project Context & Goal", "## Bối Cảnh & Mục Tiêu Dự Án")
+    context_label = tr("Context", "Bối cảnh")
+    goal_label = tr("Goal", "Mục tiêu")
+    skills_heading = tr("## Applied Skills", "## Kỹ Năng Áp Dụng")
+
+    native_section = tr(
+        "## Host-Native Orchestration (Zero Custom Runtime)\n\n"
+        "`agent-team` (`agt`) operates strictly as a multi-harness scaffold and generator. It avoids adding custom runtime daemons or process emulators to simulate agents:\n"
+        "- **Antigravity (`agy`)**: Orchestration is driven via host-native `invoke_subagent` and `send_message` tools using definitions in `.agents/agents/`.\n"
+        "- **OpenAI Codex (`codex`)**: Uses native multi-agent thread dispatch enabled via `[agents]` configurations in `.codex/config.toml`.\n"
+        "- **Claude Code (`claude`)**: Orchestrates via subagent markdown profiles in `.claude/agents/` referenced through `CLAUDE.md`.",
+        "## Host-Native Orchestration (Zero Custom Runtime)\n\n"
+        "`agent-team` (`agt`) thuần túy là bộ scaffold và generator đa harness. Dự án không tạo runtime daemon hay process giả lập agent riêng:\n"
+        "- **Antigravity (`agy`)**: Điều phối thông qua các công cụ native của host như `invoke_subagent` và `send_message` theo khai báo tại `.agents/agents/`.\n"
+        "- **OpenAI Codex (`codex`)**: Tận dụng cơ chế luồng native đa agent kích hoạt bởi `[agents]` trong `.codex/config.toml`.\n"
+        "- **Claude Code (`claude`)**: Điều phối qua hồ sơ subagent markdown tại `.claude/agents/` kết nối với `CLAUDE.md`.",
+    )
+
+    concurrency_section = tr(
+        "## Execution Concurrency & Ordering Contract\n\n"
+        "To balance execution throughput and correctness, all dispatches must follow these ordering principles:\n"
+        "1. **Parallel Read Fan-Out**: Independent codebase scouting and documentation search tasks (`searcher`) can fan out in parallel to maximize discovery speed.\n"
+        "2. **Ordered Shared-File Edits (Single-Writer)**: Implementation tasks (`implementer`, `designer`) that touch overlapping files or shared module contracts must execute sequentially with strict single-writer boundaries.\n"
+        "3. **Ordered Verification & Commit**: Once implementation passes local unit tests, `reviewer` performs an independent 2-axis quality and security review. Only after `reviewer` grants `APPROVED`, `committer` packages atomic Conventional Commits.",
+        "## Giao Thức Đồng Thời & Thứ Tự Thực Thi (Concurrency & Ordering Contract)\n\n"
+        "Để đảm bảo tốc độ và tính toàn vẹn của mã nguồn, mọi điều phối phải tuân thủ các quy tắc thứ tự:\n"
+        "1. **Parallel Read Fan-Out**: Các tác vụ trinh sát mã nguồn và tra cứu tài liệu độc lập (`searcher`) có thể chạy song song (fan-out) để tối đa tốc độ khám phá.\n"
+        "2. **Ordered Shared-File Edits (Single-Writer)**: Tác vụ triển khai code (`implementer`, `designer`) khi chạm vào các tệp dùng chung hoặc hợp đồng module phải thực thi tuần tự theo nguyên tắc đơn ghi (single-writer).\n"
+        "3. **Ordered Verification & Commit**: Sau khi code hoàn thành và test cục bộ pass, `reviewer` thực hiện kiểm định độc lập 2 trục. Chỉ khi `reviewer` duyệt `APPROVED`, `committer` mới đóng gói atomic Conventional Commit.",
+    )
+
+    boundary_section = tr(
+        "## Workflow Graph Decision Boundary\n\n"
+        "A graph-based state machine or formal workflow orchestrator is NOT required for standard linear development. Consider introducing an external workflow graph only when the target environment demands:\n"
+        "- **Gate Enforcement**: Enforcing programmatic host quality gates that strictly prevent progression before formal sign-off.\n"
+        "- **State Checkpointing & Resumption**: Checkpointing execution state to disk so long-running multi-step operations can pause, survive host restarts, and resume gracefully.\n"
+        "- **Systematic Retry Loops**: Managing automated remediation cycles where failed review or verification steps automatically re-dispatch targeted worker prompts.\n\n"
+        "Do not introduce a custom runtime or graph engine merely to represent role hierarchy.",
+        "## Ranh Giới Quyết Định Workflow Graph (Workflow Graph Decision Boundary)\n\n"
+        "Mô hình máy trạng thái dạng đồ thị (workflow graph) không bắt buộc cho quy trình phát triển thông thường. Chỉ cân nhắc tích hợp workflow graph khi môi trường thực thi yêu cầu:\n"
+        "- **Cổng Chặn (Gate Enforcement)**: Thực thi các cổng kiểm soát chất lượng có tính cưỡng chế của host, ngăn chặn chuyển pha khi chưa đủ điều kiện.\n"
+        "- **Lưu/Khôi Phục State (State Checkpointing & Resumption)**: Lưu checkpoint trạng thái thực thi bền vững xuống đĩa để có thể tạm dừng, phục hồi sau khi khởi động lại host.\n"
+        "- **Vòng Lặp Thử Lại Có Hệ Thống (Systematic Retry Loops)**: Quản lý chu trình tự động sửa lỗi và điều phối lại có hệ thống khi bước kiểm định hoặc review chưa đạt.\n\n"
+        "Tuyệt đối không bổ sung custom runtime hay engine đồ thị chỉ để mô phỏng cấu trúc vai trò.",
+    )
+
     return (
-        f"# {cfg.project_name} Agents & Skills\n\n"
-        f"Workspace subagents are located in `.agents/agents/{{agent_name}}/agent.md`.\n\n"
-        f"Both **Codex**, **Claude Code**, and **Antigravity CLI (`agy`)** discover the agents in this workspace:\n"
-        f"- **agy** reads `.agents/agents/{{agent_name}}/agent.md`, `.agents/agents.json`, and `.agents/skills.json`.\n"
-        f"- **Codex** reads `.agents/agents/{{agent_name}}/agent.toml` registered via `../.codex/config.toml`.\n"
-        f"- **Claude Code** reads `.claude/agents/{{agent_name}}.md` and `CLAUDE.md`.\n\n"
-        f"## Agent Roles & Model Mapping\n\n"
-        f"| Role | Workspace Path | Model (Agy) | Model (Codex) | Fallback Chain | Purpose |\n"
-        f"| --- | --- | --- | --- | --- | --- |\n"
+        f"{header_title}\n\n"
+        f"{discovery_intro}\n\n"
+        f"{roles_heading}\n\n"
+        f"{table_header}\n"
         f"{rows_block}\n\n"
-        f"## Project Context & Goal\n\n"
-        f"- **Context**: {cfg.project_context}\n"
-        f"- **Goal**: {cfg.project_goal}\n\n"
-        f"## Applied Skills\n\n"
+        f"{native_section}\n\n"
+        f"{concurrency_section}\n\n"
+        f"{boundary_section}\n\n"
+        f"{context_heading}\n\n"
+        f"- **{context_label}**: {cfg.project_context}\n"
+        f"- **{goal_label}**: {cfg.project_goal}\n\n"
+        f"{skills_heading}\n\n"
         f"{skills_block}\n"
     )
 
@@ -3072,7 +3389,8 @@ def build_single_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
     + `# Agent System Instructions`.
     """
     model_tier = _to_agy_model_tier(ag.agy_model)
-    tools_yaml = "\n".join(f"  - {t}" for t in ag.agy_tools)
+    canonical_tools = canonicalize_antigravity_tools(ag.agy_tools, enable_write=ag.enable_write)
+    tools_yaml = "\n".join(f"  - {t}" for t in canonical_tools)
     fallback_line = (
         f"\n- **Fallback Chain**: `{format_fallback_chain(ag.fallback_chain)}` "
         f"(If the active model hits quota/rate limits, step down in this exact order; if Antigravity quota is exhausted, switch/delegate to the OpenAI Codex provider profile)."
@@ -3095,12 +3413,13 @@ def build_single_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
         else ""
     )
 
+    main_agent_val = "true" if ag.id in ("lead-architect", "orchestrator") else "false"
     return (
         f"---\n"
         f"name: {ag.id}\n"
         f"description: \"{ag.title}\"\n"
         f"model: {model_tier}\n"
-        f"mainAgent: true\n"
+        f"mainAgent: {main_agent_val}\n"
         f"subagent: true\n"
         f"tools:\n"
         f"{tools_yaml}\n"
@@ -3177,9 +3496,11 @@ def build_codex_config_toml(cfg: TeamConfig) -> str:
         f'model = "{lead.codex_model}"',
         f'model_reasoning_effort = "{lead.reasoning_effort}"',
         'developer_instructions = """',
-        f"Act as {cfg.project_name}'s multi-agent team lead. Execute in 2 phases:",
+        f"Act as {cfg.project_name}'s multi-agent team lead. Execute in 2 phases via host-native [agents] orchestration:",
         "Phase 1: Run a bounded 2-round debate between lead-architect (proposing RFC & plan) and lead-critic (stress-testing assumptions and YAGNI simplicity) to reach CONSENSUS_REACHED.",
-        "Phase 2: Hand off the approved blueprint to orchestrator, who delegates to searcher (scout), implementer (TDD), reviewer (code quality), and committer (conventional commits).",
+        "Phase 2: Hand off the approved blueprint to orchestrator, who coordinates searcher (scout), designer (UI/UX), implementer (TDD), reviewer (code quality), and committer (conventional commits).",
+        "Allow parallel fan-out for independent reads; enforce serialized single-writer edits on shared files, followed by independent verification and commit.",
+        "Consider a workflow graph only when the host requires gate enforcement, state checkpointing/restoration, or systematic retry loops.",
         "Keep changes small, validate integration, and resolve review findings before claiming completion.",
         f"Project Context: {cfg.project_context}",
         f"Primary Goal: {cfg.project_goal}",
@@ -3207,7 +3528,8 @@ def build_codex_config_toml(cfg: TeamConfig) -> str:
 
 def build_claude_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
     """Sinh file .claude/agents/<id>.md theo chuẩn Claude Code."""
-    tools_str = "Read, Edit, Write, Bash, Grep, Glob" if ag.enable_write else "Read, Grep, Glob, Bash"
+    base_tools = "Read, Edit, Write, Bash, Grep, Glob" if ag.enable_write else "Read, Grep, Glob, Bash"
+    tools_str = base_tools + (", Agent" if ag.enable_subagents else "")
     model_line = f"model: {ag.claude_model}\n" if ag.claude_model != "inherit" else ""
     skills_str = ", ".join(ag.skills) if ag.skills else "Context-dependent"
     fallback_str = format_fallback_chain(ag.fallback_chain)
@@ -3224,6 +3546,7 @@ def build_claude_agent_md(cfg: TeamConfig, ag: AgentSpec) -> str:
         f"- **Context & Scope**: {ag.context_scope}\n"
         f"- **Goal & Completion Criteria**: {ag.goal_criteria}\n"
         f"- **Preferred Skills**: {skills_str}\n"
+        f"- Adhere to the Execution Concurrency & Ordering Contract in `AGENTS.md` and `.agents/README.md`.\n"
         f"- Follow `AGENTS.md` and `.agents/README.md`.\n"
     )
 
@@ -3325,7 +3648,7 @@ def build_subagent_payload(cfg: TeamConfig, ag: AgentSpec) -> Dict:
         f"## 3. Tiêu chí Hoàn thành (Completion Criteria)\n"
         f"{ag.goal_criteria}\n\n"
         f"## 4. Nguyên tắc Phối hợp Đội ngũ\n"
-        f"- Bám sát quy ước chung trong `AGENTS.md` và `.agents/rules/agent-team.md`.\n"
+        f"- Bám sát quy ước chung trong `AGENTS.md` và `.agents/README.md`.\n"
         f"- Quyền sửa đổi file: {'Có quyền ghi file (Write enabled).' if ag.enable_write else 'Chế độ CHỈ ĐỌC (Read-Only). Tuyệt đối không tự ý sửa đổi file mã nguồn.'}\n"
         f"- Báo cáo kết quả ngắn gọn, có cấu trúc, kèm đường dẫn file và dòng code cụ thể.\n"
     )
@@ -3386,15 +3709,122 @@ def build_subagent_doc_md(cfg: TeamConfig, ag: AgentSpec) -> str:
 
 def build_team_orchestrator_skill(cfg: TeamConfig) -> str:
     """Sinh file .agents/skills/team-orchestrator/SKILL.md chuẩn 2 Pha."""
-    return f"""---
+    en_desc = (
+        "Activate and coordinate the 2-Phase AI Team (Phase 1: Bounded 2-round debate between lead-architect "
+        "and lead-critic; Phase 2: orchestrator coordinates searcher, designer, implementer, reviewer, and committer). "
+        "Use this skill when asked to run the team, debate solutions, or orchestrate multi-agent development."
+    )
+    vi_desc = (
+        "Kích hoạt và điều phối Đội ngũ AI 2 Pha (Phase 1: Cặp Lead phản biện 2 vòng giữa lead-architect & lead-critic; "
+        "Phase 2: orchestrator điều phối searcher, designer, implementer, reviewer, committer). "
+        "Sử dụng skill này khi người dùng yêu cầu chạy đội agent, phản biện giải pháp, hoặc điều phối multi-agent."
+    )
+    desc = tr(en_desc, vi_desc)
+
+    en_content = f"""---
 name: team-orchestrator
 description: >-
-  Kích hoạt và điều phối Đội ngũ AI 2 Pha (Phase 1: Cặp Lead phản biện 2 vòng giữa lead-architect & lead-critic; Phase 2: orchestrator điều phối searcher, implementer, reviewer, committer). Sử dụng skill này khi người dùng yêu cầu chạy đội agent, phản biện giải pháp, hoặc điều phối multi-agent.
+  {desc}
 ---
 
 # Team Orchestrator Skill — {cfg.project_name}
 
-Skill này hướng dẫn quy trình điều phối chuẩn 2 Pha: **Phản biện Chiến lược 2 Vòng (Phase 1)** trước khi chuyển giao cho **Hạ tầng Thực thi Phân cấp (Phase 2)**.
+This skill defines the canonical 2-phase orchestration protocol: **Bounded 2-Round Strategic Debate (Phase 1)** before handing off to **Hierarchical Execution (Phase 2)** via host-native multi-agent coordination.
+
+## 1. Team Roster
+
+### Phase 1: Strategic Debate Pair
+- **`lead-architect`** (Lead Solution Architect & Planner):
+  - Model: `gemini-4-argon-high` / `gpt-6-astra` (Tier: `pro` / `high`)
+  - Permissions: Read-Only (`EnableWriteTools=False`, `EnableSubagentTools=False`, `EnableMCPTools=True`)
+  - Mission: Formulate initial architecture proposals, technical design blueprints, module contracts, and task breakdowns.
+- **`lead-critic`** (Lead Technical Critic & Challenger):
+  - Model: `gemini-3.1-pro-high` / `gpt-6.1-sol` (Tier: `pro` / `xhigh`)
+  - Permissions: Read-Only (`EnableWriteTools=False`, `EnableSubagentTools=False`, `EnableMCPTools=False`)
+  - Mission: Stress-test assumptions, identify blind spots, security vulnerabilities, edge cases, and YAGNI simplicity.
+
+### Phase 2: Hierarchical Execution
+- **`orchestrator`** (Lead Execution Orchestrator):
+  - Model: `gemini-4-argon-high` / `gpt-6-astra` (Tier: `pro` / `high`)
+  - Permissions: Coordination (`EnableWriteTools=False`, `EnableSubagentTools=True`, `EnableMCPTools=True`)
+  - Mission: Coordinate worker subagents via host-native orchestration; enforce execution ordering without direct code edits.
+- **`searcher`** (Primary Documentation & Codebase Scout):
+  - Model: `gemini-3.8-flash-medium` / `gpt-6-luna` (Tier: `flash` / `medium`, Read-Only)
+- **`designer`** (UI/UX & Anti-Slop Visual Designer):
+  - Model: `gemini-3.8-flash-high` / `gpt-6-sol` (Tier: `flash` / `xhigh`, Read + Write, Workspace: `share`)
+- **`implementer`** (Senior Feature & TDD Implementer):
+  - Model: `gemini-3.8-flash-high` / `gpt-6-sol` (Tier: `flash` / `xhigh`, Read + Write, Workspace: `share`)
+- **`reviewer`** (Independent Code Quality & Security Reviewer):
+  - Model: `gemini-3.1-pro-high` / `gpt-6.1-sol` (Tier: `pro` / `xhigh`, Read-Only)
+- **`committer`** (Conventional Git Committer):
+  - Model: `gemini-3.7-flash` / `gpt-6-luna` (Tier: `flash_lite` / `low`, Read-Only)
+
+---
+
+## 2. Canonical 2-Phase Execution Workflow
+
+```
+[User Request]
+       │
+       ▼
+═══════════════════════════════════════════════════════════════
+PHASE 1: BOUNDED 2-ROUND LEAD DEBATE (STRATEGIC DEBATE)
+═══════════════════════════════════════════════════════════════
+  [Round 1]
+    1. `lead-architect`: Formulate initial RFC & Task Breakdown
+    2. `lead-critic`   : Stress-test assumptions & edge cases
+  [Round 2]
+    3. `lead-architect`: Address critiques & produce Final Blueprint
+    4. `lead-critic`   : Final validation & grant `CONSENSUS_REACHED: APPROVED`
+       │
+       ▼
+═══════════════════════════════════════════════════════════════
+PHASE 2: HIERARCHICAL EXECUTION (ORCHESTRATOR + SUBAGENTS)
+═══════════════════════════════════════════════════════════════
+    5. `orchestrator` receives approved blueprint
+    6. `searcher` scouts codebase / docs (parallel fan-out)
+    7. `designer` designs UI/UX & visual styling (sequential / single-writer)
+    8. `implementer` writes Unit Tests (Red) -> Code (Green) -> Refactor (sequential / single-writer)
+    9. `reviewer` independently validates Spec & Standards
+   10. `committer` packages atomic Conventional Commits
+```
+
+---
+
+## 3. Host-Native Orchestration Mechanisms
+
+`agent-team` acts as a multi-harness scaffold and generator without a custom runtime engine:
+- **`agy` (Antigravity CLI)**: Uses `invoke_subagent` and `send_message` with subagent definitions in `.agents/agents/`.
+- **`codex` (OpenAI Codex)**: Uses `[agents]` section in `.codex/config.toml` to launch multi-agent threads natively.
+- **`claude` (Claude Code)**: Reads subagent instructions from `.claude/agents/*.md` linked via `CLAUDE.md`.
+
+---
+
+## 4. Execution Concurrency & Ordering Contract
+
+1. **Parallel Read Fan-Out**: Independent codebase scouting and documentation search tasks (`searcher`) can fan out in parallel.
+2. **Ordered Shared-File Edits (Single-Writer)**: Implementation tasks (`implementer`, `designer`) that modify shared files or contracts must execute sequentially with strict single-writer boundaries.
+3. **Ordered Verification & Commit**: `reviewer` independently validates diffs against Spec and Coding Standards; once `APPROVED`, `committer` packages atomic Conventional Commits.
+
+---
+
+## 5. Workflow Graph Decision Boundary
+
+A graph-based state machine is NOT required for standard linear development. Consider an external workflow graph only when the target environment requires:
+- **Gate Enforcement**: Programmatic host quality gates enforcing formal criteria before phase transitions.
+- **State Checkpointing & Resumption**: Checkpointing execution state to disk to survive host restarts or long pauses.
+- **Systematic Retry Loops**: Automated remediation cycles that re-dispatch worker agents upon verification failure.
+"""
+
+    vi_content = f"""---
+name: team-orchestrator
+description: >-
+  {desc}
+---
+
+# Team Orchestrator Skill — {cfg.project_name}
+
+Skill này hướng dẫn quy trình điều phối chuẩn 2 Pha: **Phản biện Chiến lược 2 Vòng (Phase 1)** trước khi chuyển giao cho **Hạ tầng Thực thi Phân cấp (Phase 2)** thông qua điều phối native của host.
 
 ## 1. Cấu hình Đội ngũ (Team Roster)
 
@@ -3414,6 +3844,8 @@ Skill này hướng dẫn quy trình điều phối chuẩn 2 Pha: **Phản bi�
   - Quyền hạn: Điều phối (`EnableWriteTools=False`, `EnableSubagentTools=True`, `EnableMCPTools=True`)
 - **`searcher`** (Trinh sát mã nguồn & Tra cứu tài liệu):
   - Model: `gemini-3.8-flash-medium` / `gpt-6-luna` (Tier: `flash` / `medium`, Read-Only)
+- **`designer`** (Kỹ sư thiết kế UI/UX & Bản sắc thị giác Anti-Slop):
+  - Model: `gemini-3.8-flash-high` / `gpt-6-sol` (Tier: `flash` / `xhigh`, Read + Write, Workspace: `share`)
 - **`implementer`** (Kỹ sư thực thi tính năng & TDD):
   - Model: `gemini-3.8-flash-high` / `gpt-6-sol` (Tier: `flash` / `xhigh`, Read + Write, Workspace: `share`)
 - **`reviewer`** (Kiểm định viên chất lượng & Bảo mật độc lập):
@@ -3444,42 +3876,40 @@ PHA 1: CẶP LEAD PHẢN BIỆN 2 VÒNG (STRATEGIC 2-ROUND DEBATE)
 PHA 2: ĐIỀU PHỐI THỰC THI PHÂN CẤP (ORCHESTRATOR + SUBAGENTS)
 ═══════════════════════════════════════════════════════════════
     5. `orchestrator` tiếp nhận Final Blueprint đã được duyệt
-    6. `searcher` trinh sát chính xác file:dòng trong codebase
-    7. `implementer` viết Unit Test (Red) -> Code tối giản (Green) -> Refactor
-    8. `reviewer` kiểm định độc lập (Spec Compliance & Coding Standards)
-    9. `committer` đóng gói Conventional Commits và nghiệm thu
+    6. `searcher` trinh sát chính xác file:dòng trong codebase (fan-out song song)
+    7. `designer` thiết kế UI/UX & bản sắc thị giác Anti-Slop (tuần tự / single-writer)
+    8. `implementer` viết Unit Test (Red) -> Code tối giản (Green) -> Refactor (tuần tự / single-writer)
+    9. `reviewer` kiểm định độc lập (Spec Compliance & Coding Standards)
+   10. `committer` đóng gói Conventional Commits và nghiệm thu
 ```
-
-### Chi tiết Pha 1: Giao thức Phản biện 2 Vòng (2-Round Debate Protocol)
-
-#### Vòng 1: Đề xuất Sơ bộ & Bắn phá Phản biện
-1. Gọi `invoke_subagent` cho `lead-architect`:
-   - Phân tích yêu cầu bài toán, đề xuất giải pháp kỹ thuật, phân tích trade-off, cấu trúc module và danh sách task dự kiến.
-2. Chuyển output của `lead-architect` sang `lead-critic`:
-   - Đọc đề xuất của `lead-architect`. Đóng vai trò đối trọng kỹ thuật (áp dụng tư duy `grilling`, `ponytail-review`, `ponytail-audit`).
-   - Tìm ra các rủi ro, điểm mù, hoặc biểu hiện over-engineering cần tinh gọn. Đưa ra danh sách phản biện cụ thể.
-
-#### Vòng 2: Hiệu chỉnh Bảo vệ & Chốt Hạ Đồng Thuận
-3. Gửi danh sách phản biện của `lead-critic` lại cho `lead-architect`:
-   - Giải trình hoặc tiếp thu từng điểm phản biện của `lead-critic`. Hiệu chỉnh lại thiết kế và kế hoạch chi tiết (Final Blueprint & Task Breakdown).
-4. Gửi bản thiết kế hiệu chỉnh cho `lead-critic` thẩm định lần 2:
-   - Đánh giá bản sửa đổi của `lead-architect`. Nếu toàn bộ phản biện trọng yếu đã được hóa giải thỏa đáng, trả về `STATUS: CONSENSUS_REACHED` kèm bản tóm tắt kế hoạch cuối cùng đã được chốt (Final Approved Blueprint).
 
 ---
 
-### Chi tiết Pha 2: Điều phối Thực thi Phân cấp (Hierarchical Execution)
+## 3. Cơ Chế Điều Phối Host-Native
 
-1. **Khởi động `orchestrator`**:
-   Chuyển giao bản `Final Approved Blueprint` từ Pha 1 cho `orchestrator`.
-2. **Trinh sát (`searcher`)**:
-   `orchestrator` giao `searcher` xác định chính xác các file, hàm, class và bài test hiện có liên quan.
-3. **Thực thi TDD (`implementer`)**:
-   `orchestrator` giao từng task độc lập cho `implementer`. Implementer tuân thủ nghiêm ngặt nguyên tắc TDD: viết test trước (Red), code tối thiểu vừa đủ pass (Green), và refactor sạch sẽ.
-4. **Kiểm định Độc lập (`reviewer`)**:
-   Sau khi `implementer` báo cáo test pass, `orchestrator` gọi `reviewer` kiểm tra `git diff`. Chỉ tiếp tục khi `reviewer` đánh giá `APPROVED`.
-5. **Đóng gói Commit (`committer`)**:
-   `orchestrator` gọi `committer` kiểm tra `git status` và đóng gói commit chuẩn Conventional Commits.
+`agent-team` vận hành thuần túy là bộ scaffold và generator đa harness không runtime tùy biến:
+- **`agy` (Antigravity CLI)**: Sử dụng các công cụ native `invoke_subagent` và `send_message` với định nghĩa tại `.agents/agents/`.
+- **`codex` (OpenAI Codex)**: Kích hoạt luồng đa agent native thông qua block `[agents]` trong `.codex/config.toml`.
+- **`claude` (Claude Code)**: Đọc hồ sơ subagent tại `.claude/agents/*.md` thông qua `CLAUDE.md`.
+
+---
+
+## 4. Giao Thức Đồng Thời & Thứ Tự Thực Thi (Concurrency & Ordering Contract)
+
+1. **Parallel Read Fan-Out**: Các tác vụ trinh sát mã nguồn và tra cứu tài liệu độc lập (`searcher`) có thể chạy song song (fan-out).
+2. **Ordered Shared-File Edits (Single-Writer)**: Tác vụ triển khai (`implementer`, `designer`) khi sửa đổi file chung hoặc module contracts phải thực thi tuần tự theo nguyên tắc đơn ghi (single-writer).
+3. **Ordered Verification & Commit**: `reviewer` kiểm định độc lập 2 trục; khi `APPROVED`, `committer` đóng gói atomic Conventional Commit.
+
+---
+
+## 5. Ranh Giới Quyết Định Workflow Graph (Workflow Graph Decision Boundary)
+
+Mô hình máy trạng thái dạng đồ thị (workflow graph) không bắt buộc cho quy trình phát triển thông thường. Chỉ cân nhắc tích hợp workflow graph khi môi trường thực thi yêu cầu:
+- **Cổng Chặn (Gate Enforcement)**: Thực thi các cổng kiểm soát chất lượng có tính cưỡng chế của host, ngăn chặn chuyển pha khi chưa đủ điều kiện.
+- **Lưu/Khôi Phục State (State Checkpointing & Resumption)**: Lưu checkpoint trạng thái thực thi bền vững xuống đĩa để có thể tạm dừng, phục hồi sau khi khởi động lại host.
+- **Vòng Lặp Thử Lại Có Hệ Thống (Systematic Retry Loops)**: Quản lý chu trình tự động sửa lỗi và điều phối lại có hệ thống khi bước kiểm định hoặc review chưa đạt.
 """
+    return vi_content if CURRENT_LANG == "vi" else en_content
 
 
 def write_project_configuration(cfg: TeamConfig, dry_run: bool = False) -> List[str]:
@@ -3503,8 +3933,12 @@ def write_project_configuration(cfg: TeamConfig, dry_run: bool = False) -> List[
         except Exception:
             existing_agents_md = None
 
+    # Compute root AGENTS.md content BEFORE calling save on any file so if
+    # build_root_agents_md raises ValueError, zero files on disk are created or modified!
+    agents_md_content = build_root_agents_md(cfg, existing_agents_md)
+
     # 1. Root AGENTS.md
-    save("AGENTS.md", build_root_agents_md(cfg, existing_agents_md))
+    save("AGENTS.md", agents_md_content)
 
     # 2. Chuẩn .agents/ (Dùng chung cho cả Antigravity `agy` và OpenAI `codex`)
     save(".agents/README.md", build_agents_readme_md(cfg))
@@ -3521,7 +3955,11 @@ def write_project_configuration(cfg: TeamConfig, dry_run: bool = False) -> List[
     save(".agents/skills/team-orchestrator/SKILL.md", build_team_orchestrator_skill(cfg))
 
     if cfg.add_commit_restrictions:
-        save(".agents/rules/commit-restrictions.md", build_commit_restrictions_rule())
+        commit_rule_path = project_path / ".agents" / "rules" / "commit-restrictions.md"
+        if commit_rule_path.exists():
+            created_files.append(str(commit_rule_path))
+        else:
+            save(".agents/rules/commit-restrictions.md", build_commit_restrictions_rule())
 
     # 3. Chuẩn OpenAI Codex CLI (.codex/config.toml)
     if "codex" in cfg.harnesses:
@@ -4023,9 +4461,11 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
 
     # Detect live occupancy and sessions
     active_roles, recent_sessions = detect_live_agent_occupancy(project_path, manual_active=active_arg)
+    resolved_theme = detect_system_theme()
+    active_accent = (rgb_fg(LIGHT_ACTIVE_BADGE_RGB) or YELLOW) if resolved_theme == "light" else YELLOW
 
-    # 1. 7-Column Mascot Pixel Art with Glow
-    grid_art = render_7col_agent_ps_grid(active_roles)
+    # 1. 8-Column Mascot Pixel Art with Glow
+    grid_art = render_7col_agent_ps_grid(active_roles, theme=resolved_theme)
     lines.append(grid_art)
 
     # Active Task Occupancy Breakdown
@@ -4036,20 +4476,19 @@ def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
                     f"  ⚡ Active Task Occupancy ({len(active_roles)} role(s) occupying tasks):",
                     f"  ⚡ Tác Vụ Đang Chiếm Giữ ({len(active_roles)} vai trò đang hoạt động):",
                 ),
-                BOLD + YELLOW,
+                BOLD + active_accent,
             )
         )
-        for r_id in ["lead-architect", "lead-critic", "orchestrator", "reviewer", "implementer", "searcher", "committer"]:
+        for r_id in [r[0] for r in PIXEL_ART_ANIMALS]:
             if r_id in active_roles:
                 emoji = MASCOT_EMOJIS.get(r_id, "🤖")
                 info = active_roles[r_id]
                 desc = format_active_role_desc(r_id, info, lang=CURRENT_LANG)
-                color = ROLE_COLORS.get(r_id, (255, 255, 255))
-                boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
+                boost_c = _mascot_role_rgb(r_id, resolved_theme, active_boost=True)
                 role_lbl = f"{BOLD}{rgb_fg(boost_c)}[{r_id}]{RESET}"
                 kind_name = ROLE_ANIMALS_VI.get(r_id, "linh vật") if CURRENT_LANG == "vi" else ROLE_ANIMALS.get(r_id, "mascot")
                 kind_lbl = f"({kind_name})"
-                lines.append(f"     • {emoji} {role_lbl} {kind_lbl:<12} : {c(desc, YELLOW)}")
+                lines.append(f"     • {emoji} {role_lbl} {kind_lbl:<12} : {c(desc, active_accent)}")
     else:
         lines.append(
             f"  {c(tr('○ Standby: All 7 mascots are idle. No background subagents currently occupying tasks.', '○ Chờ lệnh: Cả 7 linh vật đang nghỉ. Chưa có subagent nào chiếm giữ tác vụ.'), DIM)}"
@@ -4497,6 +4936,207 @@ def _apply_fallback_step_to_agent(ag: AgentSpec, step_str: str) -> str:
     return f"Model -> {clean_model}"
 
 
+def _upgrade_legacy_default_agent_fields(ag_raw: Dict, active_templates: Dict[str, Dict]) -> None:
+    """Upgrade unmodified legacy default agent fields to current standard templates."""
+    role_id = ag_raw.get("id", "")
+    if role_id not in active_templates:
+        return
+
+    # 1. Mission and criteria upgrades for orchestrator
+    if role_id == "orchestrator":
+        legacy_orch_missions = {
+            (
+                "Receive the finalized architecture blueprint approved from the 2-round lead debate (lead-architect ⮂ lead-critic). "
+                "Coordinate execution by dispatching searcher for codebase scouting, implementer for TDD coding, reviewer for independent "
+                "code review, and committer for Conventional Commits. Verify overall integration without modifying production code directly."
+            ),
+            (
+                "Tiếp nhận bản thiết kế kiến trúc hoàn thiện đã đạt đồng thuận từ cặp Lead phản biện (lead-architect ⮂ lead-critic). "
+                "Điều phối thực thi phân cấp: giao searcher trinh sát mã nguồn, giao implementer viết code & test (TDD), giao reviewer "
+                "kiểm định độc lập, và giao committer đóng gói git commit chuẩn. Giữ vai trò kiểm chứng tích hợp, không tự sửa code sản phẩm."
+            ),
+        }
+        legacy_orch_criteria = {
+            (
+                "Zero overlapping file ownership across subagents; all reviewer findings resolved; "
+                "full application builds and passes tests before claiming completion."
+            ),
+            (
+                "Không có 2 subagent sửa cùng một file; mọi phát hiện của reviewer được xử lý triệt để; "
+                "toàn bộ test suite vượt qua hoàn toàn trước khi báo cáo hoàn thành."
+            ),
+        }
+
+        if ag_raw.get("mission") in legacy_orch_missions:
+            ag_raw["mission"] = active_templates[role_id]["mission"]
+        if ag_raw.get("goal_criteria") in legacy_orch_criteria:
+            ag_raw["goal_criteria"] = active_templates[role_id]["goal_criteria"]
+
+    # 2. Tool upgrades for any role whose agy_tools matches a known legacy default list
+    legacy_tool_lists = [
+        # old 8-item READ_WRITE_TOOLS
+        [
+            "run_command",
+            "view_file",
+            "write_to_file",
+            "replace_file_content",
+            "multi_replace_file_content",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+        ],
+        # intermediate 6-item READ_WRITE_TOOLS with search_web
+        [
+            "run_command",
+            "manage_task",
+            "read_file",
+            "edit_file",
+            "write_file",
+            "search_web",
+        ],
+        # intermediate 13-item READ_WRITE_TOOLS
+        [
+            "run_command",
+            "manage_task",
+            "read_file",
+            "edit_file",
+            "write_file",
+            "search_web",
+            "view_file",
+            "write_to_file",
+            "replace_file_content",
+            "multi_replace_file_content",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+        ],
+        # old 5-item / 7-item REVIEWER_TOOLS / LEAD_CRITIC_TOOLS
+        [
+            "view_file",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+            "run_command",
+        ],
+        [
+            "run_command",
+            "manage_task",
+            "read_file",
+            "view_file",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+        ],
+        # old 5-item / 9-item SEARCHER_TOOLS
+        [
+            "view_file",
+            "grep_search",
+            "find_by_name",
+            "search_web",
+            "read_url_content",
+        ],
+        [
+            "run_command",
+            "manage_task",
+            "read_file",
+            "view_file",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+            "search_web",
+            "read_url_content",
+        ],
+        # old 4-item / 7-item COMMITTER_TOOLS
+        [
+            "run_command",
+            "view_file",
+            "grep_search",
+            "list_dir",
+        ],
+        [
+            "run_command",
+            "manage_task",
+            "read_file",
+            "view_file",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+        ],
+        # old 7-item / 9-item LEAD_ARCHITECT_TOOLS
+        [
+            "view_file",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+            "search_web",
+            "read_url_content",
+            "run_command",
+        ],
+        [
+            "run_command",
+            "manage_task",
+            "read_file",
+            "view_file",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+            "search_web",
+            "read_url_content",
+        ],
+        # intermediate ORCHESTRATOR_TOOLS variants
+        [
+            "run_command",
+            "manage_task",
+            "view_file",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+            "invoke_subagent",
+            "send_message",
+            "manage_subagents",
+            "define_subagent",
+        ],
+        [
+            "run_command",
+            "manage_task",
+            "read_file",
+            "view_file",
+            "grep_search",
+            "find_by_name",
+            "list_dir",
+            "search_web",
+            "invoke_subagent",
+            "send_message",
+            "manage_subagents",
+            "define_subagent",
+        ],
+        [
+            "run_command",
+            "manage_task",
+            "read_file",
+            "search_web",
+            "invoke_subagent",
+            "send_message",
+            "manage_subagents",
+            "define_subagent",
+        ],
+    ]
+
+    current_tools = ag_raw.get("agy_tools")
+    if isinstance(current_tools, list):
+        cur_tuple = tuple(current_tools)
+        cur_sorted = tuple(sorted(current_tools))
+        if any(current_tools == lt or cur_tuple == tuple(lt) or cur_sorted == tuple(sorted(lt)) for lt in legacy_tool_lists):
+            ag_raw["agy_tools"] = list(active_templates[role_id]["agy_tools"])
+            if role_id == "orchestrator":
+                ag_raw["enable_write"] = False
+        else:
+            ag_raw["agy_tools"] = canonicalize_antigravity_tools(
+                ag_raw["agy_tools"],
+                enable_write=ag_raw.get("enable_write", True),
+            )
+
+
 def _load_team_config_from_disk(project_path: Path) -> Optional[TeamConfig]:
     cfg_file = project_path / ".agents" / "team-config.json"
     if not cfg_file.exists():
@@ -4504,9 +5144,12 @@ def _load_team_config_from_disk(project_path: Path) -> Optional[TeamConfig]:
     try:
         raw = json.loads(cfg_file.read_text(encoding="utf-8"))
         active_templates = get_agent_templates()
+
         agents: List[AgentSpec] = []
         for ag_raw in raw.get("agents", []):
             role_id = ag_raw.get("id", "")
+            _upgrade_legacy_default_agent_fields(ag_raw, active_templates)
+
             default_chain = (
                 list(active_templates[role_id].get("fallback_chain", []))
                 if role_id in active_templates
@@ -5068,20 +5711,8 @@ def run_interactive_dashboard(target_path: Path, projects_root: Path, lang: str 
             return
 
 
-def main() -> None:
-    global CURRENT_LANG
-    raw_argv = sys.argv[1:]
-    lang = "en"
-    if "--lang" in raw_argv:
-        idx = raw_argv.index("--lang")
-        if idx + 1 < len(raw_argv) and raw_argv[idx + 1] in ("vi", "en"):
-            lang = raw_argv[idx + 1]
-    CURRENT_LANG = lang
-
-    if "-h" in raw_argv or "--help" in raw_argv:
-        print_cli_help(lang=lang)
-        return
-
+def build_cli_parser() -> argparse.ArgumentParser:
+    """Build and return the argument parser for agt CLI."""
     parser = argparse.ArgumentParser(
         prog="agt",
         add_help=False,
@@ -5165,6 +5796,24 @@ def main() -> None:
     p_menu.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_menu.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
 
+    return parser
+
+
+def main() -> None:
+    global CURRENT_LANG
+    raw_argv = sys.argv[1:]
+    lang = "en"
+    if "--lang" in raw_argv:
+        idx = raw_argv.index("--lang")
+        if idx + 1 < len(raw_argv) and raw_argv[idx + 1] in ("vi", "en"):
+            lang = raw_argv[idx + 1]
+    CURRENT_LANG = lang
+
+    if "-h" in raw_argv or "--help" in raw_argv:
+        print_cli_help(lang=lang)
+        return
+
+    parser = build_cli_parser()
     args = parser.parse_args()
     CURRENT_LANG = lang if "--lang" in raw_argv else getattr(args, "lang", "en")
     projects_root = Path("/home/killua/Projects")
