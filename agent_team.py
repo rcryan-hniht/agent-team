@@ -26,6 +26,7 @@ import os
 import re
 import shutil
 import sys
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -3541,36 +3542,30 @@ def detect_live_agent_occupancy(
     return active_roles, recent_sessions
 
 
-def cmd_ps(target_dir: Path, active_arg: str = "") -> None:
-    """
-    Redesigned Live Multi-Agent & OS Process Monitor:
-    1. 7-Mascot pixel art grid with glowing radiant effect for active roles.
-    2. Active Task Occupancy Breakdown.
-    3. Live OS Processes from /proc (agy / codex / claude / python agents).
-    4. Active Sessions, Background Subagents & task.md checklist.
-    5. Workspace Agent Definitions Readiness.
-    """
+def render_ps_view(target_dir: Path, active_arg: str = "") -> str:
+    """Render the full PS monitor view as a string."""
     project_path = target_dir.resolve()
-    print(
-        c(
-            tr(
-                f"\n🛰️  Live Multi-Agent & OS Process Monitor — {project_path.name} ({project_path})",
-                f"\n🛰️  Giám Sát Tiến Trình OS & Đội Ngũ Multi-Agent — {project_path.name} ({project_path})",
-            ),
-            BOLD + GREEN,
-        )
+    lines: List[str] = []
+
+    header = c(
+        tr(
+            f"🛰️  Live Multi-Agent & OS Process Monitor — {project_path.name} ({project_path})",
+            f"🛰️  Giám Sát Tiến Trình OS & Đội Ngũ Multi-Agent — {project_path.name} ({project_path})",
+        ),
+        BOLD + GREEN,
     )
+    lines.append(header)
 
     # Detect live occupancy and sessions
     active_roles, recent_sessions = detect_live_agent_occupancy(project_path, manual_active=active_arg)
 
     # 1. 7-Column Mascot Pixel Art with Glow
     grid_art = render_7col_agent_ps_grid(active_roles)
-    print(grid_art)
+    lines.append(grid_art)
 
     # Active Task Occupancy Breakdown
     if active_roles:
-        print(
+        lines.append(
             c(
                 tr(
                     f"  ⚡ Active Task Occupancy ({len(active_roles)} role(s) occupying tasks):",
@@ -3587,15 +3582,15 @@ def cmd_ps(target_dir: Path, active_arg: str = "") -> None:
                 boost_c = (min(255, int(color[0] * 1.35 + 45)), min(255, int(color[1] * 1.35 + 45)), min(255, int(color[2] * 1.35 + 45)))
                 role_lbl = f"{BOLD}{rgb_fg(boost_c)}[{r_id}]{RESET}"
                 kind_lbl = f"({ROLE_ANIMALS.get(r_id, 'mascot')})"
-                print(f"     • {emoji} {role_lbl} {kind_lbl:<12} : {c(desc, YELLOW)}")
+                lines.append(f"     • {emoji} {role_lbl} {kind_lbl:<12} : {c(desc, YELLOW)}")
     else:
-        print(
+        lines.append(
             f"  {c(tr('○ Standby: All 7 mascots are idle. No background subagents currently occupying tasks.', '○ Chờ lệnh: Cả 7 linh vật đang nghỉ. Chưa có subagent nào chiếm giữ tác vụ.'), DIM)}"
         )
-    print("")
+    lines.append("")
 
     # 2. Live OS Processes from /proc
-    print(
+    lines.append(
         c(
             tr(
                 "  1. Live OS Processes from /proc (`agy`, `codex`, `claude`):",
@@ -3616,8 +3611,8 @@ def cmd_ps(target_dir: Path, active_arg: str = "") -> None:
             + _col("UPTIME", 10, BOLD)
             + _col("CWD / PROJECT", 30, BOLD)
         )
-        print(f"     {hdr_line}")
-        print(f"     {DIM}{'─' * 8}{'─' * 10}{'─' * 14}{'─' * 12}{'─' * 9}{'─' * 10}{'─' * 35}{RESET}")
+        lines.append(f"     {hdr_line}")
+        lines.append(f"     {DIM}{'─' * 8}{'─' * 10}{'─' * 14}{'─' * 12}{'─' * 9}{'─' * 10}{'─' * 35}{RESET}")
         for p in running_procs:
             proj_tag = (
                 c(tr(" [THIS PROJECT]", " [PROJECT NÀY]"), BOLD + GREEN)
@@ -3634,14 +3629,14 @@ def cmd_ps(target_dir: Path, active_arg: str = "") -> None:
                 + _col(p["elapsed"], 10)
                 + _col(p["cwd"] + proj_tag, 35, CYAN if not p["in_project"] else "")
             )
-            print(f"     {row_str}")
+            lines.append(f"     {row_str}")
     else:
-        print(
+        lines.append(
             f"     {c(tr('No active agy / codex / claude processes detected in /proc.', 'Không phát hiện tiến trình agy / codex / claude nào trong /proc.'), DIM)}"
         )
 
     # 3. Active Antigravity Sessions, Subagents & Checklist Tasks
-    print(
+    lines.append(
         c(
             tr(
                 "\n  2. Recent Antigravity Sessions & Active Subagents:",
@@ -3660,37 +3655,37 @@ def cmd_ps(target_dir: Path, active_arg: str = "") -> None:
             else:
                 state_str = c(tr(f"○ Inactive ({age_sec // 3600}h ago)", f"○ Cũ ({age_sec // 3600} giờ trước)"), DIM)
 
-            print(
+            lines.append(
                 f"     • {BOLD}Session {s['id'][:8]}…{RESET} [{state_str}] "
                 f"— {tr('steps', 'bước')}: {s['steps']} | {tr('last tool', 'tool gần nhất')}: {c(s['last_tool'], CYAN)}"
             )
             if s["subagents"]:
                 for sa in s["subagents"][-3:]:
-                    print(
+                    lines.append(
                         f"       ↳ 🤖 {c(sa['type'], BOLD + MAGENTA)} ({sa['role']}): \"{sa['prompt']}…\""
                     )
             else:
-                print(
+                lines.append(
                     f"       ↳ {c(tr('Main agent executing directly (no subagents spawned in recent steps).', 'Main agent đang xử lý trực tiếp (chưa gọi subagent ở các bước gần đây).'), DIM)}"
                 )
 
             t = s["tasks"]
             if t["running"] or t["pending"] or t["done"]:
-                print(
+                lines.append(
                     f"       ↳ 📋 {tr('Checklist', 'Tiến độ task.md')}: "
                     f"{c(str(len(t['running'])) + tr(' running', ' đang chạy'), YELLOW)} | "
                     f"{c(str(len(t['pending'])) + tr(' pending', ' chờ'), CYAN)} | "
                     f"{c(str(len(t['done'])) + tr(' done', ' xong'), GREEN)}"
                 )
                 for ip in t["running"][:3]:
-                    print(f"          ⚡ {c(ip, BOLD + YELLOW)}")
+                    lines.append(f"          ⚡ {c(ip, BOLD + YELLOW)}")
     else:
-        print(
+        lines.append(
             f"     {c(tr('No Antigravity session transcripts found.', 'Không tìm thấy lịch sử phiên Antigravity nào.'), DIM)}"
         )
 
     # 4. Workspace Agent Readiness (.agents/agents/*/agent.md)
-    print(
+    lines.append(
         c(
             tr(
                 "\n  3. Workspace Agents Readiness (`agy` / `codex` / `claude`):",
@@ -3731,38 +3726,148 @@ def cmd_ps(target_dir: Path, active_arg: str = "") -> None:
             )
             codex_badge = c("codex ✔", CYAN) if toml_path.exists() else c("codex -", DIM)
             emoji = MASCOT_EMOJIS.get(role_dir.name, "•")
-            print(
+            lines.append(
                 f"     {emoji} [{BOLD}{role_dir.name:<12}{RESET}] "
                 f"tier={c(model_val, YELLOW)} | main={main_ag or 'false'} | sub={sub_ag or 'false'} "
                 f"| {codex_badge} -> {status_badge}"
             )
         if not found_any:
-            print(
+            lines.append(
                 f"     {c(tr('No agent.md files found in .agents/agents/.', 'Chưa có file agent.md trong .agents/agents/.'), YELLOW)}"
             )
     else:
-        print(
+        lines.append(
             f"     {c(tr('No .agents/agents/ directory found in this project.', 'Chưa có thư mục .agents/agents/ tại project này.'), YELLOW)}"
         )
 
-    # 5. Tips inside coding tool
-    print(
-        c(
+    return "\n".join(lines)
+
+
+def cmd_ps(
+    target_dir: Path,
+    active_arg: str = "",
+    watch: Optional[bool] = None,
+    interval: float = 2.0,
+) -> None:
+    """
+    Live Multi-Agent & OS Process Monitor.
+    Runs continuously like `top`/`htop` when run interactively, until user presses 'q' or Ctrl+C.
+    Can be run once with `--once` / `-1` or if not attached to a TTY.
+    """
+    project_path = target_dir.resolve()
+    is_interactive = sys.stdin.isatty() and sys.stdout.isatty()
+    if watch is None:
+        watch = is_interactive
+
+    if not watch or not is_interactive:
+        view = render_ps_view(project_path, active_arg=active_arg)
+        print(f"\n{view}")
+        print(
+            c(
+                tr(
+                    "\n  💡 Tips inside your coding tool:",
+                    "\n  💡 Mẹo kiểm tra trực tiếp bên trong công cụ:",
+                ),
+                BOLD + YELLOW,
+            )
+        )
+        print(
             tr(
-                "\n  💡 Tips inside your coding tool:",
-                "\n  💡 Mẹo kiểm tra trực tiếp bên trong công cụ:",
-            ),
-            BOLD + YELLOW,
+                f"     • Inside {BOLD}agy{RESET}  : Type {c('/agents', GREEN)} to switch/view workspace agents (or press {c('k', YELLOW)} to kill a running subagent), and {c('/tasks', GREEN)} for background tasks.\n"
+                f"     • Inside {BOLD}shell{RESET}: Run {c('agt ps', GREEN)} for live continuous top monitor (press {c('q', YELLOW)} to quit), or {c('agt ps --once', GREEN)} for single snapshot.",
+                f"     • Trong {BOLD}agy{RESET}     : Gõ {c('/agents', GREEN)} để xem/chuyển đổi agents (nhấn {c('k', YELLOW)} để dừng subagent đang chạy), và {c('/tasks', GREEN)} để xem tác vụ nền.\n"
+                f"     • Ngoài {BOLD}terminal{RESET}: Gõ {c('agt ps', GREEN)} để theo dõi liên tục như top (nhấn {c('q', YELLOW)} để thoát), hoặc {c('agt ps --once', GREEN)} để in 1 lần.",
+            )
         )
-    )
-    print(
-        tr(
-            f"     • Inside {BOLD}agy{RESET}  : Type {c('/agents', GREEN)} to switch/view workspace agents (or press {c('k', YELLOW)} to kill a running subagent), and {c('/tasks', GREEN)} for background tasks.\n"
-            f"     • Inside {BOLD}shell{RESET}: Run {c('agt ps', GREEN)} (or {c('agt ps -a <role>', GREEN)} to test glowing mascots) anytime to inspect live processes and tasks.",
-            f"     • Trong {BOLD}agy{RESET}     : Gõ {c('/agents', GREEN)} để xem/chuyển đổi agents (nhấn {c('k', YELLOW)} để dừng subagent đang chạy), và {c('/tasks', GREEN)} để xem tác vụ nền.\n"
-            f"     • Ngoài {BOLD}terminal{RESET}: Gõ {c('agt ps', GREEN)} (hoặc {c('agt ps -a <role>', GREEN)} để thử mascot phát sáng) bất cứ lúc nào để kiểm tra tiến trình và tác vụ.",
-        )
-    )
+        return
+
+    try:
+        import select
+        import termios
+        import tty
+    except ImportError:
+        view = render_ps_view(project_path, active_arg=active_arg)
+        print(f"\n{view}")
+        return
+
+    fd = sys.stdin.fileno()
+    try:
+        old_settings = termios.tcgetattr(fd)
+    except Exception:
+        view = render_ps_view(project_path, active_arg=active_arg)
+        print(f"\n{view}")
+        return
+
+    paused = False
+    cur_interval = max(0.5, float(interval))
+
+    # Switch to alternate screen buffer and hide cursor
+    sys.stdout.write("\033[?1049h\033[?25l")
+    sys.stdout.flush()
+
+    try:
+        tty.setcbreak(fd)
+        while True:
+            # 1. Clear alternate screen and move to top-left
+            sys.stdout.write("\033[H\033[2J")
+
+            # 2. Render monitor screen
+            view = render_ps_view(project_path, active_arg=active_arg)
+            sys.stdout.write(view + "\n")
+
+            # 3. Footer Control Bar
+            now_str = datetime.now().strftime("%H:%M:%S")
+            pause_badge = f"{BOLD}{YELLOW}[PAUSED] {RESET}" if paused else ""
+            footer_text = tr(
+                f"  {pause_badge}[q] Quit  [r] Refresh  [space] {'Resume' if paused else 'Pause'}  [+/-] Interval ({cur_interval:.1f}s)  •  Last updated: {now_str}",
+                f"  {pause_badge}[q] Thoát  [r] Làm mới  [space] {'Tiếp tục' if paused else 'Tạm dừng'}  [+/-] Chu kỳ ({cur_interval:.1f}s)  •  Cập nhật lúc: {now_str}",
+            )
+            term_w = shutil.get_terminal_size((115, 24)).columns
+            sys.stdout.write(DIM + "─" * term_w + RESET + "\n")
+            sys.stdout.write(footer_text + "\n")
+            sys.stdout.flush()
+
+            # 4. Wait for keypress or interval timeout
+            deadline = time.time() + (cur_interval if not paused else 0.5)
+
+            while time.time() < deadline:
+                remaining = max(0.05, deadline - time.time())
+                try:
+                    r_ready, _, _ = select.select([sys.stdin], [], [], min(remaining, 0.2))
+                except (InterruptedError, OSError):
+                    # Handle window resize (SIGWINCH) gracefully
+                    break
+
+                if r_ready:
+                    try:
+                        ch = sys.stdin.read(1)
+                    except Exception:
+                        return
+                    if not ch:  # EOF
+                        return
+                    if ch in ("q", "Q", "\x03"):  # 'q', 'Q', or Ctrl+C
+                        return
+                    elif ch in ("r", "R"):  # Manual instant refresh
+                        break
+                    elif ch == " ":  # Toggle pause
+                        paused = not paused
+                        break
+                    elif ch in ("+", "="):
+                        cur_interval = max(0.5, round(cur_interval - 0.5, 1))
+                        break
+                    elif ch in ("-", "_"):
+                        cur_interval = min(10.0, round(cur_interval + 0.5, 1))
+                        break
+
+    except KeyboardInterrupt:
+        pass
+    finally:
+        try:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        except Exception:
+            pass
+        sys.stdout.write("\033[?25h\033[?1049l\n")
+        sys.stdout.flush()
 
 
 def _apply_fallback_step_to_agent(ag: AgentSpec, step_str: str) -> str:
@@ -4211,13 +4316,17 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('init', BOLD + CYAN)}          Run the Multi-Agent & Skills setup wizard for a Project/Repo\n"
             f"  {c('status', BOLD + CYAN)}        Inspect active AI Team Status, 7-Role Animals & Skills\n"
             f"  {c('fallback', BOLD + CYAN)}      Configure or step down along the Model & Provider Fallback Chain\n"
-            f"  {c('ps / tasks', BOLD + CYAN)}    Check live running Agent processes, subagents, and tasks\n"
+            f"  {c('ps / tasks', BOLD + CYAN)}    Continuous live monitor like `top` (press `q` to quit, `--once` for snapshot)\n"
             f"  {c('clean', BOLD + CYAN)}         Clean / remove all AI agent configurations from a repo\n"
             f"  {c('list-skills', BOLD + CYAN)}   List all discovered local Skills\n\n"
             f"{c('OPTIONS:', BOLD + YELLOW)}\n"
             f"  {c('-t, --target <path>', CYAN)}     Target project directory (default: current directory)\n"
             f"  {c('-y, --yes', CYAN)}               Non-interactive mode using standard 5-agent preset\n"
             f"  {c('--clean', CYAN)}                 Clean / remove all AI agent configurations in target repo\n"
+            f"  {c('--once, -1', CYAN)}              Print ps monitor snapshot once and exit (disable continuous loop)\n"
+            f"  {c('--interval, -i <sec>', CYAN)}    Refresh interval in seconds for top monitor (default: 2.0)\n"
+            f"  {c('--watch, -w', CYAN)}             Force continuous watch loop even in non-standard TTY\n"
+            f"  {c('--active, -a <roles>', CYAN)}    Manually specify active role(s) to simulate glowing mascots\n"
             f"  {c('--goal <text>', CYAN)}           Primary project goal (used with --yes)\n"
             f"  {c('--context <text>', CYAN)}        Project context description (used with --yes)\n"
             f"  {c('--harnesses <list>', CYAN)}      Target harnesses: agy,codex,claude (default: all)\n"
@@ -4245,13 +4354,17 @@ def print_cli_help(lang: str = "en") -> None:
             f"  {c('init', BOLD + CYAN)}                Chạy Wizard thiết lập đội ngũ AI & Skills cho Project/Repo\n"
             f"  {c('status', BOLD + CYAN)}              Xem trạng thái Đội ngũ AI, 7 Linh vật & Skills\n"
             f"  {c('fallback', BOLD + CYAN)}            Thiết lập hoặc lùi Model theo Chuỗi Fallback đa Provider\n"
-            f"  {c('ps / tasks', BOLD + CYAN)}          Kiểm tra Agents nào đang chạy task nào (tiến trình, subagents, checklist)\n"
+            f"  {c('ps / tasks', BOLD + CYAN)}          Giám sát liên tục như `top` (bấm `q` để thoát, `--once` để in 1 lần)\n"
             f"  {c('clean', BOLD + CYAN)}               Dọn dẹp / xóa toàn bộ cấu hình AI Agents khỏi repo\n"
             f"  {c('list-skills', BOLD + CYAN)}         Liệt kê toàn bộ 150+ Skills đang có trên máy\n\n"
             f"{c('TÙY CHỌN (OPTIONS):', BOLD + YELLOW)}\n"
             f"  {c('-t, --target <path>', CYAN)}     Đường dẫn tới project/repo cần thiết lập (mặc định: `.`)\n"
             f"  {c('-y, --yes', CYAN)}               Khởi tạo tự động bằng Preset 5 Agents chuẩn (không hỏi đáp)\n"
             f"  {c('--clean', CYAN)}                 Dọn dẹp / xóa toàn bộ cấu hình AI Agents trong repo chỉ định\n"
+            f"  {c('--once, -1', CYAN)}              In ảnh chụp trạng thái 1 lần rồi thoát (tắt vòng lặp như `top`)\n"
+            f"  {c('--interval, -i <sec>', CYAN)}    Chu kỳ làm mới màn hình theo dõi (mặc định: 2.0 giây)\n"
+            f"  {c('--watch, -w', CYAN)}             Bắt buộc chạy vòng lặp theo dõi liên tục\n"
+            f"  {c('--active, -a <roles>', CYAN)}    Chỉ định vai trò đang chiếm task để linh vật phát sáng\n"
             f"  {c('--goal <text>', CYAN)}           Mục tiêu chính của project (dùng kèm `--yes`)\n"
             f"  {c('--context <text>', CYAN)}        Ngữ cảnh kiến trúc của project (dùng kèm `--yes`)\n"
             f"  {c('--harnesses <list>', CYAN)}      Công cụ xuất cấu hình: `agy,codex,claude` (mặc định: cả 3)\n"
@@ -4386,6 +4499,9 @@ def main() -> None:
     parser.add_argument("--target", "-t", type=str, default=".", help="Target project/repo path")
     parser.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode with standard preset")
     parser.add_argument("--active", "-a", type=str, default="", help="Active role(s) to simulate/highlight in ps monitor (comma-separated)")
+    parser.add_argument("--once", "-1", action="store_true", help="Print snapshot once and exit (disable continuous top monitor)")
+    parser.add_argument("--interval", "-i", type=float, default=2.0, help="Refresh interval in seconds for top monitor (default: 2.0)")
+    parser.add_argument("--watch", "-w", action="store_true", help="Force continuous watch loop even in non-standard TTY")
     parser.add_argument("--clean", action="store_true", help="Remove all AI agent configurations in target repo")
     parser.add_argument("--dry-run", action="store_true", help="Preview generated files without writing")
     subparsers = parser.add_subparsers(dest="command")
@@ -4424,15 +4540,21 @@ def main() -> None:
     p_status.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_status.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
 
-    p_ps = subparsers.add_parser("ps", add_help=False, help="Check live running Agent processes, subagents, and tasks")
+    p_ps = subparsers.add_parser("ps", add_help=False, help="Continuous live monitor like `top` (press `q` to quit, `--once` for snapshot)")
     p_ps.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_ps.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
     p_ps.add_argument("--active", "-a", type=str, default=argparse.SUPPRESS, help="Active role(s) to highlight (comma-separated)")
+    p_ps.add_argument("--once", "-1", action="store_true", default=argparse.SUPPRESS, help="Print snapshot once and exit")
+    p_ps.add_argument("--interval", "-i", type=float, default=argparse.SUPPRESS, help="Refresh interval in seconds (default: 2.0)")
+    p_ps.add_argument("--watch", "-w", action="store_true", default=argparse.SUPPRESS, help="Force continuous watch loop")
 
-    p_tasks = subparsers.add_parser("tasks", add_help=False, help="Alias for `ps` — check live running Agents and tasks")
+    p_tasks = subparsers.add_parser("tasks", add_help=False, help="Alias for `ps` — continuous live monitor like `top`")
     p_tasks.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
     p_tasks.add_argument("--target", "-t", type=str, default=argparse.SUPPRESS, help="Target project/repo path")
     p_tasks.add_argument("--active", "-a", type=str, default=argparse.SUPPRESS, help="Active role(s) to highlight (comma-separated)")
+    p_tasks.add_argument("--once", "-1", action="store_true", default=argparse.SUPPRESS, help="Print snapshot once and exit")
+    p_tasks.add_argument("--interval", "-i", type=float, default=argparse.SUPPRESS, help="Refresh interval in seconds (default: 2.0)")
+    p_tasks.add_argument("--watch", "-w", action="store_true", default=argparse.SUPPRESS, help="Force continuous watch loop")
 
     p_clean = subparsers.add_parser("clean", add_help=False, help="Remove all AI agent configurations in target repo")
     p_clean.add_argument("--lang", type=str, default=argparse.SUPPRESS, choices=["en", "vi"])
@@ -4465,7 +4587,15 @@ def main() -> None:
 
     if args.command in ("ps", "tasks"):
         active_arg = getattr(args, "active", "")
-        cmd_ps(Path(args.target), active_arg=active_arg)
+        once_flag = getattr(args, "once", False)
+        watch_flag = True if getattr(args, "watch", False) else (False if once_flag else None)
+        interval = float(getattr(args, "interval", 2.0))
+        cmd_ps(
+            Path(args.target),
+            active_arg=active_arg,
+            watch=watch_flag,
+            interval=interval,
+        )
         return
 
     if args.command == "clean" or getattr(args, "clean", False):
