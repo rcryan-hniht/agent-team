@@ -209,12 +209,12 @@
       <text x="42" y="26" text-anchor="middle" fill="#68707a" font-size="7.5">TRANH LUẬN</text>
     </g>
 
-    <!-- Agent 02: Lead Critic (cat) -->
+    <!-- Agent 02: Lead Critic (orca) -->
     <g transform="translate(336, 28)">
       <rect x="0" y="0" width="222" height="72" rx="4" fill="url(#oaCardCriticBgVi)" stroke="#d59090" stroke-width="1.2" filter="url(#oaSoftShadowVi)"/>
       <rect x="0" y="0" width="4" height="72" rx="2" fill="#9b0303"/>
-      <text x="12" y="18" fill="#181811" font-size="11.5" font-weight="800">02 LEAD CRITIC 🐱</text>
-      <text x="12" y="34" fill="#68707a" font-size="9.5">cat • Phản Biện &amp; Thẩm Định Rủi Ro</text>
+      <text x="12" y="18" fill="#181811" font-size="11.5" font-weight="800">02 LEAD CRITIC 🐋</text>
+      <text x="12" y="34" fill="#68707a" font-size="9.5">orca • Phản Biện &amp; Thẩm Định Rủi Ro</text>
       <text x="12" y="49" fill="#9b0303" font-size="9" font-weight="600">pro-3.1 (h) • sol-6.1 (xh) • opus</text>
       <text x="12" y="62" fill="#68707a" font-size="8.5">fallback: →opus→flash→sol</text>
     </g>
@@ -276,14 +276,14 @@
         <text x="12" y="58" fill="#868d90" font-size="8">fallback: →pro→sonnet→sol</text>
       </g>
 
-      <!-- Agent 06: Reviewer (frog) -->
+      <!-- Agent 06: Reviewer (shark) -->
       <g transform="translate(0, 176)">
         <rect x="0" y="0" width="276" height="66" rx="4" fill="url(#oaCardCriticBgVi)" stroke="#d59090" stroke-width="1.2" filter="url(#oaSoftShadowVi)"/>
         <rect x="0" y="0" width="4" height="66" rx="2" fill="#9b0303"/>
-        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">06 REVIEWER 🐸</text>
+        <text x="12" y="16" fill="#181811" font-size="11" font-weight="800">06 REVIEWER 🦈</text>
         <rect x="188" y="6" width="78" height="15" rx="2.5" fill="#f5d5d5"/>
         <text x="227" y="16.5" text-anchor="middle" fill="#9b0303" font-size="8" font-weight="700">BẢO MẬT [RO]</text>
-        <text x="12" y="32" fill="#68707a" font-size="9">frog • Kiểm Định Chuẩn Code &amp; An Toàn</text>
+        <text x="12" y="32" fill="#68707a" font-size="9">shark • Kiểm Định Chuẩn Code &amp; An Toàn</text>
         <text x="12" y="46" fill="#9b0303" font-size="8.5">pro-3.1 (h) • sol-6.1 (xh) • sonnet</text>
         <text x="12" y="58" fill="#868d90" font-size="8">fallback: →opus→sol</text>
       </g>
