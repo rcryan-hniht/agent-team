@@ -143,7 +143,8 @@ class TestSystemThemeAutoSync(unittest.TestCase):
 
         self.assertIn("\033[38;2;228;255;255m", ps_grid)
         self.assertIn("\033[38;2;255;255;255m", ps_grid)
-        self.assertIn("\033[1m\033[33m✦ ACTIVE ✦", ps_grid)
+        self.assertNotIn("✦ ACTIVE ✦", ps_grid)
+        self.assertIn("\033[1m\033[33m● working", ps_grid)
         self.assertIn("\033[38;2;136;192;208m", status_grid)
         self.assertIn("\033[38;2;196;167;231m", status_grid)
 
@@ -162,20 +163,20 @@ class TestSystemThemeAutoSync(unittest.TestCase):
 
         self.assertNotIn("\033[38;2;228;255;255m", ps_grid)
         self.assertNotIn("\033[38;2;255;255;255m", ps_grid)
+        self.assertNotIn("✦ ACTIVE ✦", ps_grid)
+        self.assertNotIn("✦ACTIVE✦", ps_grid)
 
         lines = ps_grid.splitlines()
-        crown_line = next(l for l in lines if "ACTIVE" in l)
-        busy_line = next(l for l in lines if "BUSY" in l)
+        working_line = next(l for l in lines if "working" in l)
         role_line = next(l for l in lines if "[architect]" in l)
 
-        for badge_line in (crown_line, busy_line):
-            rgbs = _extract_rgbs(badge_line)
-            self.assertTrue(rgbs, "Expected truecolor warm accent on ACTIVE/BUSY badges in light mode")
-            for r, g, b in rgbs:
-                self.assertTrue(r > g and r > b)
-                self.assertLessEqual(_rgb_to_hsl_saturation(r, g, b), 0.58)
-                self.assertGreaterEqual(_contrast_ratio((r, g, b), (237, 238, 242)), 4.0)
-                self.assertGreaterEqual(_contrast_ratio((r, g, b), (255, 255, 255)), 4.5)
+        rgbs = _extract_rgbs(working_line)
+        self.assertTrue(rgbs, "Expected truecolor warm accent on working badges in light mode")
+        for r, g, b in rgbs:
+            self.assertTrue(r > g and r > b)
+            self.assertLessEqual(_rgb_to_hsl_saturation(r, g, b), 0.58)
+            self.assertGreaterEqual(_contrast_ratio((r, g, b), (237, 238, 242)), 4.0)
+            self.assertGreaterEqual(_contrast_ratio((r, g, b), (255, 255, 255)), 4.5)
 
         role_rgbs = _extract_rgbs(role_line)
         self.assertEqual(len(role_rgbs), 5, "Only the 5 active roles should have warm RGB tags")

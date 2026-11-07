@@ -776,7 +776,7 @@ def render_7col_agent_ps_grid(
 ) -> str:
     """
     Render 8 columns of mascot pixel art with dynamic glowing effect for active roles.
-    - Active roles: Overhead '✦ ACTIVE ✦' crown, radiant boosted RGB colors (warm pink/red in light mode), bold role tag, '● BUSY' badge.
+    - Active roles: Radiant boosted RGB colors (warm pink/red in light mode), bold role tag, '● working' badge.
     - Idle roles: Dimmed/neutral palette, dim role tag, '○ idle' badge.
     """
     resolved_theme = theme if theme in ("light", "dark") else detect_system_theme()
@@ -803,21 +803,6 @@ def render_7col_agent_ps_grid(
 
     lines = []
     lines.append("")
-
-    # 0. Crown / Aura row above sprites
-    crown_row = m + " " * hdr_w
-    for k in range(num_cols):
-        role_id = PIXEL_ART_ANIMALS[k][0]
-        is_active = role_id in normalized_active
-        if is_active:
-            glow_raw = "✦ ACTIVE ✦" if cell_w >= 14 else "✦ACTIVE✦"
-            glow_tag = f"{BOLD}{active_badge_c}{glow_raw}{RESET}" if sys.stdout.isatty() else glow_raw
-            tag_len = _visible_len(glow_raw)
-            pad = max(0, cell_w - tag_len)
-            crown_row += " " * (pad // 2) + glow_tag + " " * (pad - pad // 2)
-        else:
-            crown_row += " " * cell_w
-    lines.append(crown_row)
 
     # 6 rows of sprite
     for r in range(6):
@@ -890,13 +875,13 @@ def render_7col_agent_ps_grid(
         row += " " * (pad // 2) + colored_tag + " " * (pad - pad // 2)
     lines.append(row)
 
-    # State row (BUSY vs idle)
+    # State row (working vs idle)
     row = m + " " * hdr_w
     for k in range(num_cols):
         role_id = PIXEL_ART_ANIMALS[k][0]
         is_active = role_id in normalized_active
         if is_active:
-            st = "● BUSY"
+            st = "● working"
             colored_st = f"{BOLD}{active_badge_c}{st}{RESET}" if sys.stdout.isatty() else st
         else:
             st = "○ idle"
